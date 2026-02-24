@@ -4,10 +4,10 @@
 # Для разработки и тестирования
 # ============================================
 
-# Testing
-pytest==8.3.3
-pytest-asyncio==0.24.0
-pytest-cov==6.0.0
+# Testing - Python 3.13 Compatible
+pytest>=8.0.0
+pytest-asyncio>=0.24.0
+pytest-cov>=6.0.0
 
 # Code Quality
 flake8==7.0.0
