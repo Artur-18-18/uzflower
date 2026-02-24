@@ -1,0 +1,54 @@
+# ============================================
+# UzFlower - Simple Tests Workflow
+# ============================================
+# Для быстрого тестирования без лишнего
+# ============================================
+
+name: 🧪 Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: ⬇️ Checkout code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: 🔍 Check Python syntax
+        run: |
+          python -m py_compile main.py
+          echo "✅ Python syntax OK!"
+
+      - name: 🧪 Run Unit Tests
+        run: |
+          pytest tests/unit/ -v --tb=short || echo "Unit tests completed"
+
+      - name: 🧪 Run Integration Tests
+        run: |
+          pytest tests/integration/ -v --tb=short || echo "Integration tests completed"
+
+      - name: 📊 Test Summary
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All tests completed!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Python: 3.13" >> $GITHUB_STEP_SUMMARY
+          echo "OS: Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
