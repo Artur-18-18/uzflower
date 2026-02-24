@@ -7,7 +7,6 @@ from typing import Generator, Dict, Any
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
-from passlib.context import CryptContext
 
 # Импортируем приложение и модели
 from main import app, Base, get_db, User, Product, Order, Category, Review
