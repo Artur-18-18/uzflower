@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель администратора - UzFlower</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Login Overlay -->
+    <div id="login-overlay"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-rose-100 rounded-full mb-4">
+                    <i data-lucide="lock" class="w-8 h-8 text-rose-600"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900">Вход в панель управления</h2>
+                <p class="text-gray-500 mt-2">Введите учетные данные администратора</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleAdminLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="login-email" required placeholder="admin@test.com"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Пароль</label>
+                    <input type="password" id="login-password" required placeholder="••••••••"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all">
+                </div>
+                <button type="submit"
+                    class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]">
+                    Войти
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold">Панель администратора</h1>
+                <p class="text-white/90 mt-2">Управление магазином uzflower</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openSite()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
+                    <i data-lucide="external-link" class="w-5 h-5"></i>
+                    <span class="font-medium">Смотреть сайт</span>
+                </button>
+                <button onclick="logoutAdmin()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span class="font-medium">Выйти</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <!-- Tabs -->
+            <div class="border-b">
+                <div class="flex overflow-x-auto" id="tabs-container">
+                    <button onclick="switchTab('stats')" id="tab-stats"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Статистика
+                    </button>
+                    <button onclick="switchTab('products')" id="tab-products"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="package" class="w-5 h-5"></i> Товары
+                    </button>
+                    <button onclick="switchTab('orders')" id="tab-orders"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> Заказы
+                    </button>
+                    <button onclick="switchTab('delivery')" id="tab-delivery"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="truck" class="w-5 h-5"></i> Доставка
+                    </button>
+                    <button onclick="switchTab('marketing')" id="tab-marketing"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="megaphone" class="w-5 h-5"></i> Маркетинг
+                    </button>
+                    <button onclick="switchTab('customers')" id="tab-customers"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="users" class="w-5 h-5"></i> Клиенты
+                    </button>
+                    <button onclick="switchTab('support')" id="tab-support"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900 relative">
+                        <i data-lucide="headset" class="w-5 h-5"></i> Поддержка
+                        <span id="support-badge"
+                            class="absolute top-2 right-2 w-5 h-5 bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center hidden">0</span>
+                    </button>
+                    <button onclick="switchTab('categories')" id="tab-categories"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="layers" class="w-5 h-5"></i> Категории
+                    </button>
+                    <button onclick="switchTab('promo')" id="tab-promo"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="ticket" class="w-5 h-5"></i> Промокоды
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6" id="content-area">
+                <!-- Content will be loaded here via JS -->
+                <div class="flex justify-center py-10">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-rose-600"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="section-customers" class="hidden p-6">
+            <h2 class="text-xl font-bold mb-4">Наши клиенты</h2>
+            <div id="customers-list" class="space-y-2"></div>
+        </div>
+
+        <div id="section-reviews" class="hidden p-6">
+            <h2 class="text-xl font-bold mb-4">Отзывы</h2>
+            <div id="reviews-list" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Modal for Product -->
+    <div id="product-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900" id="modal-title">Добавление товара</h3>
+                <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)" class="p-6 space-y-4">
+                <input type="hidden" id="prod-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Название</label>
+                    <input type="text" id="prod-name" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Описание</label>
+                    <textarea id="prod-description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Состав</label>
+                    <textarea id="prod-composition" rows="3" placeholder="Клубника - 25 шт..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Категория</label>
+                    <select id="prod-category-id"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                        <option value="">Без категории</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Базовая цена (сум)</label>
+                        <input type="number" id="prod-price" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Цена со скидкой (сум)</label>
+                        <input type="number" id="prod-sale-price"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Price S (сум)</label>
+                        <input type="number" id="prod-price-s"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Price M (сум)</label>
+                        <input type="number" id="prod-price-m"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Price L (сум)</label>
+                        <input type="number" id="prod-price-l"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ширина (см)</label>
+                        <input type="number" id="prod-width" step="0.01"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Высота (см)</label>
+                        <input type="number" id="prod-height" step="0.01"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">URL изображения</label>
+                        <input type="text" id="prod-image-url" placeholder="https://... или путь к файлу"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Или загрузить файл</label>
+                        <div class="flex items-center gap-2">
+                            <input type="file" id="prod-image-file" accept="image/*" onchange="handleFileUpload(this)"
+                                class="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-gray-50 hover:bg-white transition-colors cursor-pointer">
+                            <div id="upload-status" class="hidden">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-rose-600"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Наличие (шт)</label>
+                    <input type="number" id="prod-stock" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                </div>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="prod-is-sale" class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-sm text-gray-700">Акция</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="prod-is-featured" class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-sm text-gray-700">В карусели</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="prod-is-popular" class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-sm text-gray-700">Популярное</span>
+                    </label>
+                </div>
+                <button type="submit"
+                    class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> Сохранить
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Banner Modal -->
+    <div id="banner-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900" id="banner-modal-title">Добавление баннера</h3>
+                <button onclick="closeBannerModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="banner-form" onsubmit="saveBanner(event)" class="p-6 space-y-4">
+                <input type="hidden" id="banner-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Тип баннера</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="banner-media-type" value="image" id="banner-type-image" onchange="toggleBannerFileType('image')" checked class="w-4 h-4 text-rose-600">
+                            <span class="text-sm text-gray-700">Изображение</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="banner-media-type" value="video" id="banner-type-video" onchange="toggleBannerFileType('video')" class="w-4 h-4 text-rose-600">
+                            <span class="text-sm text-gray-700">Видео</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="banner-image-section">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">URL изображения</label>
+                    <input type="text" id="banner-image-url" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <div class="mt-2">
+                        <label class="block text-sm text-gray-600 mb-1">Или загрузить файл</label>
+                        <input type="file" id="banner-image-file" accept="image/*" onchange="handleBannerFileUpload(this)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                    </div>
+                </div>
+
+                <div id="banner-video-section" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">URL видео</label>
+                    <input type="text" id="banner-video-url" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <div class="mt-2">
+                        <label class="block text-sm text-gray-600 mb-1">Или загрузить файл</label>
+                        <input type="file" id="banner-video-file" accept="video/*" onchange="handleBannerFileUpload(this)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ссылка (необязательно)</label>
+                    <input type="text" id="banner-link" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Текст на баннере (сезонный)</label>
+                    <input type="text" id="banner-text" placeholder="Например: Весенняя Коллекция, 8 Марта, Новый Год..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 mt-1">Этот текст будет отображаться поверх баннера на главной странице</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Подзаголовок (необязательно)</label>
+                    <input type="text" id="banner-subtext" placeholder="Например: Создайте незабываемые моменты..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                </div>
+
+                <div>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="banner-is-active" checked class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-sm text-gray-700">Активен</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2">
+                    <i data-lucide="save" class="w-5 h-5"></i> Сохранить
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let categories = [];
+        let activeChatUser = null;
+        let adminChatPolling = null;
+
+        // --- Auth Helpers ---
+        function getAuthToken() {
+            return localStorage.getItem('admin_token');
+        }
+
+        async function adminFetch(url, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                showLogin();
+                throw new Error("No token");
+            }
+
+            options.headers = {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            };
+
+            const res = await fetch(url, options);
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('admin_token');
+                showLogin();
+                throw new Error("Unauthorized");
+            }
+            
+            const data = await res.json();
+            return data;
+        }
+
+        function showLogin() {
+            document.getElementById('login-overlay').classList.remove('hidden');
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('admin_token');
+            location.reload();
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.user && data.user.is_admin) {
+                        localStorage.setItem('admin_token', data.access_token);
+                        document.getElementById('login-overlay').classList.add('hidden');
+                        initAdmin();
+                    } else {
+                        alert("У вас нет прав администратора");
+                    }
+                } else {
+                    alert("Неверный логин или пароль");
+                }
+            } catch (err) {
+                alert("Ошибка подключения");
+            }
+        }
+
+        async function initAdmin() {
+            lucide.createIcons();
+            loadData('stats');
+            setInterval(checkUnreadSupport, 10000);
+            checkUnreadSupport();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!getAuthToken()) {
+                showLogin();
+                lucide.createIcons(); // To show lock icon in login
+            } else {
+                initAdmin();
+            }
+        });
+
+        let currentTab = 'products';
+
+        function formatPrice(price) {
+            return Number(price).toLocaleString('ru-RU');
+        }
+
+        async function checkUnreadSupport() {
+            try {
+                const res = await adminFetch('/api/support/unread-total');
+                const data = await res.json();
+                const badge = document.getElementById('support-badge');
+                if (data.total > 0) {
+                    badge.innerText = data.total;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            } catch (e) { }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            // Update UI tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900';
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.className = 'tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600';
+
+            loadData(tab);
+        }
+
+        async function loadData(tab) {
+            const type = tab;
+            try {
+                let endpoint;
+                if (type === 'support') endpoint = '/api/support/sessions';
+                else if (type === 'stats') endpoint = '/api/admin/stats';
+                else if (type === 'delivery') endpoint = '/api/admin/delivery-zones';
+                else if (type === 'marketing') endpoint = '/api/banners';
+                else if (type === 'customers') endpoint = '/api/admin/customers';
+                else if (type === 'promo') endpoint = '/api/promo-codes';
+                else if (type === 'products') endpoint = '/api/admin/products';
+                else endpoint = `/api/${type}`;
+
+                const data = await adminFetch(endpoint);
+
+                if (['products', 'orders', 'support', 'categories', 'promo', 'customers', 'reviews', 'stats', 'delivery', 'marketing'].includes(type)) {
+                    renderContent(type, data);
+                    return;
+                }
+
+            } catch (e) {
+                console.error("Ошибка загрузки данных:", e);
+            }
+        }
+
+        function renderContent(tab, data) {
+            const content = document.getElementById('content-area');
+            content.innerHTML = '';
+
+            if (tab === 'stats') {
+                content.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Панель управления</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div onclick="openRevenueModal()" class="bg-gradient-to-br from-rose-500 to-pink-600 p-6 rounded-2xl text-white shadow-lg cursor-pointer hover:shadow-xl hover:scale-105 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <i data-lucide="banknote" class="w-8 h-8 opacity-80"></i>
+                                <span class="text-xs font-bold uppercase tracking-wider opacity-80">Доход (Вып.)</span>
+                            </div>
+                            <div class="text-3xl font-bold">${formatPrice(data.revenue)} сум</div>
+                            <p class="text-xs mt-2 opacity-80">↗ Нажмите для деталей</p>
+                        </div>
+                        <div onclick="openOrdersModal()" class="bg-white p-6 rounded-2xl border shadow-sm cursor-pointer hover:shadow-xl hover:scale-105 transition-all">
+                            <div class="flex items-center justify-between mb-4 text-rose-500">
+                                <i data-lucide="shopping-bag" class="w-8 h-8"></i>
+                                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Всего заказов</span>
+                            </div>
+                            <div class="text-3xl font-bold text-gray-900">${data.orders}</div>
+                            <p class="text-xs mt-2 text-gray-400">↗ Нажмите для деталей</p>
+                        </div>
+                        <div onclick="openCustomersModal()" class="bg-white p-6 rounded-2xl border shadow-sm cursor-pointer hover:shadow-xl hover:scale-105 transition-all">
+                            <div class="flex items-center justify-between mb-4 text-rose-500">
+                                <i data-lucide="users" class="w-8 h-8"></i>
+                                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Клиенты</span>
+                            </div>
+                            <div class="text-3xl font-bold text-gray-900">${data.customers}</div>
+                            <p class="text-xs mt-2 text-gray-400">↗ Нажмите для деталей</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-2xl border shadow-sm p-6">
+                        <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-5 h-5 text-rose-500"></i>
+                             товары
+                        </h3>
+                        <div class="space-y-4">
+                            ${data.top_products.map(p => `
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                    <span class="font-medium text-gray-800">${p.name}</span>
+                                    <span class="text-rose-600 font-bold">${formatPrice(p.price)} сум</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'delivery') {
+                content.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Управление доставкой</h2>
+                        <button onclick="openDeliveryModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg flex items-center gap-2 hover:bg-rose-700 transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Добавить зону
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border shadow-sm">
+                            <h3 class="font-bold mb-4 flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-5 h-5 text-rose-500"></i>
+                                Зоны доставки
+                            </h3>
+                            <div class="space-y-3" id="zones-list">
+                                ${data.length === 0
+                        ? '<p class="text-gray-400 text-sm italic">Зоны ещё не настроены. Нажмите «Добавить зону».</p>'
+                        : data.map(z => `
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:border-rose-200 transition-all">
+                                            <div>
+                                                <p class="font-semibold text-gray-900">${z.name}</p>
+                                                <p class="text-sm text-rose-600 font-bold">${formatPrice(z.price)} сум</p>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <button onclick="editZone(${z.id}, '${z.name.replace(/'/g, '\\&#39;')}', ${z.price})" class="p-2 border border-gray-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 text-gray-500 hover:text-yellow-600 transition-all" title="Редактировать">
+                                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                                </button>
+                                                <button onclick="deleteZone(${z.id})" class="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-300 text-gray-500 hover:text-red-600 transition-all" title="Удалить">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')
+                    }
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 p-6 rounded-2xl">
+                            <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                                <i data-lucide="info" class="w-5 h-5"></i> Как это работает
+                            </h3>
+                            <ul class="text-sm text-blue-700 space-y-2 list-disc ml-4">
+                                <li>Каждая зона — район или часть города с фиксированной стоимостью доставки</li>
+                                <li>Клиент видит зоны при оформлении заказа</li>
+                                <li>Можно редактировать цену существующих зон</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+
+            } else if (tab === 'marketing') {
+                content.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Маркетинг</h2>
+                        <button onclick="openBannerModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg flex items-center gap-2 hover:bg-rose-700 transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Добавить баннер
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="banners-grid">
+                        ${data.length === 0
+                            ? '<div class="col-span-full text-center py-10 text-gray-400">Баннеры ещё не добавлены</div>'
+                            : data.map(b => `
+                                <div class="bg-white rounded-2xl border shadow-sm overflow-hidden relative group">
+                                    ${b.media_type === 'video'
+                                        ? `<video src="${b.video_url}" class="w-full h-48 object-cover" muted loop autoplay onmouseover="this.play()" onmouseout="this.pause()"></video>`
+                                        : `<img src="${b.image_url || 'https://via.placeholder.com/400'}" class="w-full h-48 object-cover">`
+                                    }
+                                    ${b.text ? `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4"><p class="text-white font-bold text-lg">${b.text}</p>${b.subtext ? `<p class="text-white/80 text-sm">${b.subtext}</p>` : ''}</div>` : ''}
+                                    <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="toggleBannerActive(${b.id}, ${!b.is_active})" class="p-2 bg-white rounded-lg shadow hover:bg-gray-50" title="${b.is_active ? 'Деактивировать' : 'Активировать'}">
+                                            <i data-lucide="${b.is_active ? 'eye' : 'eye-off'}" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="editBanner(${b.id})" class="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600" title="Редактировать">
+                                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="deleteBanner(${b.id})" class="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600" title="Удалить">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                    <div class="p-4">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="px-2 py-1 bg-rose-100 text-rose-600 text-xs font-bold rounded uppercase">${b.media_type === 'video' ? 'Видео' : 'Изображение'}</span>
+                                            <span class="px-2 py-1 ${b.is_active ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'} text-xs font-bold rounded">${b.is_active ? 'Активен' : 'Неактивен'}</span>
+                                        </div>
+                                        ${b.text ? `<p class="text-sm font-semibold text-gray-800 mb-2">📝 ${b.text}</p>` : ''}
+                                        ${b.link ? `<a href="${b.link}" target="_blank" class="text-sm text-rose-500 hover:underline flex items-center gap-1"><i data-lucide="external-link" class="w-3 h-3"></i> Ссылка</a>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>
+                `;
+                lucide.createIcons();
+                // Автозапуск видео при наведении
+                document.querySelectorAll('#banners-grid video').forEach(video => {
+                    video.addEventListener('mouseenter', () => video.play());
+                    video.addEventListener('mouseleave', () => {
+                        video.pause();
+                        video.currentTime = 0;
+                    });
+                });
+            } else if (tab === 'products') {
+                const header = document.createElement('div');
+                header.className = 'flex items-center justify-between mb-6';
+                header.innerHTML = `
+                    <h2 class="text-2xl font-bold text-gray-900">Товары</h2>
+                    <button onclick="openModal()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Добавить товар
+                    </button>
+                `;
+                content.appendChild(header);
+
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
+                data.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'border rounded-lg p-4';
+                    card.innerHTML = `
+                        <img src="${product.image_url || 'https://via.placeholder.com/400'}" alt="${product.name}" class="w-full h-48 object-cover rounded-lg mb-3">
+                        <h3 class="font-semibold text-gray-900 mb-2">${product.name}</h3>
+                        <p class="text-lg font-bold text-gray-900 mb-2">${formatPrice(product.price)} сум</p>
+                        <p class="text-sm text-gray-600 mb-3">Наличие: ${product.stock} шт</p>
+                        <div class="flex gap-2">
+                            <button onclick='openModal(${JSON.stringify(product).replace(/'/g, "&#39;")})' class="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                                <i data-lucide="edit-2" class="w-4 h-4"></i> Изменить
+                            </button>
+                            <button onclick="deleteProduct('${product.id}')" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                content.appendChild(grid);
+            } else if (tab === 'orders') {
+                content.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Заказы</h2>
+                        <div class="flex gap-2">
+                            <button onclick="clearAllOrders()" class="px-4 py-2 border border-red-300 text-red-600 rounded-lg flex items-center gap-2 hover:bg-red-50 transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Очистить все
+                            </button>
+                            <button onclick="window.print()" class="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-all">
+                                <i data-lucide="printer" class="w-4 h-4"></i> Печать страницы
+                            </button>
+                        </div>
+                    </div>
+                `;
+                const list = document.createElement('div');
+                list.className = 'space-y-4';
+                data.forEach(order => {
+                    const item = document.createElement('div');
+                    item.className = 'border rounded-2xl p-6 bg-white shadow-sm hover:shadow-md transition-all relative overflow-hidden';
+                    item.innerHTML = `
+                        ${order.is_paid ? '<div class="absolute top-0 right-0 px-3 py-1 bg-green-500 text-white text-[10px] font-bold uppercase">Оплачено</div>' : ''}
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div>
+                                <p class="text-xs text-gray-400 mb-1 uppercase tracking-wider font-bold">Заказ #${order.id}</p>
+                                <p class="font-bold text-lg text-gray-900">${order.user_name || order.phone || 'Клиент'}</p>
+                                <p class="text-sm text-gray-500">${new Date(order.created_at).toLocaleString('ru-RU')}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="togglePayment(${order.id}, ${!order.is_paid})" class="p-2 border rounded-lg hover:bg-gray-50 text-gray-600" title="Переключить оплату">
+                                    <i data-lucide="${order.is_paid ? 'credit-card' : 'alert-circle'}" class="w-5 h-5 ${order.is_paid ? 'text-green-500' : 'text-gray-400'}"></i>
+                                </button>
+                                <select onchange="updateOrderStatus(${order.id}, this.value)" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 text-sm font-bold bg-white">
+                                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ В обработке</option>
+                                    <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>✅ Подтвержден</option>
+                                    <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>🌸 Сборка</option>
+                                    <option value="shipping" ${order.status === 'shipping' ? 'selected' : ''}>🚚 Доставка</option>
+                                    <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>🎉 Выполнен</option>
+                                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>❌ Отменен</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <div class="space-y-2 text-sm">
+                                <p class="flex items-center gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-gray-400"></i> ${order.delivery_address}
+                                    ${order.lat && order.lng ? `
+                                        <a href="https://www.google.com/maps?q=${order.lat},${order.lng}" target="_blank" class="ml-2 text-rose-500 hover:text-rose-600 transition-colors" title="Посмотреть на карте">
+                                            <i data-lucide="external-link" class="w-4 h-4 inline"></i>
+                                        </a>
+                                    ` : ''}
+                                </p>
+                                <p class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-gray-400"></i> ${order.phone}</p>
+                                <p class="flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i> ${order.delivery_date || 'Не указана'} в ${order.delivery_time || 'Не указано'}</p>
+                            </div>
+                            <div class="space-y-2 text-sm border-l md:pl-4 border-gray-200">
+                                <p class="font-bold text-gray-400 text-[10px] uppercase">Товары:</p>
+                                ${Array.isArray(order.items) ? `
+                                    <div class="space-y-1">
+                                        ${order.items.map(item => `
+                                            <p class="text-gray-700">• ${item.name || item.product_name} ${item.size ? `(Размер: ${item.size})` : ''} ${item.quantity ? `x${item.quantity}` : ''}</p>
+                                        `).join('')}
+                                    </div>
+                                ` : `<p class="line-clamp-2 text-gray-600">${order.items || 'Нет товаров'}</p>`}
+                                ${order.postcard_text ? `<p class="italic text-rose-500">"Открытка: ${order.postcard_text}"</p>` : ''}
+                                ${order.courier ? `
+                                    <div class="mt-2 pt-2 border-t border-gray-200">
+                                        <p class="font-bold text-gray-400 text-[10px] uppercase">Курьер:</p>
+                                        <p class="text-gray-700"><i data-lucide="user" class="w-3 h-3 inline"></i> ${order.courier.name}</p>
+                                        <p class="text-gray-700"><i data-lucide="phone" class="w-3 h-3 inline"></i> ${order.courier.phone}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                             <div class="flex items-center gap-4">
+                                <p class="text-2xl font-black text-gray-900">${formatPrice(order.total_amount)} <span class="text-xs font-normal">UZS</span></p>
+                             </div>
+                             <div class="flex gap-2">
+                                <button onclick="printInvoice(${order.id})" class="text-gray-400 hover:text-rose-600 transition-colors p-2" title="Печать накладной">
+                                    <i data-lucide="printer" class="w-5 h-5"></i>
+                                </button>
+                             </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+                content.appendChild(list);
+            } else if (tab === 'customers') {
+                content.innerHTML = '<h2 class="text-2xl font-bold text-gray-900 mb-6">Клиенты</h2>';
+                const list = document.createElement('div');
+                list.className = 'space-y-3';
+                list.innerHTML = data.map(u => `
+                    <div class="p-4 border bg-white rounded-2xl flex items-center justify-between shadow-sm">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold">
+                                ${u.full_name.charAt(0)}
+                            </div>
+                            <div>
+                                <p class="font-bold text-gray-900">${u.full_name} ${u.is_blocked ? '<span class="text-[10px] text-red-500 border border-red-500 px-1 rounded ml-2">ЗАБЛОКИРОВАН</span>' : ''}</p>
+                                <p class="text-sm text-gray-500">${u.email}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right mr-4">
+                                <p class="text-[10px] text-gray-400 uppercase font-bold">Бонусы</p>
+                                <p class="font-bold text-rose-600">${u.bonus_points || 0}</p>
+                            </div>
+                            <button onclick="toggleBlockUser(${u.id}, ${!u.is_blocked})" class="p-2 border rounded-lg hover:bg-gray-50 text-gray-600">
+                                <i data-lucide="${u.is_blocked ? 'unlock' : 'lock'}" class="w-4 h-4 ${u.is_blocked ? 'text-green-500' : 'text-gray-400'}"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                content.appendChild(list);
+            } else if (tab === 'support') {
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
+                        <div class="bg-gray-50 rounded-xl p-4 overflow-y-auto border" id="support-sessions">
+                            <h2 class="text-lg font-bold mb-4">Диалоги</h2>
+                            <div class="space-y-2">
+                                ${data.map(s => `
+                                    <button onclick="openAdminChat(${s.user_id}, '${s.user_name}')" class="w-full text-left p-3 rounded-lg bg-white shadow-sm hover:border-rose-300 border border-transparent transition-all relative">
+                                        <p class="font-bold text-gray-900">${s.user_name}</p>
+                                        <p class="text-xs text-gray-500 truncate">${s.last_message}</p>
+                                        ${s.unread_count > 0 ? `<span class="absolute top-3 right-3 w-5 h-5 bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center">${s.unread_count}</span>` : ''}
+                                    </button>
+                                `).join('') || '<p class="text-gray-500 text-sm">Нет активных чатов</p>'}
+                            </div>
+                        </div>
+                        <div class="md:col-span-2 bg-white rounded-xl border flex flex-col overflow-hidden" id="admin-chat-area">
+                            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                                <h3 class="font-bold text-gray-800" id="chat-user-title">Выберите чат</h3>
+                            </div>
+                            <div id="admin-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                                <p class="text-center text-gray-400 mt-20">Выберите диалог слева, чтобы начать переписку</p>
+                            </div>
+                            <div class="p-4 border-t bg-gray-50 hidden" id="admin-chat-input-area">
+                                <div class="flex gap-2">
+                                    <input type="text" id="admin-reply-input" placeholder="Введите ответ..." class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-rose-500 outline-none">
+                                    <button onclick="sendAdminReply()" class="px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all font-bold">Отправить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (tab === 'categories') {
+                content.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Категории</h2>
+                        <button onclick="promptAddCategory()" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-all">Добавить категорию</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${data.map(c => `
+                            <div class="p-4 border rounded-xl flex justify-between items-center bg-gray-50">
+                                <div>
+                                    <p class="font-bold text-gray-900">${c.name}</p>
+                                    <p class="text-xs text-gray-400">${c.slug}</p>
+                                </div>
+                                <button onclick="deleteCategory(${c.id})" class="p-2 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (tab === 'promo') {
+                content.innerHTML = `
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Промокоды</h2>
+                        <button onclick="promptAddPromo()" class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-all">Создать промокод</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-xs font-bold uppercase text-gray-500">
+                                <tr>
+                                    <th class="px-4 py-3">Код</th>
+                                    <th class="px-4 py-3">Скидка (%)</th>
+                                    <th class="px-4 py-3">Статус</th>
+                                    <th class="px-4 py-3">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${data.map(p => `
+                                    <tr>
+                                        <td class="px-4 py-3 font-bold text-gray-900">${p.code}</td>
+                                        <td class="px-4 py-3">${p.discount_percent}%</td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-0.5 ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} text-xs rounded-full">
+                                                ${p.is_active ? 'Активен' : 'Отключен'}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <button onclick="deletePromo(${p.id})" class="text-red-500 hover:text-red-700"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (tab === 'reviews') {
+                content.innerHTML = '<h2 class="text-2xl font-bold text-gray-900 mb-6">Отзывы</h2>' + data.map(r => `
+                    <div class="p-4 border shadow-sm bg-white rounded-xl mb-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-bold text-gray-900">${r.user_name}</span>
+                            <div class="flex text-rose-500 text-xs">${'★'.repeat(r.rating)}</div>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mb-2 uppercase tracking-wider">Товар ID: ${r.product_id}</p>
+                        <p class="text-sm text-gray-600 italic">"${r.text}"</p>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        // Product Actions
+        function openModal(product = null) {
+            const modal = document.getElementById('product-modal');
+            const title = document.getElementById('modal-title');
+
+            if (product) {
+                title.innerText = 'Редактирование товара';
+                document.getElementById('prod-id').value = product.id;
+                document.getElementById('prod-name').value = product.name;
+                document.getElementById('prod-description').value = product.description || '';
+                document.getElementById('prod-composition').value = product.composition || '';
+                document.getElementById('prod-price').value = product.price;
+                document.getElementById('prod-sale-price').value = product.sale_price || '';
+                document.getElementById('prod-width').value = product.width || '';
+                document.getElementById('prod-height').value = product.height || '';
+                document.getElementById('prod-image-url').value = product.image_url || '';
+                document.getElementById('prod-stock').value = product.stock;
+                document.getElementById('prod-is-sale').checked = product.is_sale;
+                document.getElementById('prod-is-featured').checked = product.is_featured;
+                document.getElementById('prod-is-popular').checked = product.is_popular;
+                document.getElementById('prod-price-s').value = product.price_s || '';
+                document.getElementById('prod-price-m').value = product.price_m || '';
+                document.getElementById('prod-price-l').value = product.price_l || '';
+
+                loadCategoriesToSelect(product.category_id);
+            } else {
+                title.innerText = 'Добавление товара';
+                document.getElementById('product-form').reset();
+                document.getElementById('prod-id').value = '';
+                loadCategoriesToSelect();
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('product-modal').classList.add('hidden');
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+            const id = document.getElementById('prod-id').value;
+
+            const data = {
+                name: document.getElementById('prod-name').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                sale_price: document.getElementById('prod-sale-price').value ? parseFloat(document.getElementById('prod-sale-price').value) : null,
+                description: document.getElementById('prod-description').value,
+                composition: document.getElementById('prod-composition').value,
+                image_url: document.getElementById('prod-image-url').value,
+                stock: parseInt(document.getElementById('prod-stock').value) || 0,
+                is_sale: document.getElementById('prod-is-sale').checked,
+                is_featured: document.getElementById('prod-is-featured').checked,
+                is_popular: document.getElementById('prod-is-popular').checked,
+                category_id: document.getElementById('prod-category-id').value ? parseInt(document.getElementById('prod-category-id').value) : null,
+                price_s: document.getElementById('prod-price-s').value ? parseFloat(document.getElementById('prod-price-s').value) : null,
+                price_m: document.getElementById('prod-price-m').value ? parseFloat(document.getElementById('prod-price-m').value) : null,
+                price_l: document.getElementById('prod-price-l').value ? parseFloat(document.getElementById('prod-price-l').value) : null,
+                width: document.getElementById('prod-width').value ? parseFloat(document.getElementById('prod-width').value) : null,
+                height: document.getElementById('prod-height').value ? parseFloat(document.getElementById('prod-height').value) : null
+            };
+
+            try {
+                const url = id ? `/api/products/${id}` : '/api/products';
+                const method = id ? 'PUT' : 'POST';
+                const response = await adminFetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    loadData('products');
+                    alert("Успешно со��������������ранено!");
+                } else {
+                    const error = await response.json();
+                    alert("Ошибка: " + (error.detail || "Неизвестная ошибка"));
+                }
+            } catch (err) {
+                console.error("Save product error:", err);
+                alert("Ошибка при сохранен��и: " + err.message);
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
+            try {
+                const res = await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadData('products');
+                } else {
+                    alert("Ошибка при удалении");
+                }
+            } catch (err) {
+                console.error("Delete error:", err);
+                alert("Ошибка: " + err.message);
+            }
+        }
+
+        async function updateOrderStatus(id, status) {
+            try {
+                const res = await adminFetch(`/api/orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) {
+                    alert("Статус обновлен");
+                }
+            } catch (e) {
+                alert("Ошибка при обновлении статуса");
+            }
+        }
+
+        // --- Admin Support Logic ---
+
+        async function openAdminChat(userId, userName) {
+            activeChatUser = userId;
+            document.getElementById('chat-user-title').innerText = `Чат с ${userName}`;
+            document.getElementById('admin-chat-input-area').classList.remove('hidden');
+
+            // Highlight selected
+            document.querySelectorAll('#support-sessions button').forEach(btn => btn.classList.remove('border-rose-500', 'bg-rose-50'));
+
+            loadAdminMessages();
+            if (adminChatPolling) clearInterval(adminChatPolling);
+            adminChatPolling = setInterval(loadAdminMessages, 3000);
+        }
+
+        async function loadAdminMessages() {
+            if (!activeChatUser) return;
+            try {
+                const messages = await adminFetch(`/api/support/messages?user_id=${activeChatUser}`);
+                if (!Array.isArray(messages)) return;
+                const container = document.getElementById('admin-chat-messages');
+
+                container.innerHTML = messages.map(m => `
+                    <div class="flex ${m.is_admin ? 'justify-end' : 'justify-start'}">
+                        <div class="${m.is_admin ? 'bg-rose-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none'} p-3 rounded-xl max-w-[70%] shadow-sm">
+                            <p class="text-sm">${m.message}</p>
+                            <p class="text-[10px] opacity-70 mt-1">${new Date(m.created_at).toLocaleTimeString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                console.error("Error loading messages:", e);
+            }
+        }
+
+        async function sendAdminReply() {
+            const input = document.getElementById('admin-reply-input');
+            const message = input.value.trim();
+            if (!message || !activeChatUser) return;
+
+            try {
+                const res = await adminFetch('/api/support/reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: activeChatUser, message })
+                });
+                if (res.ok) {
+                    input.value = '';
+                    loadAdminMessages();
+                }
+            } catch (e) {
+                alert("Ошибка отпра��ки");
+            }
+        }
+
+        async function loadCategoriesToSelect(selectedId = null) {
+            const categories = await adminFetch('/api/categories');
+            const select = document.getElementById('prod-category-id');
+            select.innerHTML = '<option value="">Без категории</option>' + categories.map(c => `
+                <option value="${c.id}" ${selectedId == c.id ? 'selected' : ''}>${c.name}</option>
+            `).join('');
+        }
+
+        async function promptAddCategory() {
+            const name = prompt("Название категории:");
+            if (!name) return;
+            const slug = prompt("Слаг (например, romance):", name.toLowerCase().replace(/\s+/g, '-'));
+            if (!slug) return;
+
+            const res = await adminFetch('/api/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, slug })
+            });
+            if (res.ok) loadData('categories');
+        }
+
+        async function deleteCategory(id) {
+            if (confirm("Удалить категорию?")) {
+                await adminFetch(`/api/categories/${id}`, { method: 'DELETE' });
+                loadData('categories');
+            }
+        }
+
+        async function promptAddPromo() {
+            const code = prompt("Код промокода (например, SPRING20):");
+            if (!code) return;
+            const discount = prompt("Процент скидки:", "10");
+            if (!discount) return;
+
+            const res = await adminFetch('/api/promo-codes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, discount_percent: parseFloat(discount), is_active: true })
+            });
+            if (res.ok) loadData('promo');
+        }
+
+        async function deletePromo(id) {
+            if (confirm("Удалить промокод?")) {
+                await adminFetch(`/api/promo-codes/${id}`, { method: 'DELETE' });
+                loadData('promo');
+            }
+        }
+
+        // --- Admin Management Functions ---
+        async function toggleBlockUser(userId, block) {
+            try {
+                const res = await adminFetch(`/api/admin/customers/${userId}/block?block=${block}`, { method: 'PUT' });
+                if (res.ok) loadData('customers');
+            } catch (e) { alert("Ошибка при блокировке"); }
+        }
+
+        async function clearAllOrders() {
+            if (!confirm('⚠️ Вы уверены что хотите удалить ВСЕ заказы?\n\nЭто действие НЕЛЬЗЯ отменить!')) {
+                return;
+            }
+            
+            try {
+                const res = await adminFetch('/api/admin/orders/all', {
+                    method: 'DELETE'
+                });
+                
+                if (res.count !== undefined) {
+                    alert(`✅ Удалено заказов: ${res.count}`);
+                    loadData('orders');
+                }
+            } catch (e) {
+                console.error("Ошибка при удалении заказов:", e);
+                alert("Ошибка при удалении заказов");
+            }
+        }
+
+        async function togglePayment(orderId, paid) {
+            try {
+                const res = await adminFetch(`/api/orders/${orderId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_paid: paid })
+                });
+                if (res.ok) loadData('orders');
+            } catch (e) { alert("Ошибка при обновлении оплаты"); }
+        }
+
+        function printInvoice(orderId) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`<html><body><h1>Накладная заказа #${orderId}</h1><p>Содержимое будет сформировано из данных заказа...</p></body></html>`);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        async function handleFileUpload(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const statusIndicator = document.getElementById('upload-status');
+            statusIndicator.classList.remove('hidden');
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await adminFetch('/api/admin/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const urlInput = document.getElementById('prod-image-url');
+                    urlInput.value = data.url;
+                    // Trigger input event to ensure any listeners are notified
+                    urlInput.dispatchEvent(new Event('input'));
+                    alert("Изображение успешно загружено!");
+                } else {
+                    const error = await res.text();
+                    console.error("Upload error:", error);
+                    alert("Ошибка при загрузке файла на сервер");
+                }
+            } catch (e) {
+                console.error("Fetch error:", e);
+                alert("Ошибка соединения с сервером при загрузке");
+            } finally {
+                statusIndicator.classList.add('hidden');
+                // Clear the file input so the same file can be uploaded again if needed
+                input.value = '';
+            }
+        }
+
+        async function openDeliveryModal() {
+            const name = prompt("Название зоны (например, Юнусабад):");
+            if (!name || !name.trim()) return;
+            const price = prompt("Стоимость доставки (сум):", "15000");
+            if (!price || isNaN(parseFloat(price))) return;
+
+            try {
+                const res = await adminFetch('/api/admin/delivery-zones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), price: parseFloat(price) })
+                });
+                if (res.ok) {
+                    loadData('delivery');
+                } else {
+                    const err = await res.json();
+                    alert("Ошибка: " + (err.detail || "Не удалось добавить зону"));
+                }
+            } catch (e) { alert("Ошибка при добавлении зоны"); }
+        }
+
+        async function editZone(id, currentName, currentPrice) {
+            const name = prompt("Новое название зоны:", currentName);
+            if (!name || !name.trim()) return;
+            const price = prompt("Новая стоимость доставки (сум):", currentPrice);
+            if (!price || isNaN(parseFloat(price))) return;
+
+            try {
+                const res = await adminFetch(`/api/admin/delivery-zones/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), price: parseFloat(price) })
+                });
+                if (res.ok) {
+                    loadData('delivery');
+                } else {
+                    alert("Ошибка при обновлении зоны");
+                }
+            } catch (e) { alert("Ошибка соединения"); }
+        }
+
+        async function deleteZone(id) {
+            if (!confirm("Удалить зону доставки?")) return;
+            try {
+                const res = await adminFetch(`/api/admin/delivery-zones/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadData('delivery');
+                } else {
+                    alert("Ошибка при удалении зоны");
+                }
+            } catch (e) { alert("Ошибка соединения"); }
+        }
+
+        // === Banner Management Functions ===
+        function toggleBannerFileType(type) {
+            const imageSection = document.getElementById('banner-image-section');
+            const videoSection = document.getElementById('banner-video-section');
+            
+            if (type === 'video') {
+                imageSection.classList.add('hidden');
+                videoSection.classList.remove('hidden');
+            } else {
+                imageSection.classList.remove('hidden');
+                videoSection.classList.add('hidden');
+            }
+        }
+
+        function openBannerModal(banner = null) {
+            const modal = document.getElementById('banner-modal');
+            const title = document.getElementById('banner-modal-title');
+
+            // Reset form
+            document.getElementById('banner-form').reset();
+            document.getElementById('banner-id').value = '';
+            document.getElementById('banner-is-active').checked = true;
+            toggleBannerFileType('image');
+
+            if (banner) {
+                title.textContent = 'Редактирование баннера';
+                document.getElementById('banner-id').value = banner.id;
+                document.getElementById('banner-link').value = banner.link || '';
+                document.getElementById('banner-text').value = banner.text || '';
+                document.getElementById('banner-subtext').value = banner.subtext || '';
+                document.getElementById('banner-is-active').checked = banner.is_active;
+
+                if (banner.media_type === 'video') {
+                    document.getElementById('banner-type-video').checked = true;
+                    toggleBannerFileType('video');
+                    document.getElementById('banner-video-url').value = banner.video_url || '';
+                } else {
+                    document.getElementById('banner-type-image').checked = true;
+                    toggleBannerFileType('image');
+                    document.getElementById('banner-image-url').value = banner.image_url || '';
+                }
+            } else {
+                title.textContent = 'Добавление баннера';
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeBannerModal() {
+            document.getElementById('banner-modal').classList.add('hidden');
+        }
+
+        async function handleBannerFileUpload(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await adminFetch('/api/admin/upload-banner', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    const mediaType = document.querySelector('input[name="banner-media-type"]:checked').value;
+                    
+                    if (mediaType === 'video') {
+                        document.getElementById('banner-video-url').value = data.url;
+                    } else {
+                        document.getElementById('banner-image-url').value = data.url;
+                    }
+                    alert("Файл успешно загружен!");
+                } else {
+                    const error = await res.text();
+                    console.error("Upload error:", error);
+                    alert("Ошибка при загрузке файла на сервер");
+                }
+            } catch (e) {
+                console.error("Fetch error:", e);
+                alert("Ошибка соединения с сервером при загрузке");
+            } finally {
+                input.value = '';
+            }
+        }
+
+        async function saveBanner(event) {
+            event.preventDefault();
+
+            const bannerId = document.getElementById('banner-id').value;
+            const mediaType = document.querySelector('input[name="banner-media-type"]:checked').value;
+
+            const bannerData = {
+                media_type: mediaType,
+                link: document.getElementById('banner-link').value,
+                text: document.getElementById('banner-text').value,
+                subtext: document.getElementById('banner-subtext').value,
+                is_active: document.getElementById('banner-is-active').checked
+            };
+
+            if (mediaType === 'video') {
+                bannerData.video_url = document.getElementById('banner-video-url').value;
+                bannerData.image_url = null;
+            } else {
+                bannerData.image_url = document.getElementById('banner-image-url').value;
+                bannerData.video_url = null;
+            }
+
+            try {
+                const url = bannerId ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
+                const method = bannerId ? 'PUT' : 'POST';
+
+                const res = await adminFetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bannerData)
+                });
+
+                if (res.ok) {
+                    closeBannerModal();
+                    loadData('marketing');
+                } else {
+                    const err = await res.json();
+                    alert("Ошибка: " + (err.detail || "Не удалось сохранить баннер"));
+                }
+            } catch (e) {
+                console.error("Save error:", e);
+                alert("Ошибка соединения с сервером");
+            }
+        }
+
+        async function editBanner(id) {
+            try {
+                const res = await adminFetch('/api/admin/banners');
+                if (res.ok) {
+                    const banners = await res.json();
+                    const banner = banners.find(b => b.id === id);
+                    if (banner) {
+                        openBannerModal(banner);
+                    }
+                }
+            } catch (e) {
+                console.error("Edit error:", e);
+                alert("Ошибка при загрузке данных баннера");
+            }
+        }
+
+        async function deleteBanner(id) {
+            if (!confirm("Удалить этот баннер?")) return;
+            
+            try {
+                const res = await adminFetch(`/api/admin/banners/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadData('marketing');
+                } else {
+                    alert("Ошибка при удалении баннера");
+                }
+            } catch (e) {
+                console.error("Delete error:", e);
+                alert("Ошибка соединения с сервером");
+            }
+        }
+
+        async function toggleBannerActive(id, isActive) {
+            try {
+                const res = await adminFetch('/api/admin/banners');
+                if (res.ok) {
+                    const banners = await res.json();
+                    const banner = banners.find(b => b.id === id);
+                    if (banner) {
+                        const bannerData = {
+                            media_type: banner.media_type,
+                            image_url: banner.image_url,
+                            video_url: banner.video_url,
+                            link: banner.link,
+                            is_active: isActive
+                        };
+                        
+                        const updateRes = await adminFetch(`/api/admin/banners/${id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(bannerData)
+                        });
+                        
+                        if (updateRes.ok) {
+                            loadData('marketing');
+                        } else {
+                            alert("Ошибка при обновлении статуса");
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Toggle error:", e);
+                alert("Ошибка соединения с сервером");
+            }
+        }
+    </script>
+
+    <!-- Revenue Modal -->
+    <div id="revenue-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i data-lucide="banknote" class="w-6 h-6"></i>
+                        Доходы
+                    </h3>
+                    <p class="text-white/80 text-sm mt-1">Детальный отчёт по оплаченным заказам</p>
+                </div>
+                <button onclick="closeRevenueModal()" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-200">
+                        <p class="text-xs text-green-600 uppercase font-bold">Общий доход</p>
+                        <p id="revenue-total" class="text-2xl font-bold text-green-700 mt-1">0 сум</p>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                        <p class="text-xs text-blue-600 uppercase font-bold">Оплачено заказов</p>
+                        <p id="revenue-count" class="text-2xl font-bold text-blue-700 mt-1">0</p>
+                    </div>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-3">Последние оплаченные заказы</h4>
+                <div id="revenue-orders-list" class="space-y-2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Modal -->
+    <div id="orders-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                        Заказы
+                    </h3>
+                    <p class="text-white/80 text-sm mt-1">Статистика и последние заказы</p>
+                </div>
+                <button onclick="closeOrdersModal()" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 mb-6">
+                    <p class="text-xs text-rose-600 uppercase font-bold">Всего заказов</p>
+                    <p id="orders-total" class="text-3xl font-bold text-rose-700 mt-1">0</p>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-3">По статусам</h4>
+                <div id="orders-status-list" class="space-y-2 mb-6">
+                </div>
+                <h4 class="font-bold text-gray-800 mb-3">Последние заказы</h4>
+                <div id="orders-recent-list" class="space-y-2">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Modal -->
+    <div id="customers-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                        Клиенты
+                    </h3>
+                    <p class="text-white/80 text-sm mt-1">Список всех клиентов</p>
+                </div>
+                <button onclick="closeCustomersModal()" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 mb-6">
+                    <p class="text-xs text-emerald-600 uppercase font-bold">Всего клиентов</p>
+                    <p id="customers-total" class="text-3xl font-bold text-emerald-700 mt-1">0</p>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-3">Все клиенты</h4>
+                <div id="customers-list" class="space-y-2">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Открыть главную страницу в новой вкладке
+        function openSite() {
+            window.open('/', '_blank');
+        }
+
+        // ========== Модальные окна для статистики ==========
+        
+        // Доходы
+        async function openRevenueModal() {
+            try {
+                const orders = await adminFetch('/api/orders');
+
+                // Фильтруем оплаченные заказы
+                const paidOrders = orders.filter(o => o.is_paid);
+                const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total_amount, 0);
+
+                // Последние 10 заказов
+                const recentOrders = paidOrders.slice(-10).reverse();
+
+                document.getElementById('revenue-modal').classList.remove('hidden');
+                document.getElementById('revenue-total').textContent = formatPrice(totalRevenue) + ' сум';
+                document.getElementById('revenue-count').textContent = paidOrders.length;
+
+                const list = document.getElementById('revenue-orders-list');
+                if (recentOrders.length === 0) {
+                    list.innerHTML = '<p class="text-gray-400 text-sm">Нет оплаченных заказов</p>';
+                } else {
+                    list.innerHTML = recentOrders.map(o => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                            <div>
+                                <p class="font-semibold text-gray-800">Заказ #${o.id}</p>
+                                <p class="text-xs text-gray-500">${new Date(o.created_at).toLocaleDateString('ru-RU')}</p>
+                            </div>
+                            <span class="text-green-600 font-bold">+${formatPrice(o.total_amount)} сум</span>
+                        </div>
+                    `).join('');
+                }
+                lucide.createIcons();
+            } catch (e) {
+                console.error('Revenue error:', e);
+                alert('Ошибка загрузки данных');
+            }
+        }
+
+        function closeRevenueModal() {
+            document.getElementById('revenue-modal').classList.add('hidden');
+        }
+
+        // Заказы
+        async function openOrdersModal() {
+            try {
+                const orders = await adminFetch('/api/orders');
+
+                // Статистика по статусам
+                const statusCounts = {};
+                orders.forEach(o => {
+                    statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
+                });
+
+                document.getElementById('orders-modal').classList.remove('hidden');
+                document.getElementById('orders-total').textContent = orders.length;
+                
+                const statusList = document.getElementById('orders-status-list');
+                const statusNames = {
+                    'pending': 'В обработке',
+                    'confirmed': 'Подтвержден',
+                    'processing': 'Сборка',
+                    'shipping': 'Доставка',
+                    'completed': 'Выполнен',
+                    'cancelled': 'Отменен'
+                };
+                
+                statusList.innerHTML = Object.entries(statusCounts).map(([status, count]) => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <span class="text-gray-700">${statusNames[status] || status}</span>
+                        <span class="font-bold text-rose-600">${count}</span>
+                    </div>
+                `).join('');
+                
+                // Последние 10 заказов
+                const recentOrders = orders.slice(-10).reverse();
+                const ordersList = document.getElementById('orders-recent-list');
+                ordersList.innerHTML = recentOrders.map(o => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                        <div>
+                            <p class="font-semibold text-gray-800">Заказ #${o.id}</p>
+                            <p class="text-xs text-gray-500">${o.user_name || 'Аноним'}</p>
+                        </div>
+                        <span class="text-gray-600 font-bold">${formatPrice(o.total_amount)} сум</span>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error('Orders error:', e);
+                alert('Ошибка загрузки данных');
+            }
+            lucide.createIcons();
+        }
+
+        function closeOrdersModal() {
+            document.getElementById('orders-modal').classList.add('hidden');
+        }
+
+        // Клиенты
+        async function openCustomersModal() {
+            try {
+                const customers = await adminFetch('/api/admin/customers');
+                console.log('Customers loaded:', customers);
+
+                const modal = document.getElementById('customers-modal');
+                const list = document.getElementById('customers-list');
+                const total = document.getElementById('customers-total');
+                
+                if (!modal || !list || !total) {
+                    console.error('Modal elements not found');
+                    alert('Ошибка: элементы модального окна не найдены');
+                    return;
+                }
+                
+                modal.classList.remove('hidden');
+                total.textContent = customers.length;
+
+                if (customers.length === 0) {
+                    list.innerHTML = '<p class="text-gray-400 text-sm">Нет клиентов</p>';
+                } else {
+                    list.innerHTML = customers.map(c => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                            <div>
+                                <p class="font-semibold text-gray-800">${c.full_name || 'Аноним'}</p>
+                                <p class="text-xs text-gray-500">${c.email}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-rose-600">${c.bonus_points || 0} бонусов</p>
+                                ${c.is_blocked ? '<span class="text-xs text-red-500">Заблокирован</span>' : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) {
+                console.error('Customers error:', e);
+                alert('Ошибка загрузки данных: ' + e.message);
+            }
+            lucide.createIcons();
+        }
+
+        function closeCustomersModal() {
+            document.getElementById('customers-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>

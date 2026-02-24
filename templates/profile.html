@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - UzFlower</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/output.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .tab-active {
+            background: linear-gradient(135deg, #e11d48 0%, #ec4899 100%);
+            color: white;
+        }
+        
+        .status-pending { background-color: #fef3c7; color: #92400e; }
+        .status-processing { background-color: #dbeafe; color: #1e40af; }
+        .status-shipping { background-color: #e0e7ff; color: #3730a3; }
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+        
+        .notification-unread {
+            background: linear-gradient(90deg, #fef2f2 0%, transparent 100%);
+            border-left: 3px solid #e11d48;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        /* Review Styles */
+        .star-btn.active i {
+            color: #fbbf24;
+            fill: #fbbf24;
+        }
+        
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #d1fae5;
+            color: #065f46;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-rose-500 to-pink-600 shadow-lg sticky top-0 z-40 rounded-b-3xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 pt-2">
+                <div class="flex items-center gap-4">
+                    <a href="/" class="flex items-center gap-2 group">
+                        <span class="text-2xl font-bold text-white group-hover:text-white/90 transition-colors">uzflower</span>
+                    </a>
+                </div>
+
+                <nav class="flex items-center gap-3">
+                    <a href="/" class="p-2.5 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all" title="На главную">
+                        <i data-lucide="home" class="w-5 h-5"></i>
+                    </a>
+                    <button onclick="handleSignOut()" class="p-2.5 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-red-500/50 transition-all" title="Выйти">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Sidebar Navigation -->
+                <aside class="lg:w-64 flex-shrink-0">
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden sticky top-24">
+                        <!-- Profile Summary -->
+                        <div class="bg-gradient-to-r from-rose-500 to-pink-600 p-6 text-white text-center">
+                            <div class="relative inline-block">
+                                <img id="sidebar-avatar" src="" alt="Avatar" class="w-20 h-20 rounded-full border-4 border-white/30 object-cover">
+                                <button onclick="document.getElementById('avatar-upload').click()" class="absolute bottom-0 right-0 p-1.5 bg-white rounded-full text-rose-600 hover:bg-rose-50 transition-colors">
+                                    <i data-lucide="camera" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                            <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="uploadAvatar(event)">
+                            <h3 id="sidebar-name" class="font-bold text-lg mt-3">Загрузка...</h3>
+                            <p id="sidebar-email" class="text-white/80 text-sm">...</p>
+                            <div class="mt-3 flex items-center justify-center gap-2 text-sm">
+                                <i data-lucide="gift" class="w-4 h-4"></i>
+                                <span id="sidebar-bonuses">0 бонусов</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Navigation Tabs -->
+                        <nav class="p-2">
+                            <button onclick="switchTab('profile')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors tab-active" data-tab="profile">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                                <span>Профиль</span>
+                            </button>
+                            <button onclick="switchTab('orders')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="orders">
+                                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                                <span>Заказы</span>
+                                <span id="orders-badge" class="ml-auto bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                            </button>
+                            <button onclick="switchTab('favorites')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="favorites">
+                                <i data-lucide="heart" class="w-5 h-5"></i>
+                                <span>Избранное</span>
+                                <span id="favorites-badge" class="ml-auto bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                            </button>
+                            <button onclick="switchTab('addresses')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="addresses">
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                                <span>Адреса</span>
+                            </button>
+                            <button onclick="switchTab('bonuses')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="bonuses">
+                                <i data-lucide="percent" class="w-5 h-5"></i>
+                                <span>Бонусы и скидки</span>
+                            </button>
+                            <button onclick="switchTab('reminders')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="reminders">
+                                <i data-lucide="bell" class="w-5 h-5"></i>
+                                <span>Напоминания</span>
+                            </button>
+                            <button onclick="switchTab('notifications')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="notifications">
+                                <i data-lucide="message-square" class="w-5 h-5"></i>
+                                <span>Уведомления</span>
+                                <span id="notifications-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+                            </button>
+                            <button onclick="switchTab('reviews')" class="tab-btn w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 hover:bg-rose-50 transition-colors" data-tab="reviews">
+                                <i data-lucide="star" class="w-5 h-5"></i>
+                                <span>Отзывы</span>
+                            </button>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- Main Content Area -->
+                <div class="flex-1">
+                    <!-- Profile Tab -->
+                    <div id="tab-profile" class="tab-content">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6">Профиль</h2>
+                            
+                            <form id="profile-form" onsubmit="updateProfile(event)" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Имя</label>
+                                        <input type="text" id="profile-fullname" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" id="profile-email-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Телефон</label>
+                                        <input type="tel" id="profile-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" placeholder="+998 (__) ___-__-__">
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg font-medium hover:from-rose-600 hover:to-pink-700 transition-all">
+                                    Сохранить изменения
+                                </button>
+                            </form>
+                            
+                            <!-- Change Password -->
+                            <div class="mt-8 pt-8 border-t">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">Изменение пароля</h3>
+                                <form onsubmit="changePassword(event)" class="space-y-4 max-w-md">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Текущий пароль</label>
+                                        <input type="password" id="current-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Новый пароль</label>
+                                        <input type="password" id="new-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                                    </div>
+                                    <button type="submit" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all">
+                                        Изменить пароль
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Orders Tab -->
+                    <div id="tab-orders" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6">Мои заказы</h2>
+                            <div id="orders-list" class="space-y-4">
+                                <div class="text-center py-12 text-gray-500">
+                                    <i data-lucide="shopping-bag" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка заказов...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Favorites Tab -->
+                    <div id="tab-favorites" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6">Избранное</h2>
+                            <div id="favorites-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div class="text-center py-12 col-span-full text-gray-500">
+                                    <i data-lucide="heart" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка избранного...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Addresses Tab -->
+                    <div id="tab-addresses" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">Адреса доставки</h2>
+                                <button onclick="showAddAddressModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all flex items-center gap-2">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    <span>Добавить адрес</span>
+                                </button>
+                            </div>
+                            <div id="addresses-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="text-center py-12 text-gray-500">
+                                    <i data-lucide="map-pin" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка адресов...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bonuses Tab -->
+                    <div id="tab-bonuses" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-6">Бонусы и скидки</h2>
+                            
+                            <!-- Balance Card -->
+                            <div class="bg-gradient-to-r from-rose-500 to-pink-600 rounded-xl p-6 text-white mb-8">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-white/80 text-sm mb-1">Баланс бонусов</p>
+                                        <p id="bonus-balance" class="text-4xl font-bold">0</p>
+                                    </div>
+                                    <i data-lucide="gift" class="w-16 h-16 text-white/30"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Promo Codes -->
+                            <div class="mb-8">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">Промокоды</h3>
+                                <div id="promo-codes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="text-center py-8 text-gray-500">
+                                        <p>Загрузка промокодов...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- History -->
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">История начислений</h3>
+                                <div id="bonus-history" class="space-y-2">
+                                    <div class="text-center py-8 text-gray-500">
+                                        <p>Загрузка истории...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reminders Tab -->
+                    <div id="tab-reminders" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">Напоминания</h2>
+                                <button onclick="showAddReminderModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all flex items-center gap-2">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                    <span>Добавить</span>
+                                </button>
+                            </div>
+                            <div id="reminders-list" class="space-y-4">
+                                <div class="text-center py-12 text-gray-500">
+                                    <i data-lucide="bell" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка напоминаний...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div id="tab-notifications" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">Уведомления</h2>
+                                <div class="flex gap-3">
+                                    <button onclick="markAllNotificationsRead()" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+                                        <i data-lucide="check-double" class="w-4 h-4 inline mr-1"></i>
+                                        Прочитано
+                                    </button>
+                                    <button onclick="clearAllNotifications()" class="text-sm text-red-600 hover:text-red-700 font-medium px-4 py-2 border border-red-300 rounded-lg hover:bg-red-50 transition-all">
+                                        <i data-lucide="trash-2" class="w-4 h-4 inline mr-1"></i>
+                                        Очистить все
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="notifications-list" class="space-y-2">
+                                <div class="text-center py-12 text-gray-500">
+                                    <i data-lucide="message-square" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка уведомлений...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div id="tab-reviews" class="tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-900">Мои отзывы</h2>
+                                <button onclick="showReviewModal()" class="px-4 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all flex items-center gap-2 shadow-lg">
+                                    <i data-lucide="star" class="w-5 h-5"></i>
+                                    <span>Оставить отзыв</span>
+                                </button>
+                            </div>
+
+                            <div id="my-reviews-list" class="space-y-4">
+                                <div class="text-center py-12 text-gray-500">
+                                    <i data-lucide="star" class="w-16 h-16 mx-auto mb-4 text-gray-300"></i>
+                                    <p>Загрузка отзывов...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Address Modal -->
+    <div id="add-address-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideAddAddressModal()"></div>
+        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in">
+            <div class="p-6 h-full overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Новый адрес</h3>
+                    <button onclick="hideAddAddressModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addAddress(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Название (необязательно)</label>
+                        <input type="text" id="address-title" placeholder="Дом, Работа, Дача" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Адрес</label>
+                        <input type="text" id="address-full" placeholder="г. Ташкент, ул..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Телефон</label>
+                        <input type="tel" id="address-phone" placeholder="+998 (__) ___-__-__" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Имя получателя</label>
+                        <input type="text" id="address-recipient" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="address-default" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500">
+                        <label for="address-default" class="text-sm text-gray-700">Адрес по умолчанию</label>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg font-medium hover:from-rose-600 hover:to-pink-700 transition-all">
+                        Сохранить адрес
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Reminder Modal -->
+    <div id="add-reminder-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideAddReminderModal()"></div>
+        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in">
+            <div class="p-6 h-full overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Новое напоминание</h3>
+                    <button onclick="hideAddReminderModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <form onsubmit="addReminder(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Название</label>
+                        <input type="text" id="reminder-title" placeholder="День рождения мамы" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Дата</label>
+                        <input type="date" id="reminder-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Имя получателя</label>
+                        <input type="text" id="reminder-recipient" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Телефон (необязательно)</label>
+                        <input type="tel" id="reminder-phone" placeholder="+998 (__) ___-__-__" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="reminder-recurring" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500" onchange="toggleRecurringType()">
+                        <label for="reminder-recurring" class="text-sm text-gray-700">Повторяющееся</label>
+                    </div>
+                    <div id="recurring-type-container" class="hidden">
+                        <select id="reminder-recurring-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                            <option value="yearly">Ежегодно</option>
+                            <option value="monthly">Ежемесячно</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg font-medium hover:from-rose-600 hover:to-pink-700 transition-all">
+                        Сохранить напоминание
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideReviewModal()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b">
+                    <h3 class="text-xl font-bold text-gray-900">Оставить отзыв</h3>
+                    <button onclick="hideReviewModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <form onsubmit="submitReviewWithPhotos(event)" class="space-y-4">
+                    <!-- Оценка -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Оценка</label>
+                        <div class="flex gap-2" id="rating-stars">
+                            <button type="button" onclick="setRating(1)" class="star-btn" data-rating="1">
+                                <i data-lucide="star" class="w-8 h-8 text-gray-300 hover:text-yellow-400 transition-colors"></i>
+                            </button>
+                            <button type="button" onclick="setRating(2)" class="star-btn" data-rating="2">
+                                <i data-lucide="star" class="w-8 h-8 text-gray-300 hover:text-yellow-400 transition-colors"></i>
+                            </button>
+                            <button type="button" onclick="setRating(3)" class="star-btn" data-rating="3">
+                                <i data-lucide="star" class="w-8 h-8 text-gray-300 hover:text-yellow-400 transition-colors"></i>
+                            </button>
+                            <button type="button" onclick="setRating(4)" class="star-btn" data-rating="4">
+                                <i data-lucide="star" class="w-8 h-8 text-gray-300 hover:text-yellow-400 transition-colors"></i>
+                            </button>
+                            <button type="button" onclick="setRating(5)" class="star-btn" data-rating="5">
+                                <i data-lucide="star" class="w-8 h-8 text-gray-300 hover:text-yellow-400 transition-colors"></i>
+                            </button>
+                        </div>
+                        <input type="hidden" id="review-rating" value="5">
+                        <p class="text-xs text-gray-500 mt-1" id="rating-text">Отлично!</p>
+                    </div>
+
+                    <!-- Текст отзыва -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Текст отзыва</label>
+                        <textarea id="review-text" rows="4" placeholder="Расскажите о вашем опыте покупки..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none resize-none" required></textarea>
+                    </div>
+
+                    <!-- Загрузка фото -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Фотографии доставленного товара</label>
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-rose-500 transition-colors cursor-pointer" onclick="document.getElementById('review-photos').click()">
+                            <i data-lucide="camera" class="w-8 h-8 text-gray-400 mx-auto mb-2"></i>
+                            <p class="text-sm text-gray-600">Нажмите чтобы добавить фото</p>
+                            <p class="text-xs text-gray-400">JPG, PNG до 5MB</p>
+                        </div>
+                        <input type="file" id="review-photos" accept="image/*" multiple class="hidden" onchange="previewReviewPhotos()">
+                        <div id="review-photo-preview" class="grid grid-cols-3 gap-2 mt-3"></div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg font-medium hover:from-rose-600 hover:to-pink-700 transition-all shadow-lg">
+                        <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>
+                        Отправить отзыв
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="order-detail-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideOrderDetail()"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900">Заказ #<span id="detail-order-id"></span></h3>
+                    <button onclick="hideOrderDetail()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div id="order-detail-content" class="space-y-4">
+                    <!-- Content will be filled dynamically -->
+                </div>
+                
+                <div class="mt-6 flex gap-3">
+                    <button onclick="repeatOrder()" class="flex-1 py-3 border border-rose-600 text-rose-600 rounded-lg font-medium hover:bg-rose-50 transition-all">
+                        Повторить заказ
+                    </button>
+                    <button onclick="downloadReceipt()" class="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg font-medium hover:from-rose-600 hover:to-pink-700 transition-all">
+                        Скачать чек
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>

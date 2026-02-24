@@ -1,0 +1,369 @@
+﻿/* ============================================
+   RESPONSIVE STYLES - Mobile & Tablet
+   ============================================ */
+
+/* ============================================
+   HEADER - Mobile Adaptations
+   ============================================ */
+@media (max-width: 768px) {
+    /* Compact header on mobile */
+    #main-header .h-16 {
+        height: 3.5rem !important;
+    }
+    
+    /* Smaller logo text */
+    #main-header .text-2xl {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Hide desktop nav */
+    #main-header nav.lg\:flex.gap-8 {
+        display: none !important;
+    }
+    
+    /* Hide desktop search bar */
+    #main-header .md\:flex.max-w-xl {
+        display: none !important;
+    }
+    
+    /* Adjust icon sizes */
+    #main-header .w-10.h-10 {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+    }
+}
+
+/* ============================================
+   HERO BANNER - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    #hero-banner h1 {
+        font-size: 2.5rem !important;
+        line-height: 1.1 !important;
+        padding: 0 1rem !important;
+    }
+    
+    #hero-banner .text-xl.md\:text-2xl {
+        font-size: 1rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    #hero-banner button {
+        padding: 0.75rem 1.5rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    #hero-banner .flex.gap-4 {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        padding: 0 1rem !important;
+    }
+}
+
+/* ============================================
+   CATEGORIES GRID - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    #categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    #categories-grid .w-full.aspect-square {
+        border-radius: 0.75rem !important;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #categories-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* ============================================
+   PRODUCTS GRID - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    #products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+        padding: 0 0.5rem !important;
+    }
+    
+    #products-grid .rounded-xl {
+        border-radius: 0.5rem !important;
+    }
+    
+    #products-grid .p-4 {
+        padding: 0.5rem !important;
+    }
+    
+    #products-grid h3 {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    #products-grid .text-2xl {
+        font-size: 1rem !important;
+    }
+    
+    #products-grid .w-5.h-5 {
+        width: 1rem !important;
+        height: 1rem !important;
+    }
+    
+    /* Hide size buttons on mobile */
+    #product-detail-modal .grid.grid-cols-3 {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+}
+
+/* Extra small phones (< 375px) */
+@media (max-width: 375px) {
+    #products-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #hero-banner h1 {
+        font-size: 1.75rem !important;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #products-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============================================
+   FILTERS SIDEBAR - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    aside.w-64 {
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .sticky.top-24 {
+        position: relative !important;
+        top: 0 !important;
+    }
+}
+
+/* ============================================
+   MODALS - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    /* Product detail modal */
+    #product-detail-modal .md\:w-1\/2 {
+        width: 100% !important;
+        height: 250px !important;
+    }
+    
+    #product-detail-modal .md\:text-3xl {
+        font-size: 1.5rem !important;
+    }
+    
+    #product-detail-modal .text-2xl {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Cart sidebar */
+    #cart-sidebar .sm\:w-96 {
+        width: 100% !important;
+    }
+    
+    /* Full-screen modals on mobile */
+    #product-detail-modal .absolute.inset-x-4 {
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        border-radius: 1rem 1rem 0 0 !important;
+    }
+}
+
+/* ============================================
+   CHECKOUT PAGE - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    #page-checkout .max-w-4xl {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    #page-checkout .grid-cols-1.lg\:grid-cols-3 {
+        gap: 1rem !important;
+    }
+    
+    #page-checkout .text-3xl {
+        font-size: 1.5rem !important;
+    }
+    
+    #checkout-items {
+        max-height: 40vh !important;
+    }
+    
+    /* Stack payment methods */
+    #page-checkout .grid-cols-1.sm\:grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ============================================
+   FOOTER - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    #footer .lg\:grid-cols-5 {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.5rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    #footer h3 {
+        font-size: 1rem !important;
+    }
+    
+    #footer p, #footer a {
+        font-size: 0.875rem !important;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #footer .lg\:grid-cols-5 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* ============================================
+   PROFILE PAGE - Mobile
+   ============================================ */
+@media (max-width: 768px) {
+    .lg\:w-64 {
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .lg\:col-span-2, .lg\:col-span-1 {
+        grid-column: span 1 !important;
+    }
+    
+    .sticky.top-24 {
+        position: relative !important;
+        top: 0 !important;
+    }
+}
+
+/* ============================================
+   TOUCH-FRIENDLY INTERFACE
+   ============================================ */
+@media (max-width: 768px) {
+    /* Minimum touch target size */
+    button, a, input, select {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Prevent zoom on iOS */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    
+    /* Better spacing for touch */
+    .gap-2 {
+        gap: 0.75rem !important;
+    }
+    
+    .gap-4 {
+        gap: 1rem !important;
+    }
+}
+
+/* ============================================
+   GENERAL MOBILE IMPROVEMENTS
+   ============================================ */
+@media (max-width: 768px) {
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+        max-width: 100vw;
+    }
+    
+    /* Reduce padding on containers */
+    .max-w-7xl.px-4 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    
+    /* Smaller section padding */
+    .py-20 {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+    
+    .py-16 {
+        padding-top: 1.5rem !important;
+        padding-bottom: 1.5rem !important;
+    }
+    
+    /* Adjust font sizes */
+    .text-4xl {
+        font-size: 1.75rem !important;
+    }
+    
+    .text-3xl {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Stack grid items */
+    .md\:grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .md\:grid-cols-3 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    
+    .md\:grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============================================
+   TABLET SPECIFIC (768px - 1024px)
+   ============================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #hero-banner h1 {
+        font-size: 3.5rem !important;
+    }
+    
+    .lg\:grid-cols-6 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    
+    .lg\:grid-cols-3 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MODE
+   ============================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+    #hero-banner {
+        height: 100vh !important;
+    }
+    
+    #hero-banner h1 {
+        font-size: 2rem !important;
+    }
+    
+    /* Hide mobile menu in landscape */
+    .mobile-bottom-menu {
+        display: none !important;
+    }
+}

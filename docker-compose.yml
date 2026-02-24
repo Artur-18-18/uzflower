@@ -1,0 +1,141 @@
+# ============================================
+# UzFlower Docker Compose
+# ============================================
+# Production-ready deployment
+# ============================================
+
+version: '3.8'
+
+services:
+  # ============================================
+  # Main Application
+  # ============================================
+  uzflower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: uzflower:latest
+    container_name: uzflower-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./uzflower.db
+      - SECRET_KEY=${SECRET_KEY:-uzflower-super-secret-key-production}
+      - ENVIRONMENT=production
+    volumes:
+      - ./uzflower.db:/app/uzflower.db
+      - ./static/uploads:/app/static/uploads
+      - ./logs:/app/logs
+    networks:
+      - uzflower-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.uzflower.app=uzflower"
+      - "com.uzflower.environment=production"
+
+  # ============================================
+  # Nginx Reverse Proxy (Optional)
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: uzflower-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - uzflower
+    networks:
+      - uzflower-network
+    profiles:
+      - with-nginx
+
+  # ============================================
+  # PostgreSQL (Optional - for production)
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: uzflower-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=uzflower
+      - POSTGRES_USER=${POSTGRES_USER:-uzflower}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-uzflower_secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - uzflower-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uzflower"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - with-postgres
+
+  # ============================================
+  # Redis (Optional - for caching)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: uzflower-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - uzflower-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - with-redis
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  uzflower-network:
+    driver: bridge
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+  redis_data:
+
+# ============================================
+# Usage Instructions:
+# ============================================
+# Basic (just app):
+#   docker-compose up -d
+#
+# With Nginx:
+#   docker-compose --profile with-nginx up -d
+#
+# With PostgreSQL:
+#   docker-compose --profile with-postgres up -d
+#
+# All services:
+#   docker-compose --profile with-nginx --profile with-postgres --profile with-redis up -d
+#
+# View logs:
+#   docker-compose logs -f
+#
+# Stop:
+#   docker-compose down
+#
+# Rebuild:
+#   docker-compose up -d --build
+# ============================================
