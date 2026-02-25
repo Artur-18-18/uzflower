@@ -161,7 +161,7 @@ pip install --no-cache-dir -r requirements.txt
 # Проверьте Python версию
 python --version
 
-# Требуется Python 3.13
+# Требуется Python 3.12
 # Если другая версия - обновите Python
 ```
 

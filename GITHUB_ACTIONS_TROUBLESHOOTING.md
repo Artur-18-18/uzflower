@@ -69,7 +69,7 @@ python -m py_compile main.py
 - name: Set up Python
   uses: actions/setup-python@v5
   with:
-    python-version: '3.13'
+    python-version: '3.12'
 
 - name: Set environment variables
   run: |

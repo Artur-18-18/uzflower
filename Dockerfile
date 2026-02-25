@@ -7,7 +7,7 @@
 # ============================================
 # Stage 1: Builder
 # ============================================
-FROM python:3.13-slim as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --user -r requirements.txt
 # ============================================
 # Stage 2: Production
 # ============================================
-FROM python:3.13-slim as production
+FROM python:3.12-slim as production
 
 WORKDIR /app
 

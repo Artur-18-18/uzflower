@@ -13,7 +13,7 @@ on:
     branches: [ main, master ]
 
 env:
-  PYTHON_VERSION: '3.13'
+  PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
   REGISTRY: docker.io
   IMAGE_NAME: uzflower

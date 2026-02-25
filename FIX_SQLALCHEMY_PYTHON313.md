@@ -9,8 +9,8 @@ directly inherits TypingOnly but has additional attributes
 ```
 
 **Причина:**
-- SQLAlchemy 2.0.25 не совместима с Python 3.13
-- В Python 3.13 изменилась работа с Generic типами
+- SQLAlchemy 2.0.25 не совместима с Python 3.12
+- В Python 3.12 изменилась работа с Generic типами
 
 ---
 
@@ -44,7 +44,7 @@ pytest-cov==6.0.0
 
 ```bash
 git add requirements.txt requirements-dev.txt
-git commit -m "Fix SQLAlchemy compatibility with Python 3.13"
+git commit -m "Fix SQLAlchemy compatibility with Python 3.12"
 git push origin main
 ```
 
@@ -88,7 +88,7 @@ GitHub → Actions → Tests → Latest run
 ## 🔗 Ссылки
 
 - **SQLAlchemy Changelog**: https://docs.sqlalchemy.org/en/20/changelog/
-- **Python 3.13 Changes**: https://docs.python.org/3/whatsnew/3.13.html
+- **Python 3.12 Changes**: https://docs.python.org/3/whatsnew/3.13.html
 - **Issue Tracker**: https://github.com/sqlalchemy/sqlalchemy/issues
 
 ---

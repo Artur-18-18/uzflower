@@ -5,7 +5,7 @@
 **requirements.txt:**
 ```diff
 - sqlalchemy==2.0.36
-+ sqlalchemy>=2.0.35  # Python 3.13 Compatible
++ sqlalchemy>=2.0.35  # Python 3.12 Compatible
 ```
 
 **requirements-dev.txt:**
@@ -13,7 +13,7 @@
 - pytest==8.3.3
 - pytest-asyncio==0.24.0
 - pytest-cov==6.0.0
-+ pytest>=8.0.0         # Python 3.13 Compatible
++ pytest>=8.0.0         # Python 3.12 Compatible
 + pytest-asyncio>=0.24.0
 + pytest-cov>=6.0.0
 ```
@@ -25,7 +25,7 @@
 ```bash
 cd c:\Users\matka\uzflower
 git add requirements.txt requirements-dev.txt
-git commit -m "Fix: Update SQLAlchemy for Python 3.13 compatibility"
+git commit -m "Fix: Update SQLAlchemy for Python 3.12 compatibility"
 git push origin main
 ```
 
@@ -33,9 +33,9 @@ git push origin main
 
 ## 📊 Почему это работает:
 
-**SQLAlchemy 2.0.35+** содержит фикс для Python 3.13:
+**SQLAlchemy 2.0.35+** содержит фикс для Python 3.12:
 - ✅ Исправлена проблема с `TypingOnly`
-- ✅ Совместимо с Generic типами Python 3.13
+- ✅ Совместимо с Generic типами Python 3.12
 - ✅ Все тесты проходят
 
 ---
@@ -58,7 +58,7 @@ AssertionError: Class <class 'sqlalchemy.sql.elements.SQLCoreOperations'>
 directly inherits TypingOnly but has additional attributes
 ```
 
-**Причина:** SQLAlchemy 2.0.25 не совместима с Python 3.13
+**Причина:** SQLAlchemy 2.0.25 не совместима с Python 3.12
 
 **Решение:** SQLAlchemy >= 2.0.35 ✅
 

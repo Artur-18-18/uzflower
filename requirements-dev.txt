@@ -4,7 +4,7 @@
 # Для разработки и тестирования
 # ============================================
 
-# Testing - Python 3.13 Compatible
+# Testing - Python 3.12 Compatible
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
 pytest-cov>=6.0.0
