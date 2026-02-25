@@ -88,11 +88,20 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: 🔍 Check versions
+        run: |
+          python --version
+          python -c "import sqlalchemy; print(f'SQLAlchemy: {sqlalchemy.__version__}')"
+
       - name: 🧪 Run Unit Tests
+        env:
+          PYTHONPATH: .
         run: |
           pytest tests/unit/ -v --tb=short --cov=main --cov-report=xml || echo "Unit tests completed"
 
       - name: 🧪 Run Integration Tests
+        env:
+          PYTHONPATH: .
         run: |
           pytest tests/integration/ -v --tb=short --cov=main --cov-report=xml --cov-append || echo "Integration tests completed"
 
