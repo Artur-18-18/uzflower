@@ -91,6 +91,7 @@ jobs:
       - name: 🔍 Check versions
         run: |
           python --version
+          pip list
           python -c "import sqlalchemy; print(f'SQLAlchemy: {sqlalchemy.__version__}')"
 
       - name: 🧪 Run Unit Tests

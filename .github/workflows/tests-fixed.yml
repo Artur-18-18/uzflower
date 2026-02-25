@@ -41,7 +41,7 @@ jobs:
           pip install --no-cache-dir -r requirements-dev.txt
           echo "✅ Development dependencies installed"
 
-      - name: �🔍 Check versions
+      - name: 🔍 Check versions
         run: |
           python --version
           python -c "import sqlalchemy; print(f'SQLAlchemy: {sqlalchemy.__version__}')"
