@@ -264,7 +264,6 @@ User.notifications = relationship("Notification", back_populates="user", cascade
 User.reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
 User.saved_cards = relationship("SavedCard", back_populates="user", cascade="all, delete-orphan")
 Product.favorites = relationship("Favorite", back_populates="product", cascade="all, delete-orphan")
-Review.images = relationship("ReviewImage", back_populates="review", cascade="all, delete-orphan")
 
 Base.metadata.create_all(bind=engine)
 
@@ -2453,4 +2452,3 @@ async def read_login(request: Request):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
