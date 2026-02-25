@@ -46,7 +46,7 @@ jobs:
           # Force reinstall a recent SQLAlchemy without using pip cache to
           # avoid runner preinstalled/cached older versions causing TypingOnly
           # import errors on Python 3.13.x hosted runners.
-          pip install --no-cache-dir --upgrade --force-reinstall "SQLAlchemy>=2.0.35"
+          python -m pip install --no-cache-dir --upgrade --force-reinstall "SQLAlchemy>=2.0.35"
           echo "✅ SQLAlchemy force-reinstalled"
 
       - name: �🔍 Check versions
