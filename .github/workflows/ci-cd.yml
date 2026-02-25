@@ -88,12 +88,6 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: 🛠️ Ensure SQLAlchemy is compatible with Python 3.13
-        run: |
-          # Uninstall old SQLAlchemy first, then install pinned 2.0.23 (confirmed working with Python 3.13)
-          python -m pip uninstall -y sqlalchemy
-          python -m pip install --no-cache-dir --force-reinstall "sqlalchemy==2.0.23"
-
       - name: 🧪 Run Unit Tests
         run: |
           pytest tests/unit/ -v --tb=short --cov=main --cov-report=xml || echo "Unit tests completed"

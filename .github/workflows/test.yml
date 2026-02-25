@@ -32,11 +32,6 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: 🛠️ Ensure SQLAlchemy is compatible with Python 3.13
-        run: |
-          python -m pip uninstall -y sqlalchemy
-          python -m pip install --no-cache-dir --force-reinstall "sqlalchemy==2.0.23"
-
       - name: �🔍 Check Python syntax
         run: |
           python -m py_compile main.py
