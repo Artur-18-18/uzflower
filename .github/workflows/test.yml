@@ -34,11 +34,10 @@ jobs:
 
       - name: �️ Ensure SQLAlchemy is up-to-date
         run: |
-          # Some GitHub-hosted runners may install a SQLAlchemy version
-          # that is incompatible with the runner's Python minor release.
-          # Upgrade to the latest released SQLAlchemy to avoid TypingOnly
-          # related import errors during test collection.
-          pip install --upgrade SQLAlchemy
+          # Force reinstall a recent SQLAlchemy without using pip cache to
+          # avoid runner preinstalled/cached older versions causing TypingOnly
+          # import errors on Python 3.13.x hosted runners.
+          pip install --no-cache-dir --upgrade --force-reinstall "SQLAlchemy>=2.0.35"
 
       - name: �🔍 Check Python syntax
         run: |
