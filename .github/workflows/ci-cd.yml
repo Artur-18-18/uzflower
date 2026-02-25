@@ -88,6 +88,11 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: 🛠️ Ensure SQLAlchemy is up-to-date
+        run: |
+          # Prevent SQLAlchemy / typing incompatibility on hosted runners
+          pip install --upgrade SQLAlchemy
+
       - name: 🧪 Run Unit Tests
         run: |
           pytest tests/unit/ -v --tb=short --cov=main --cov-report=xml || echo "Unit tests completed"

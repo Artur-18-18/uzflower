@@ -32,7 +32,15 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
-      - name: 🔍 Check Python syntax
+      - name: �️ Ensure SQLAlchemy is up-to-date
+        run: |
+          # Some GitHub-hosted runners may install a SQLAlchemy version
+          # that is incompatible with the runner's Python minor release.
+          # Upgrade to the latest released SQLAlchemy to avoid TypingOnly
+          # related import errors during test collection.
+          pip install --upgrade SQLAlchemy
+
+      - name: �🔍 Check Python syntax
         run: |
           python -m py_compile main.py
           echo "✅ Python syntax OK!"

@@ -41,7 +41,13 @@ jobs:
           pip install --no-cache-dir -r requirements-dev.txt
           echo "✅ Development dependencies installed"
 
-      - name: 🔍 Check versions
+      - name: �️ Ensure SQLAlchemy is up-to-date
+        run: |
+          # Upgrade SQLAlchemy to avoid compatibility issues with runner Python
+          pip install --no-cache-dir --upgrade SQLAlchemy
+          echo "✅ SQLAlchemy upgraded"
+
+      - name: �🔍 Check versions
         run: |
           python --version
           python -c "import sqlalchemy; print(f'SQLAlchemy: {sqlalchemy.__version__}')"
