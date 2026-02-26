@@ -120,6 +120,13 @@ def add_bonus_points(db: Session, user_id: int, amount: int, description: str, o
 # Silence passlib warnings about bcrypt version
 logging.getLogger("passlib").setLevel(logging.ERROR)
 
+# Monkey-patch passlib to avoid AttributeError with bcrypt>=4.1.0
+import bcrypt
+if getattr(bcrypt, "__about__", None) is None:
+    class About:
+        __version__ = getattr(bcrypt, "__version__", "4.0.0")
+    bcrypt.__about__ = About
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
@@ -310,10 +317,11 @@ async def lifespan(app: FastAPI):
         inspector.get_columns("users")
     except NoSuchTableError:
         # Таблицы не существуют - создаём их
-        # Это происходит в тестах где таблицы создаются через conftest
-        db.close()
-        yield
-        return
+        logger.info("📊 Таблицы не найдены, создаём...")
+        db_module.Base.metadata.create_all(bind=db_module.engine)
+        db.commit()
+        # Обновляем inspector после создания таблиц
+        inspector = inspect(db_module.engine)
 
     # Users table
     user_cols = [c['name'] for c in inspector.get_columns("users")]
@@ -490,6 +498,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================
+# Debug / Health Check Endpoint
+# ============================================================
+@app.get("/api/debug")
+async def debug_endpoint(db: Session = Depends(get_db)):
+    """Проверка состояния приложения"""
+    from sqlalchemy import text
+    try:
+        # Проверка подключения к БД
+        db.execute(text("SELECT 1"))
+        
+        # Проверка таблиц
+        from sqlalchemy import inspect
+        inspector = inspect(db.bind)
+        tables = inspector.get_table_names()
+        
+        # Проверка количества пользователей
+        user_count = db.query(User).count()
+        
+        return {
+            "status": "ok",
+            "database": "connected",
+            "tables": tables,
+            "user_count": user_count,
+            "cors_enabled": True
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 # --- Auth API ---
 @app.post("/api/auth/register")
