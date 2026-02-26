@@ -15,7 +15,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -117,22 +117,6 @@ def add_bonus_points(db: Session, user_id: int, amount: int, description: str, o
         db.rollback()
 
 # --- Security ---
-# Silence passlib warnings about bcrypt version
-logging.getLogger("passlib").setLevel(logging.ERROR)
-
-# Monkey-patch passlib to avoid AttributeError with bcrypt>=4.1.0
-import bcrypt
-if getattr(bcrypt, "__about__", None) is None:
-    class About:
-        __version__ = getattr(bcrypt, "__version__", "4.0.0")
-    bcrypt.__about__ = About
-
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__truncate_error=True
-)
-
 SECRET_KEY = "uzflower-super-secret-key-2026" # В проде менять на переменную окружения
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 43200 # 30 дней
@@ -395,7 +379,7 @@ async def lifespan(app: FastAPI):
     if db.query(User).count() == 0:
         admin = User(
             email="admin@test.com",
-            hashed_password=pwd_context.hash("admin123"),
+            hashed_password=bcrypt.hashpw("admin123".encode("utf-8"), bcrypt.gensalt()).decode("utf-8"),
             full_name="Администратор",
             is_admin=True
         )
@@ -538,7 +522,12 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         db_user = db.query(User).filter(User.email == user.email).first()
         if db_user:
             raise HTTPException(status_code=400, detail="Email already registered")
-        hashed_password = pwd_context.hash(user.password)
+        
+        # Raw bcrypt
+        password_bytes = user.password.encode("utf-8")
+        hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+        hashed_password = hashed_bytes.decode("utf-8")
+        
         new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
         db.add(new_user)
         db.commit()
@@ -556,7 +545,13 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
         db_user = db.query(User).filter(User.email == user.email).first()
-        if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+        if not db_user:
+            raise HTTPException(status_code=400, detail="Invalid email or password")
+            
+        password_bytes = user.password.encode("utf-8")
+        hashed_bytes = db_user.hashed_password.encode("utf-8")
+        
+        if not bcrypt.checkpw(password_bytes, hashed_bytes):
             raise HTTPException(status_code=400, detail="Invalid email or password")
 
 
@@ -661,13 +656,17 @@ async def change_password(
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    if not pwd_context.verify(password_data.current_password, current_user.hashed_password):
+    current_hashed = current_user.hashed_password.encode("utf-8")
+    password_bytes = password_data.current_password.encode("utf-8")
+    
+    if not bcrypt.checkpw(password_bytes, current_hashed):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
     db = SessionLocal()
     try:
         current_user = db.merge(current_user)
-        current_user.hashed_password = pwd_context.hash(password_data.new_password)
+        new_hashed = bcrypt.hashpw(password_data.new_password.encode("utf-8"), bcrypt.gensalt())
+        current_user.hashed_password = new_hashed.decode("utf-8")
         db.commit()
 
         logger.info("🔑 Пароль изменен для: %s", current_user.email)
