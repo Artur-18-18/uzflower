@@ -534,36 +534,53 @@ async def debug_endpoint(db: Session = Depends(get_db)):
 # --- Auth API ---
 @app.post("/api/auth/register")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = pwd_context.hash(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name}
+    try:
+        db_user = db.query(User).filter(User.email == user.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        hashed_password = pwd_context.hash(user.password)
+        new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        logger.error(f"REGISTER ERR: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)} | Trace: {error_msg}")
 
 @app.post("/api/auth/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+    try:
+        db_user = db.query(User).filter(User.email == user.email).first()
+        if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
+            raise HTTPException(status_code=400, detail="Invalid email or password")
 
-    token = create_access_token({"sub": db_user.email})
-    logger.info("🔐 Вход: %s (admin=%s)", db_user.email, db_user.is_admin)
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": db_user.id,
-            "email": db_user.email,
-            "full_name": db_user.full_name,
-            "is_admin": db_user.is_admin,
-            "bonus_points": db_user.bonus_points
+        token = create_access_token({"sub": db_user.email})
+        logger.info("🔐 Вход: %s (admin=%s)", db_user.email, db_user.is_admin)
+
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": {
+                "id": db_user.id,
+                "email": db_user.email,
+                "full_name": db_user.full_name,
+                "is_admin": db_user.is_admin,
+                "bonus_points": db_user.bonus_points
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_msg = traceback.format_exc()
+        logger.error(f"LOGIN ERR: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)} | Trace: {error_msg}")
 
 # ============================================
 # --- PROFILE API ---
