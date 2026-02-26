@@ -35,8 +35,10 @@ COPY --from=builder /root/.local /home/appuser/.local
 
 # Copy application code
 COPY main.py .
+COPY app/ app/
 COPY templates/ templates/
 COPY static/ static/
+COPY requirements.txt .
 
 # Set environment variables
 ENV PATH=/home/appuser/.local/bin:$PATH

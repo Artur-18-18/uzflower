@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
@@ -478,6 +479,17 @@ if not os.path.exists("static/uploads"):
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# ============================================================
+# CORS Middleware - разрешаем запросы с любых доменов
+# ============================================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # В продакшене лучше указать конкретные домены
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Auth API ---
 @app.post("/api/auth/register")
