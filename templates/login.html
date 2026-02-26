@@ -1,210 +1,210 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вход - UzFlower</title>
-    <link rel="stylesheet" href="/static/css/style.css" />
-    <link
-      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div class="container">
-      <div class="form-box login">
-        <form action="#">
-          <h1>Войти</h1>
-          <div class="input-box">
-            <input type="email" placeholder="Email" required />
-            <i class="bx bxs-envelope"></i>
-          </div>
-          <div class="input-box">
-            <input type="password" placeholder="Пароль" required />
-            <i class="bx bxs-lock-alt"></i>
-          </div>
-          <div class="forgot-link">
-            <a href="#">Забыли пароль?</a>
-          </div>
-          <button type="submit" class="btn">Войти</button>
-        </form>
-      </div>
 
-      <div class="form-box register">
-        <form action="#">
-          <h1>Регистрация</h1>
-          <div class="input-box">
-            <input type="text" placeholder="Ваше имя" required />
-            <i class="bx bxs-user"></i>
-          </div>
-          <div class="input-box">
-            <input type="email" placeholder="Email" required />
-            <i class="bx bxs-envelope"></i>
-          </div>
-          <div class="input-box">
-            <input type="password" placeholder="Пароль" required />
-            <i class="bx bxs-lock-alt"></i>
-          </div>
-          <button type="submit" class="btn">Зарегистрироваться</button>
-        </form>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход - UzFlower</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+</head>
 
-      <div class="toggle-box">
-        <div class="toggle-panel toggle-left">
-          <h1 style="color: rgb(50, 33, 33)"  >Добро пожаловать!</h1>
-          <p style="color: rgb(50, 33, 33);">Нет аккаунта?</p>
-          <button class="btn register-btn" style="color: rgb(96, 83, 83)">Зарегистрироваться</button>
+<body class="login-body">
+  <div class="container">
+    <div class="form-box login">
+      <form action="#">
+        <h1>Войти</h1>
+        <div class="input-box">
+          <input type="email" placeholder="Email" required />
+          <i class="bx bxs-envelope"></i>
         </div>
-
-        <div class="toggle-panel toggle-right">
-          <h1 style="color: rgb(50, 33, 33)" >Добро пожаловать!</h1>
-          <p style="color: rgb(50, 33, 33);">У вас уже есть аккаунт?</p>
-          <button class="btn login-btn" style="color: rgb(96, 83, 83)">Войти</button>
+        <div class="input-box">
+          <input type="password" placeholder="Пароль" required />
+          <i class="bx bxs-lock-alt"></i>
         </div>
-      </div>
+        <div class="forgot-link">
+          <a href="#">Забыли пароль?</a>
+        </div>
+        <button type="submit" class="btn">Войти</button>
+      </form>
     </div>
 
-    <script>
-      // Toggle между Login и Register
-      const container = document.querySelector('.container');
-      const registerBtn = document.querySelector('.register-btn');
-      const loginBtn = document.querySelector('.login-btn');
+    <div class="form-box register">
+      <form action="#">
+        <h1>Регистрация</h1>
+        <div class="input-box">
+          <input type="text" placeholder="Ваше имя" required />
+          <i class="bx bxs-user"></i>
+        </div>
+        <div class="input-box">
+          <input type="email" placeholder="Email" required />
+          <i class="bx bxs-envelope"></i>
+        </div>
+        <div class="input-box">
+          <input type="password" placeholder="Пароль" required />
+          <i class="bx bxs-lock-alt"></i>
+        </div>
+        <button type="submit" class="btn">Зарегистрироваться</button>
+      </form>
+    </div>
 
-      registerBtn.addEventListener('click', () => {
-        container.classList.add('active');
-      });
+    <div class="toggle-box">
+      <div class="toggle-panel toggle-left">
+        <h1 style="color: rgb(50, 33, 33)">Добро пожаловать!</h1>
+        <p style="color: rgb(50, 33, 33);">Нет аккаунта?</p>
+        <button class="btn register-btn" style="color: rgb(96, 83, 83)">Зарегистрироваться</button>
+      </div>
 
-      loginBtn.addEventListener('click', () => {
-        container.classList.remove('active');
-      });
+      <div class="toggle-panel toggle-right">
+        <h1 style="color: rgb(50, 33, 33)">Добро пожаловать!</h1>
+        <p style="color: rgb(50, 33, 33);">У вас уже есть аккаунт?</p>
+        <button class="btn login-btn" style="color: rgb(96, 83, 83)">Войти</button>
+      </div>
+    </div>
+  </div>
 
-      // Обработка формы входа
-      const loginForm = document.querySelector('.form-box.login form');
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const inputs = loginForm.querySelectorAll('input');
-        const email = inputs[0].value;
-        const password = inputs[1].value;
-        const submitBtn = loginForm.querySelector('.btn');
-        
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner"></span> Вход...';
-        
-        try {
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-          });
-          
-          const data = await response.json();
-          
-          if (response.ok) {
-            localStorage.setItem('token', data.access_token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            
-            if (data.user.is_admin) {
-              window.location.href = '/admin';
-            } else {
-              window.location.href = '/';
-            }
+  <script>
+    // Toggle между Login и Register
+    const container = document.querySelector('.container');
+    const registerBtn = document.querySelector('.register-btn');
+    const loginBtn = document.querySelector('.login-btn');
+
+    registerBtn.addEventListener('click', () => {
+      container.classList.add('active');
+    });
+
+    loginBtn.addEventListener('click', () => {
+      container.classList.remove('active');
+    });
+
+    // Обработка формы входа
+    const loginForm = document.querySelector('.form-box.login form');
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const inputs = loginForm.querySelectorAll('input');
+      const email = inputs[0].value;
+      const password = inputs[1].value;
+      const submitBtn = loginForm.querySelector('.btn');
+
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Вход...';
+
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem('token', data.access_token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          if (data.user.is_admin) {
+            window.location.href = '/admin';
           } else {
-            showAlert(loginForm, data.detail || 'Ошибка входа', 'error');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
+            window.location.href = '/';
           }
-        } catch (error) {
-          console.error('Login error:', error);
-          showAlert(loginForm, 'Ошибка подключения к серверу', 'error');
+        } else {
+          showAlert(loginForm, data.detail || 'Ошибка входа', 'error');
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
-      });
+      } catch (error) {
+        console.error('Login error:', error);
+        showAlert(loginForm, 'Ошибка подключения к серверу', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    });
 
-      // Обработка формы регистрации
-      const registerForm = document.querySelector('.form-box.register form');
-      registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const inputs = registerForm.querySelectorAll('input');
-        const full_name = inputs[0].value;
-        const email = inputs[1].value;
-        const password = inputs[2].value;
-        const submitBtn = registerForm.querySelector('.btn');
-        
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner"></span> Регистрация...';
-        
-        try {
-          const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, full_name }),
-          });
-          
-          const data = await response.json();
-          
-          if (response.ok) {
-            showAlert(registerForm, 'Аккаунт создан! Теперь войдите.', 'success');
-            container.classList.remove('active');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-          } else {
-            showAlert(registerForm, data.detail || 'Ошибка регистрации', 'error');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-          }
-        } catch (error) {
-          console.error('Register error:', error);
-          showAlert(registerForm, 'Ошибка подключения к серверу', 'error');
+    // Обработка формы регистрации
+    const registerForm = document.querySelector('.form-box.register form');
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const inputs = registerForm.querySelectorAll('input');
+      const full_name = inputs[0].value;
+      const email = inputs[1].value;
+      const password = inputs[2].value;
+      const submitBtn = registerForm.querySelector('.btn');
+
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span> Регистрация...';
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, full_name }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showAlert(registerForm, 'Аккаунт создан! Теперь войдите.', 'success');
+          container.classList.remove('active');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        } else {
+          showAlert(registerForm, data.detail || 'Ошибка регистрации', 'error');
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
-      });
+      } catch (error) {
+        console.error('Register error:', error);
+        showAlert(registerForm, 'Ошибка подключения к серверу', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    });
 
-      // Функция показа уведомлений
-      function showAlert(form, message, type) {
-        // Удаляем существующие алерты
-        const existingAlert = form.querySelector('.alert');
-        if (existingAlert) {
-          existingAlert.remove();
-        }
-        
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type}`;
-        alert.textContent = message;
-        
-        // Вставляем перед первым элементом формы
-        form.insertBefore(alert, form.firstChild);
-        
-        // Автоматически скрываем через 5 секунд
-        setTimeout(() => {
-          alert.remove();
-        }, 5000);
+    // Функция показа уведомлений
+    function showAlert(form, message, type) {
+      // Удаляем существующие алерты
+      const existingAlert = form.querySelector('.alert');
+      if (existingAlert) {
+        existingAlert.remove();
       }
 
-      // Проверка авторизации при загрузке
-      document.addEventListener('DOMContentLoaded', () => {
-        const token = localStorage.getItem('token');
-        const user = localStorage.getItem('user');
-        
-        if (token && user) {
-          try {
-            const userData = JSON.parse(user);
-            if (userData.is_admin) {
-              window.location.href = '/admin';
-            } else {
-              window.location.href = '/';
-            }
-          } catch (e) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type}`;
+      alert.textContent = message;
+
+      // Вставляем перед первым элементом формы
+      form.insertBefore(alert, form.firstChild);
+
+      // Автоматически скрываем через 5 секунд
+      setTimeout(() => {
+        alert.remove();
+      }, 5000);
+    }
+
+    // Проверка авторизации при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+
+      if (token && user) {
+        try {
+          const userData = JSON.parse(user);
+          if (userData.is_admin) {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/';
           }
+        } catch (e) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
-      });
-    </script>
-  </body>
+      }
+    });
+  </script>
+</body>
+
 </html>

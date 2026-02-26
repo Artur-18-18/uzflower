@@ -22,39 +22,39 @@
                 transform: rotate(360deg);
             }
         }
-        
+
         /* Language Switcher Styles */
         .lang-switcher {
-          display: flex;
-          align-items: center;
-          gap: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .lang-buttons {
-          display: flex;
-          gap: 4px;
+            display: flex;
+            gap: 4px;
         }
 
         .lang-btn {
-          background: transparent;
-          border: 2px solid transparent;
-          border-radius: 8px;
-          padding: 6px 10px;
-          cursor: pointer;
-          font-size: 18px;
-          transition: all 0.3s ease;
-          opacity: 0.6;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            opacity: 0.6;
         }
 
         .lang-btn:hover {
-          opacity: 1;
-          background: rgba(224, 27, 78, 0.1);
+            opacity: 1;
+            background: rgba(224, 27, 78, 0.1);
         }
 
         .lang-btn.active {
-          opacity: 1;
-          border-color: #e01b4e;
-          background: rgba(224, 27, 78, 0.1);
+            opacity: 1;
+            border-color: #e01b4e;
+            background: rgba(224, 27, 78, 0.1);
         }
     </style>
 </head>
@@ -66,11 +66,14 @@
         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-3 sm:p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
             <div class="text-center mb-6 sm:mb-8">
-                <div class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-rose-100 rounded-full mb-4">
+                <div
+                    class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-rose-100 rounded-full mb-4">
                     <i data-lucide="lock" class="w-7 h-7 sm:w-8 sm:h-8 text-rose-600"></i>
                 </div>
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900" data-i18n="admin.login_title">Вход в панель управления</h2>
-                <p class="text-sm sm:text-base text-gray-500 mt-2" data-i18n="admin.login_subtitle">Введите учетные данные администратора</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900" data-i18n="admin.login_title">Вход в панель
+                    управления</h2>
+                <p class="text-sm sm:text-base text-gray-500 mt-2" data-i18n="admin.login_subtitle">Введите учетные
+                    данные администратора</p>
             </div>
 
             <form id="login-form" onsubmit="handleAdminLogin(event)" class="space-y-4 sm:space-y-6">
@@ -80,7 +83,8 @@
                         class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all text-sm sm:text-base">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="admin.password">Пароль</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                        data-i18n="admin.password">Пароль</label>
                     <input type="password" id="login-password" required placeholder="••••••••"
                         class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all text-sm sm:text-base">
                 </div>
@@ -104,11 +108,13 @@
                 <div class="lang-switcher"></div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="openSite()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
+                <button onclick="openSite()"
+                    class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
                     <i data-lucide="external-link" class="w-5 h-5"></i>
                     <span class="font-medium" data-i18n="admin.view_site">Смотреть сайт</span>
                 </button>
-                <button onclick="logoutAdmin()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
+                <button onclick="logoutAdmin()"
+                    class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
                     <span class="font-medium" data-i18n="admin.logout">Выйти</span>
                 </button>
@@ -124,23 +130,28 @@
                 <div class="flex overflow-x-auto" id="tabs-container">
                     <button onclick="switchTab('stats')" id="tab-stats"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600">
-                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span data-i18n="admin.tabs.stats">Статистика</span>
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span
+                            data-i18n="admin.tabs.stats">Статистика</span>
                     </button>
                     <button onclick="switchTab('products')" id="tab-products"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="package" class="w-5 h-5"></i> <span data-i18n="admin.tabs.products">Товары</span>
+                        <i data-lucide="package" class="w-5 h-5"></i> <span
+                            data-i18n="admin.tabs.products">Товары</span>
                     </button>
                     <button onclick="switchTab('orders')" id="tab-orders"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> <span data-i18n="admin.tabs.orders">Заказы</span>
+                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> <span
+                            data-i18n="admin.tabs.orders">Заказы</span>
                     </button>
                     <button onclick="switchTab('delivery')" id="tab-delivery"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="truck" class="w-5 h-5"></i> <span data-i18n="admin.tabs.delivery">Доставка</span>
+                        <i data-lucide="truck" class="w-5 h-5"></i> <span
+                            data-i18n="admin.tabs.delivery">Доставка</span>
                     </button>
                     <button onclick="switchTab('marketing')" id="tab-marketing"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="megaphone" class="w-5 h-5"></i> <span data-i18n="admin.tabs.banners">Баннеры</span>
+                        <i data-lucide="megaphone" class="w-5 h-5"></i> <span
+                            data-i18n="admin.tabs.banners">Баннеры</span>
                     </button>
                     <button onclick="switchTab('customers')" id="tab-customers"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
@@ -216,7 +227,7 @@
                         <option value="">Без категории</option>
                     </select>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Базовая цена (сум)</label>
                         <input type="number" id="prod-price" required
@@ -228,7 +239,7 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Price S (сум)</label>
                         <input type="number" id="prod-price-s"
@@ -245,7 +256,7 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Ширина (см)</label>
                         <input type="number" id="prod-width" step="0.01"
@@ -302,7 +313,8 @@
     </div>
 
     <!-- Banner Modal -->
-    <div id="banner-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+    <div id="banner-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl">
             <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
                 <h3 class="text-xl font-bold text-gray-900" id="banner-modal-title">Добавление баннера</h3>
@@ -312,16 +324,18 @@
             </div>
             <form id="banner-form" onsubmit="saveBanner(event)" class="p-6 space-y-4">
                 <input type="hidden" id="banner-id">
-                
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Тип баннера</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="banner-media-type" value="image" id="banner-type-image" onchange="toggleBannerFileType('image')" checked class="w-4 h-4 text-rose-600">
+                            <input type="radio" name="banner-media-type" value="image" id="banner-type-image"
+                                onchange="toggleBannerFileType('image')" checked class="w-4 h-4 text-rose-600">
                             <span class="text-sm text-gray-700">Изображение</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="banner-media-type" value="video" id="banner-type-video" onchange="toggleBannerFileType('video')" class="w-4 h-4 text-rose-600">
+                            <input type="radio" name="banner-media-type" value="video" id="banner-type-video"
+                                onchange="toggleBannerFileType('video')" class="w-4 h-4 text-rose-600">
                             <span class="text-sm text-gray-700">Видео</span>
                         </label>
                     </div>
@@ -329,36 +343,47 @@
 
                 <div id="banner-image-section">
                     <label class="block text-sm font-medium text-gray-700 mb-2">URL изображения</label>
-                    <input type="text" id="banner-image-url" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <input type="text" id="banner-image-url" placeholder="https://..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
                     <div class="mt-2">
                         <label class="block text-sm text-gray-600 mb-1">Или загрузить файл</label>
-                        <input type="file" id="banner-image-file" accept="image/*" onchange="handleBannerFileUpload(this)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                        <input type="file" id="banner-image-file" accept="image/*"
+                            onchange="handleBannerFileUpload(this)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
                     </div>
                 </div>
 
                 <div id="banner-video-section" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-2">URL видео</label>
-                    <input type="text" id="banner-video-url" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <input type="text" id="banner-video-url" placeholder="https://..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
                     <div class="mt-2">
                         <label class="block text-sm text-gray-600 mb-1">Или загрузить файл</label>
-                        <input type="file" id="banner-video-file" accept="video/*" onchange="handleBannerFileUpload(this)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                        <input type="file" id="banner-video-file" accept="video/*"
+                            onchange="handleBannerFileUpload(this)"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Ссылка (необязательно)</label>
-                    <input type="text" id="banner-link" placeholder="https://..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <input type="text" id="banner-link" placeholder="https://..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Текст на баннере (сезонный)</label>
-                    <input type="text" id="banner-text" placeholder="Например: Весенняя Коллекция, 8 Марта, Новый Год..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
-                    <p class="text-xs text-gray-500 mt-1">Этот текст будет отображаться поверх баннера на главной странице</p>
+                    <input type="text" id="banner-text"
+                        placeholder="Например: Весенняя Коллекция, 8 Марта, Новый Год..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <p class="text-xs text-gray-500 mt-1">Этот текст будет отображаться поверх баннера на главной
+                        странице</p>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Подзаголовок (необязательно)</label>
-                    <input type="text" id="banner-subtext" placeholder="Например: Создайте незабываемые моменты..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
+                    <input type="text" id="banner-subtext" placeholder="Например: Создайте незабываемые моменты..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
                 </div>
 
                 <div>
@@ -368,7 +393,8 @@
                     </label>
                 </div>
 
-                <button type="submit" class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2">
+                <button type="submit"
+                    class="w-full py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2">
                     <i data-lucide="save" class="w-5 h-5"></i> Сохранить
                 </button>
             </form>
@@ -403,7 +429,7 @@
                 showLogin();
                 throw new Error("Unauthorized");
             }
-            
+
             const data = await res.json();
             return data;
         }
@@ -458,7 +484,7 @@
             if (window.i18n) {
                 i18n.init();
             }
-            
+
             if (!getAuthToken()) {
                 showLogin();
                 lucide.createIcons(); // To show lock icon in login
@@ -497,7 +523,7 @@
             activeBtn.className = 'tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600';
 
             loadData(tab);
-            
+
             // Re-apply translations after switching tabs
             if (window.i18n) {
                 i18n.translatePage();
@@ -637,13 +663,13 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="banners-grid">
                         ${data.length === 0
-                            ? '<div class="col-span-full text-center py-10 text-gray-400">Баннеры ещё не добавлены</div>'
-                            : data.map(b => `
+                        ? '<div class="col-span-full text-center py-10 text-gray-400">Баннеры ещё не добавлены</div>'
+                        : data.map(b => `
                                 <div class="bg-white rounded-2xl border shadow-sm overflow-hidden relative group">
                                     ${b.media_type === 'video'
-                                        ? `<video src="${b.video_url}" class="w-full h-48 object-cover" muted loop autoplay onmouseover="this.play()" onmouseout="this.pause()"></video>`
-                                        : `<img src="${b.image_url || 'https://via.placeholder.com/400'}" class="w-full h-48 object-cover">`
-                                    }
+                                ? `<video src="${b.video_url}" class="w-full h-48 object-cover" muted loop autoplay onmouseover="this.play()" onmouseout="this.pause()"></video>`
+                                : `<img src="${b.image_url || 'https://via.placeholder.com/400'}" class="w-full h-48 object-cover">`
+                            }
                                     ${b.text ? `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4"><p class="text-white font-bold text-lg">${b.text}</p>${b.subtext ? `<p class="text-white/80 text-sm">${b.subtext}</p>` : ''}</div>` : ''}
                                     <div class="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onclick="toggleBannerActive(${b.id}, ${!b.is_active})" class="p-2 bg-white rounded-lg shadow hover:bg-gray-50" title="${b.is_active ? 'Деактивировать' : 'Активировать'}">
@@ -666,7 +692,7 @@
                                     </div>
                                 </div>
                             `).join('')
-                        }
+                    }
                     </div>
                 `;
                 lucide.createIcons();
@@ -1160,12 +1186,12 @@
             if (!confirm('⚠️ Вы уверены что хотите удалить ВСЕ заказы?\n\nЭто действие НЕЛЬЗЯ отменить!')) {
                 return;
             }
-            
+
             try {
                 const res = await adminFetch('/api/admin/orders/all', {
                     method: 'DELETE'
                 });
-                
+
                 if (res.count !== undefined) {
                     alert(`✅ Удалено заказов: ${res.count}`);
                     loadData('orders');
@@ -1289,7 +1315,7 @@
         function toggleBannerFileType(type) {
             const imageSection = document.getElementById('banner-image-section');
             const videoSection = document.getElementById('banner-video-section');
-            
+
             if (type === 'video') {
                 imageSection.classList.add('hidden');
                 videoSection.classList.remove('hidden');
@@ -1354,7 +1380,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     const mediaType = document.querySelector('input[name="banner-media-type"]:checked').value;
-                    
+
                     if (mediaType === 'video') {
                         document.getElementById('banner-video-url').value = data.url;
                     } else {
@@ -1437,7 +1463,7 @@
 
         async function deleteBanner(id) {
             if (!confirm("Удалить этот баннер?")) return;
-            
+
             try {
                 const res = await adminFetch(`/api/admin/banners/${id}`, { method: 'DELETE' });
                 if (res.ok) {
@@ -1465,13 +1491,13 @@
                             link: banner.link,
                             is_active: isActive
                         };
-                        
+
                         const updateRes = await adminFetch(`/api/admin/banners/${id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(bannerData)
                         });
-                        
+
                         if (updateRes.ok) {
                             loadData('marketing');
                         } else {
@@ -1487,7 +1513,8 @@
     </script>
 
     <!-- Revenue Modal -->
-    <div id="revenue-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+    <div id="revenue-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
                 <div>
@@ -1520,7 +1547,8 @@
     </div>
 
     <!-- Orders Modal -->
-    <div id="orders-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+    <div id="orders-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
                 <div>
@@ -1550,7 +1578,8 @@
     </div>
 
     <!-- Customers Modal -->
-    <div id="customers-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
+    <div id="customers-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white p-6 flex justify-between items-center">
                 <div>
@@ -1575,7 +1604,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Открыть главную страницу в новой вкладке
         function openSite() {
@@ -1583,7 +1612,7 @@
         }
 
         // ========== Модальные окна для статистики ==========
-        
+
         // Доходы
         async function openRevenueModal() {
             try {
@@ -1638,7 +1667,7 @@
 
                 document.getElementById('orders-modal').classList.remove('hidden');
                 document.getElementById('orders-total').textContent = orders.length;
-                
+
                 const statusList = document.getElementById('orders-status-list');
                 const statusNames = {
                     'pending': 'В обработке',
@@ -1648,14 +1677,14 @@
                     'completed': 'Выполнен',
                     'cancelled': 'Отменен'
                 };
-                
+
                 statusList.innerHTML = Object.entries(statusCounts).map(([status, count]) => `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                         <span class="text-gray-700">${statusNames[status] || status}</span>
                         <span class="font-bold text-rose-600">${count}</span>
                     </div>
                 `).join('');
-                
+
                 // Последние 10 заказов
                 const recentOrders = orders.slice(-10).reverse();
                 const ordersList = document.getElementById('orders-recent-list');
@@ -1688,13 +1717,13 @@
                 const modal = document.getElementById('customers-modal');
                 const list = document.getElementById('customers-list');
                 const total = document.getElementById('customers-total');
-                
+
                 if (!modal || !list || !total) {
                     console.error('Modal elements not found');
                     alert('Ошибка: элементы модального окна не найдены');
                     return;
                 }
-                
+
                 modal.classList.remove('hidden');
                 total.textContent = customers.length;
 
