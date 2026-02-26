@@ -357,13 +357,106 @@
     #hero-banner {
         height: 100vh !important;
     }
-    
+
     #hero-banner h1 {
         font-size: 2rem !important;
     }
-    
+
     /* Hide mobile menu in landscape */
     .mobile-bottom-menu {
         display: none !important;
+    }
+}
+
+/* ============================================
+   VERY SMALL SCREENS (< 360px)
+   ============================================ */
+@media (max-width: 360px) {
+    #hero-banner h1 {
+        font-size: 1.75rem !important;
+    }
+
+    #hero-banner .text-xl {
+        font-size: 0.875rem !important;
+    }
+
+    .text-3xl {
+        font-size: 1.25rem !important;
+    }
+
+    .text-2xl {
+        font-size: 1.125rem !important;
+    }
+
+    /* Single column for everything */
+    .grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Smaller buttons */
+    button, .btn {
+        padding: 0.5rem 1rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Compact header */
+    #main-header .h-16 {
+        height: 3rem !important;
+    }
+}
+
+/* ============================================
+   IPHONE SE / SMALL PHONES
+   ============================================ */
+@media (max-width: 375px) {
+    #products-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    #categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============================================
+   ADMIN LOGIN - Mobile Adaptation
+   ============================================ */
+@media (max-width: 480px) {
+    #login-overlay .max-w-md {
+        max-width: 100% !important;
+        margin: 0 0.5rem;
+    }
+
+    #login-overlay h2 {
+        font-size: 1.25rem !important;
+    }
+
+    #login-overlay p {
+        font-size: 0.75rem !important;
+    }
+
+    #login-overlay input {
+        font-size: 0.875rem !important;
+    }
+
+    #login-overlay button {
+        font-size: 0.875rem !important;
+    }
+}
+
+/* Landscape mode on mobile - adjust login */
+@media (max-height: 500px) and (orientation: landscape) {
+    #login-overlay {
+        overflow-y: auto;
+        padding: 1rem;
+    }
+
+    #login-overlay .bg-white {
+        padding: 1rem !important;
+        margin: auto;
+    }
+
+    #login-overlay .space-y-4 {
+        gap: 0.5rem !important;
     }
 }

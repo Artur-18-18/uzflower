@@ -265,5 +265,108 @@
     "free_delivery": "Бесплатная доставка от",
     "delivery_time": "Время доставки",
     "payment_methods": "Способы оплаты"
+  },
+  "admin": {
+    "title": "Панель администратора",
+    "subtitle": "Управление магазином uzflower",
+    "login_title": "Вход в панель управления",
+    "login_subtitle": "Введите учетные данные администратора",
+    "email": "Email",
+    "password": "Пароль",
+    "login": "Войти",
+    "logout": "Выйти",
+    "view_site": "Смотреть сайт",
+    "tabs": {
+      "stats": "Статистика",
+      "products": "Товары",
+      "orders": "Заказы",
+      "delivery": "Доставка",
+      "reviews": "Отзывы",
+      "users": "Пользователи",
+      "banners": "Баннеры",
+      "promo": "Промокоды",
+      "settings": "Настройки"
+    },
+    "stats": {
+      "total_orders": "Всего заказов",
+      "total_revenue": "Общая выручка",
+      "total_products": "Всего товаров",
+      "total_users": "Всего пользователей",
+      "pending_orders": "Ожидают",
+      "completed_orders": "Выполнены"
+    },
+    "products": {
+      "add_new": "Добавить товар",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "name": "Название",
+      "price": "Цена",
+      "stock": "Остаток",
+      "category": "Категория",
+      "description": "Описание",
+      "composition": "Состав",
+      "images": "Изображения",
+      "no_products": "Товары не найдены",
+      "confirm_delete": "Вы уверены что хотите удалить этот товар?",
+      "save": "Сохранить товар",
+      "cancel": "Отмена"
+    },
+    "orders": {
+      "no_orders": "Заказов нет",
+      "order_number": "Заказ №",
+      "customer": "Клиент",
+      "total": "Сумма",
+      "status": "Статус",
+      "date": "Дата",
+      "details": "Детали",
+      "update_status": "Обновить статус",
+      "mark_completed": "Отметить как выполненный",
+      "mark_cancelled": "Отменить заказ"
+    },
+    "users": {
+      "no_users": "Пользователи не найдены",
+      "name": "Имя",
+      "email": "Email",
+      "phone": "Телефон",
+      "orders": "Заказы",
+      "registered": "Зарегистрирован",
+      "block": "Заблокировать",
+      "unblock": "Разблокировать"
+    },
+    "reviews": {
+      "no_reviews": "Отзывов нет",
+      "author": "Автор",
+      "rating": "Рейтинг",
+      "text": "Текст",
+      "approve": "Одобрить",
+      "reject": "Отклонить",
+      "pending": "Ожидают модерации"
+    },
+    "banners": {
+      "add_new": "Добавить баннер",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "image_url": "URL изображения",
+      "video_url": "URL видео",
+      "link": "Ссылка",
+      "text": "Текст",
+      "active": "Активен",
+      "inactive": "Не активен"
+    },
+    "promo_codes": {
+      "add_new": "Добавить промокод",
+      "code": "Код",
+      "discount": "Скидка",
+      "active": "Активен",
+      "expired": "Истёк"
+    },
+    "notifications": {
+      "product_added": "Товар добавлен",
+      "product_updated": "Товар обновлён",
+      "product_deleted": "Товар удалён",
+      "order_updated": "Заказ обновлён",
+      "settings_saved": "Настройки сохранены",
+      "error": "Произошла ошибка"
+    }
   }
 }

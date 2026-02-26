@@ -368,6 +368,20 @@
     .favorites-overlay.active {
         display: block;
     }
+
+    /* Language Switcher in Mobile Menu */
+    .mobile-bottom-menu .lang-switcher {
+        position: absolute;
+        top: 8px;
+        right: 50%;
+        transform: translateX(50%);
+        z-index: 4;
+    }
+
+    .mobile-bottom-menu .lang-btn {
+        font-size: 16px;
+        padding: 4px 8px;
+    }
 }
 
 @media (max-width: 480px) {

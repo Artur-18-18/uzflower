@@ -266,5 +266,108 @@
     "free_delivery": "Dan boshlab bepul yetkazib berish",
     "delivery_time": "Yetkazib berish vaqti",
     "payment_methods": "To'lov usullari"
+  },
+  "admin": {
+    "title": "Admin panel",
+    "subtitle": "uzflower do'konini boshqarish",
+    "login_title": "Boshqaruv paneliga kirish",
+    "login_subtitle": "Admin ma'lumotlarini kiriting",
+    "email": "Email",
+    "password": "Parol",
+    "login": "Kirish",
+    "logout": "Chiqish",
+    "view_site": "Saytni ko'rish",
+    "tabs": {
+      "stats": "Statistika",
+      "products": "Mahsulotlar",
+      "orders": "Buyurtmalar",
+      "delivery": "Yetkazib berish",
+      "reviews": "Sharhlar",
+      "users": "Foydalanuvchilar",
+      "banners": "Bannerlar",
+      "promo": "Promokodlar",
+      "settings": "Sozlamalar"
+    },
+    "stats": {
+      "total_orders": "Jami buyurtmalar",
+      "total_revenue": "Umumiy daromad",
+      "total_products": "Jami mahsulotlar",
+      "total_users": "Jami foydalanuvchilar",
+      "pending_orders": "Kutilmoqda",
+      "completed_orders": "Bajarildi"
+    },
+    "products": {
+      "add_new": "Mahsulot qo'shish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "name": "Nomi",
+      "price": "Narx",
+      "stock": "Ombor",
+      "category": "Kategoriya",
+      "description": "Tavsif",
+      "composition": "Tarkibi",
+      "images": "Rasmlar",
+      "no_products": "Mahsulotlar topilmadi",
+      "confirm_delete": "Haqiqatan ham bu mahsulotni o'chirmoqchimisiz?",
+      "save": "Mahsulotni saqlash",
+      "cancel": "Bekor qilish"
+    },
+    "orders": {
+      "no_orders": "Buyurtmalar yo'q",
+      "order_number": "Buyurtma №",
+      "customer": "Mijoz",
+      "total": "Summa",
+      "status": "Holat",
+      "date": "Sana",
+      "details": "Tafsilotlar",
+      "update_status": "Holatni yangilash",
+      "mark_completed": "Bajarildi deb belgilash",
+      "mark_cancelled": "Buyurtmani bekor qilish"
+    },
+    "users": {
+      "no_users": "Foydalanuvchilar topilmadi",
+      "name": "Ism",
+      "email": "Email",
+      "phone": "Telefon",
+      "orders": "Buyurtmalar",
+      "registered": "Ro'yxatdan o'tgan",
+      "block": "Bloklash",
+      "unblock": "Blokdan chiqarish"
+    },
+    "reviews": {
+      "no_reviews": "Sharhlar yo'q",
+      "author": "Muallif",
+      "rating": "Reyting",
+      "text": "Matn",
+      "approve": "Tasdiqlash",
+      "reject": "Rad etish",
+      "pending": "Moderatsiya kutilmoqda"
+    },
+    "banners": {
+      "add_new": "Banner qo'shish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "image_url": "Rasm URL",
+      "video_url": "Video URL",
+      "link": "Havola",
+      "text": "Matn",
+      "active": "Faol",
+      "inactive": "Faol emas"
+    },
+    "promo_codes": {
+      "add_new": "Promokod qo'shish",
+      "code": "Kod",
+      "discount": "Chegirma",
+      "active": "Faol",
+      "expired": "Muddati tugagan"
+    },
+    "notifications": {
+      "product_added": "Mahsulot qo'shildi",
+      "product_updated": "Mahsulot yangilandi",
+      "product_deleted": "Mahsulot o'chirildi",
+      "order_updated": "Buyurtma yangilandi",
+      "settings_saved": "Sozlamalar saqlandi",
+      "error": "Xatolik yuz berdi"
+    }
   }
 }

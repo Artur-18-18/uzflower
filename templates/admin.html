@@ -7,6 +7,7 @@
     <title>Панель администратора - UzFlower</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/static/js/i18n.js"></script>
     <style>
         .animate-spin {
             animation: spin 1s linear infinite;
@@ -21,6 +22,40 @@
                 transform: rotate(360deg);
             }
         }
+        
+        /* Language Switcher Styles */
+        .lang-switcher {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .lang-buttons {
+          display: flex;
+          gap: 4px;
+        }
+
+        .lang-btn {
+          background: transparent;
+          border: 2px solid transparent;
+          border-radius: 8px;
+          padding: 6px 10px;
+          cursor: pointer;
+          font-size: 18px;
+          transition: all 0.3s ease;
+          opacity: 0.6;
+        }
+
+        .lang-btn:hover {
+          opacity: 1;
+          background: rgba(224, 27, 78, 0.1);
+        }
+
+        .lang-btn.active {
+          opacity: 1;
+          border-color: #e01b4e;
+          background: rgba(224, 27, 78, 0.1);
+        }
     </style>
 </head>
 
@@ -28,29 +63,29 @@
 
     <!-- Login админка -->
     <div id="login-overlay"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-rose-100 rounded-full mb-4">
-                    <i data-lucide="lock" class="w-8 h-8 text-rose-600"></i>
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center hidden p-3 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <div class="text-center mb-6 sm:mb-8">
+                <div class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-rose-100 rounded-full mb-4">
+                    <i data-lucide="lock" class="w-7 h-7 sm:w-8 sm:h-8 text-rose-600"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-900">Вход в панель управления</h2>
-                <p class="text-gray-500 mt-2">Введите учетные данные администратора</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900" data-i18n="admin.login_title">Вход в панель управления</h2>
+                <p class="text-sm sm:text-base text-gray-500 mt-2" data-i18n="admin.login_subtitle">Введите учетные данные администратора</p>
             </div>
 
-            <form id="login-form" onsubmit="handleAdminLogin(event)" class="space-y-6">
+            <form id="login-form" onsubmit="handleAdminLogin(event)" class="space-y-4 sm:space-y-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="admin.email">Email</label>
                     <input type="email" id="login-email" required placeholder="admin@test.com"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all">
+                        class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all text-sm sm:text-base">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Пароль</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="admin.password">Пароль</label>
                     <input type="password" id="login-password" required placeholder="••••••••"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all">
+                        class="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none transition-all text-sm sm:text-base">
                 </div>
-                <button type="submit"
-                    class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg active:scale-[0.98]">
+                <button type="submit" data-i18n="admin.login"
+                    class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl transition-all shadow-lg active:scale-[0.98] text-sm sm:text-base">
                     Войти
                 </button>
             </form>
@@ -59,19 +94,23 @@
 
     <!--админка -->
     <div class="bg-gradient-to-r from-rose-500 to-pink-600 text-white py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold">Панель администратора</h1>
-                <p class="text-white/90 mt-2">Управление магазином uzflower</p>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold" data-i18n="admin.title">Панель администратора</h1>
+                    <p class="text-white/90 mt-2" data-i18n="admin.subtitle">Управление магазином uzflower</p>
+                </div>
+                <!-- Language Switcher -->
+                <div class="lang-switcher"></div>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="openSite()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
                     <i data-lucide="external-link" class="w-5 h-5"></i>
-                    <span class="font-medium">Смотреть сайт</span>
+                    <span class="font-medium" data-i18n="admin.view_site">Смотреть сайт</span>
                 </button>
                 <button onclick="logoutAdmin()" class="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all backdrop-blur-sm">
                     <i data-lucide="log-out" class="w-5 h-5"></i>
-                    <span class="font-medium">Выйти</span>
+                    <span class="font-medium" data-i18n="admin.logout">Выйти</span>
                 </button>
             </div>
         </div>
@@ -85,41 +124,41 @@
                 <div class="flex overflow-x-auto" id="tabs-container">
                     <button onclick="switchTab('stats')" id="tab-stats"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600">
-                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Статистика
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span data-i18n="admin.tabs.stats">Статистика</span>
                     </button>
                     <button onclick="switchTab('products')" id="tab-products"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="package" class="w-5 h-5"></i> Товары
+                        <i data-lucide="package" class="w-5 h-5"></i> <span data-i18n="admin.tabs.products">Товары</span>
                     </button>
                     <button onclick="switchTab('orders')" id="tab-orders"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> Заказы
+                        <i data-lucide="shopping-bag" class="w-5 h-5"></i> <span data-i18n="admin.tabs.orders">Заказы</span>
                     </button>
                     <button onclick="switchTab('delivery')" id="tab-delivery"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="truck" class="w-5 h-5"></i> Доставка
+                        <i data-lucide="truck" class="w-5 h-5"></i> <span data-i18n="admin.tabs.delivery">Доставка</span>
                     </button>
                     <button onclick="switchTab('marketing')" id="tab-marketing"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="megaphone" class="w-5 h-5"></i> Маркетинг
+                        <i data-lucide="megaphone" class="w-5 h-5"></i> <span data-i18n="admin.tabs.banners">Баннеры</span>
                     </button>
                     <button onclick="switchTab('customers')" id="tab-customers"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="users" class="w-5 h-5"></i> Клиенты
+                        <i data-lucide="users" class="w-5 h-5"></i> <span data-i18n="admin.tabs.users">Клиенты</span>
                     </button>
                     <button onclick="switchTab('support')" id="tab-support"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900 relative">
-                        <i data-lucide="headset" class="w-5 h-5"></i> Поддержка
+                        <i data-lucide="headset" class="w-5 h-5"></i> <span data-i18n="admin.tabs.reviews">Отзывы</span>
                         <span id="support-badge"
                             class="absolute top-2 right-2 w-5 h-5 bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center hidden">0</span>
                     </button>
                     <button onclick="switchTab('categories')" id="tab-categories"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="layers" class="w-5 h-5"></i> Категории
+                        <i data-lucide="layers" class="w-5 h-5"></i> <span data-i18n="categories.title">Категории</span>
                     </button>
                     <button onclick="switchTab('promo')" id="tab-promo"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
-                        <i data-lucide="ticket" class="w-5 h-5"></i> Промокоды
+                        <i data-lucide="ticket" class="w-5 h-5"></i> <span data-i18n="admin.tabs.promo">Промокоды</span>
                     </button>
                 </div>
             </div>
@@ -415,6 +454,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Initialize i18n translations
+            if (window.i18n) {
+                i18n.init();
+            }
+            
             if (!getAuthToken()) {
                 showLogin();
                 lucide.createIcons(); // To show lock icon in login
@@ -453,6 +497,11 @@
             activeBtn.className = 'tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-rose-600 border-b-2 border-rose-600';
 
             loadData(tab);
+            
+            // Re-apply translations after switching tabs
+            if (window.i18n) {
+                i18n.translatePage();
+            }
         }
 
         async function loadData(tab) {
