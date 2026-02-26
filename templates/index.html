@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/mobile-menu.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
+    <script src="/static/js/i18n.js"></script>
     <style>
         /* Fixed Header Styles */
         #main-header {
@@ -378,24 +379,30 @@
 
                 <nav class="hidden lg:flex items-center gap-8 ml-8">
                     <a href="/" onclick="scrollToTop(event)"
-                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1">Главная</a>
+                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
+                        data-i18n="header.home">Главная</a>
                     <a href="#catalog"
-                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1">Каталог</a>
+                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
+                        data-i18n="header.catalog">Каталог</a>
                     <a href="#footer"
-                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1">Контакты</a>
+                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
+                        data-i18n="header.contacts">Контакты</a>
                 </nav>
 
                 <div class="hidden md:flex flex-1 max-w-xl mx-8">
                     <div class="relative w-full">
                         <i data-lucide="search"
                             class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-                        <input type="text" id="search-input" placeholder="Поиск цветов..."
+                        <input type="text" id="search-input" data-i18n-placeholder="header.search_placeholder" placeholder="Поиск цветов..."
                             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                             oninput="handleSearch()">
                     </div>
                 </div>
 
                 <div class="flex items-center gap-4">
+                    <!-- Language Switcher -->
+                    <div class="lang-switcher hidden sm:flex"></div>
+                    
                     <button onclick="toggleFavorites()"
                         class="relative p-2 text-gray-600 hover:text-rose-600 transition-all">
                         <i data-lucide="heart" class="w-6 h-6"></i>
@@ -429,15 +436,17 @@
                 </div>
                 <div
                     class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white">
-                    <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl">Весенняя Коллекция</h1>
-                    <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg">Создайте незабываемые
+                    <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl" data-i18n="hero.title">Весенняя Коллекция</h1>
+                    <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg" data-i18n="hero.subtitle">Создайте незабываемые
                         моменты с нашими авторскими букетами</p>
                     <div class="flex gap-4">
                         <button onclick="scrollToCatalog()"
-                            class="px-10 py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-lg shadow-xl">Выбрать
+                            class="px-10 py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-lg shadow-xl"
+                            data-i18n="hero.cta_primary">Выбрать
                             букет</button>
                         <button onclick="toggleCustomBouquet()"
-                            class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg">Собрать
+                            class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg"
+                            data-i18n="hero.cta_secondary">Собрать
                             свой</button>
                     </div>
                 </div>
@@ -447,7 +456,7 @@
             <section class="py-20 bg-white">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-16">
-                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4">Наши Категории</h2>
+                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="categories.title">Наши Категории</h2>
                         <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
                     </div>
                     <div id="categories-grid" class="grid grid-cols-2 lg:grid-cols-6 gap-6">
@@ -461,12 +470,12 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-end mb-12">
                         <div>
-                            <h2 class="text-4xl font-serif font-bold text-gray-900 mb-2">Популярные букеты</h2>
-                            <p class="text-gray-500">То, что чаще всего выбирают наши клиенты</p>
+                            <h2 class="text-4xl font-serif font-bold text-gray-900 mb-2" data-i18n="products.popular">Популярные букеты</h2>
+                            <p class="text-gray-500" data-i18n="products.popular_subtitle">То, что чаще всего выбирают наши клиенты</p>
                         </div>
                         <button onclick="scrollToCatalog()"
                             class="text-rose-600 font-bold flex items-center gap-2 hover:gap-3 transition-all">
-                            Весь каталог <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            <span data-i18n="products.view_all">Весь каталог</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>
                         </button>
                     </div>
                     <div id="popular-products" class="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
@@ -484,32 +493,32 @@
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="truck" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2">Быстрая доставка</h3>
-                            <p class="text-gray-500 text-sm">Привезем букет за 60 минут в любую точку города</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fast_delivery.title">Быстрая доставка</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.fast_delivery.description">Привезем букет за 60 минут в любую точку города</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="flower-2" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2">Свежие цветы</h3>
-                            <p class="text-gray-500 text-sm">Прямые поставки каждое утро — гарантия свежести</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fresh_flowers.title">Свежие цветы</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.fresh_flowers.description">Прямые поставки каждое утро — гарантия свежести</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="camera" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2">Фото перед отправкой</h3>
-                            <p class="text-gray-500 text-sm">Пришлем фото готового букета в Telegram/WhatsApp</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.photo_before_send.title">Фото перед отправкой</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.photo_before_send.description">Пришлем фото готового букета в Telegram/WhatsApp</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="credit-card" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2">Удобная оплата</h3>
-                            <p class="text-gray-500 text-sm">Оплата картой на сайте или наличными курьеру</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.convenient_payment.title">Удобная оплата</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.convenient_payment.description">Оплата картой на сайте или наличными курьеру</p>
                         </div>
                     </div>
                 </div>
@@ -578,13 +587,13 @@
             <section id="reviews-section" class="py-16 bg-emerald-50 border-t">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-12">
-                        <h2 class="text-3xl font-bold text-gray-900 mb-2">Отзывы клиентов 💛</h2>
-                        <p class="text-gray-600">Что говорят наши покупатели</p>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="reviews.title">Отзывы клиентов 💛</h2>
+                        <p class="text-gray-600" data-i18n="reviews.subtitle">Что говорят наши покупатели</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="reviews-display">
                         <div class="col-span-full text-center py-12">
                             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
-                            <p class="text-gray-500 mt-4">Загрузка отзывов...</p>
+                            <p class="text-gray-500 mt-4" data-i18n="reviews.loading">Загрузка отзывов...</p>
                         </div>
                     </div>
                 </div>

@@ -14,6 +14,12 @@ function formatPrice(price) {
 
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
+    
+    // Инициализация системы переводов
+    if (window.i18n) {
+        i18n.init();
+    }
+    
     loadUserFromStorage();
     loadCategories();
     loadBanners();

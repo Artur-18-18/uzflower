@@ -1,20 +1,22 @@
-import os
+import base64
+import hashlib
+import json
 import logging
+import os
+import shutil
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
-from fastapi import FastAPI, Request, HTTPException, Depends, status, File, UploadFile, Form
-from fastapi.responses import HTMLResponse, JSONResponse
-import shutil
+
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, Text, ForeignKey, DateTime
-from sqlalchemy.orm import sessionmaker, Session, relationship, DeclarativeBase
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-import hashlib
-from contextlib import asynccontextmanager
-from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 
 # ============================================================
 # Настройка логгера — все события пишутся в server_debug.log
@@ -31,248 +33,37 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- Database Setup ---
-SQLALCHEMY_DATABASE_URL = "sqlite:///./uzflower.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Импортируем модели и зависимости из app.database
+# Для тестов DATABASE_URL переопределяется через переменную окружения
+from app.database import (
+    Base,
+    BonusTransaction,
+    Banner,
+    Category,
+    Courier,
+    DeliveryZone,
+    Favorite,
+    Notification,
+    Order,
+    Product,
+    ProductImage,
+    PromoCode,
+    Reminder,
+    Review,
+    ReviewImage,
+    SavedCard,
+    SessionLocal,
+    SupportMessage,
+    User,
+    UserAddress,
+    engine,
+    get_db,
+    init_db_tables,
+)
 
-class Base(DeclarativeBase):
-    pass
-
-class Category(Base):
-    __tablename__ = "categories"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
-    slug = Column(String, unique=True, index=True)
-    products = relationship("Product", back_populates="category")
-
-class Courier(Base):
-    __tablename__ = "couriers"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    phone = Column(String)
-    status = Column(String, default="active") # active, busy, off
-
-class DeliveryZone(Base):
-    __tablename__ = "delivery_zones"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True)
-    price = Column(Float)
-
-class Banner(Base):
-    __tablename__ = "banners"
-    id = Column(Integer, primary_key=True, index=True)
-    image_url = Column(String, nullable=True)
-    video_url = Column(String, nullable=True)
-    media_type = Column(String, default="image")  # "image" или "video"
-    link = Column(String, nullable=True)
-    text = Column(String, nullable=True)  # Сезонный текст на баннере
-    subtext = Column(String, nullable=True)  # Подзаголовок
-    is_active = Column(Boolean, default=True)
-
-class ProductImage(Base):
-    __tablename__ = "product_images"
-    id = Column(Integer, primary_key=True, index=True)
-    product_id = Column(Integer, ForeignKey("products.id"))
-    url = Column(String)
-    product = relationship("Product", back_populates="images")
-
-class PromoCode(Base):
-    __tablename__ = "promo_codes"
-    id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, unique=True, index=True)
-    discount_percent = Column(Integer)
-    is_active = Column(Boolean, default=True)
-
-# --- Models ---
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    full_name = Column(String)
-    phone = Column(String, nullable=True)
-    is_admin = Column(Boolean, default=False)
-    is_blocked = Column(Boolean, default=False)
-    bonus_points = Column(Integer, default=0)
-    image_url = Column(String, nullable=True)
-    orders = relationship("Order", back_populates="owner")
-
-class Product(Base):
-    __tablename__ = "products"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    price = Column(Float)
-    sale_price = Column(Float, nullable=True)
-    description = Column(Text, nullable=True)
-    composition = Column(Text, nullable=True)
-    image_url = Column(String, nullable=True) # Primary image
-    stock = Column(Integer, default=0)
-    is_sale = Column(Boolean, default=False)
-    is_featured = Column(Boolean, default=False)
-    is_popular = Column(Boolean, default=False)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
-    
-    # Size pricing
-    price_s = Column(Float, nullable=True)
-    price_m = Column(Float, nullable=True)
-    price_l = Column(Float, nullable=True)
-    
-    width = Column(Float, nullable=True)
-    height = Column(Float, nullable=True)
-
-    category = relationship("Category", back_populates="products")
-    images = relationship("ProductImage", back_populates="product")
-
-class Order(Base):
-    __tablename__ = "orders"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    total_amount = Column(Float)
-    status = Column(String, default="pending") # pending, processing, shipping, completed, cancelled
-    is_paid = Column(Boolean, default=False)
-    payment_method = Column(String, default="card")
-    courier_id = Column(Integer, nullable=True)
-    delivery_address = Column(String)
-    phone = Column(String)
-    items = Column(Text, nullable=True)
-    
-    delivery_date = Column(String, nullable=True)
-    delivery_time = Column(String, nullable=True)
-    postcard_text = Column(Text, nullable=True)
-    comment = Column(Text, nullable=True)
-    promo_code_used = Column(String, nullable=True)
-    
-    payment_status = Column(String, default="waiting") # waiting, payed, error
-    external_id = Column(String, nullable=True) # ID транзакции в Click/Payme
-    lat = Column(Float, nullable=True)
-    lng = Column(Float, nullable=True)
-    
-    created_at = Column(DateTime, default=datetime.utcnow)
-    owner = relationship("User", back_populates="orders")
-
-class Review(Base):
-    __tablename__ = "reviews"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    user_name = Column(String)
-    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
-    product_name = Column(String)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
-    text = Column(Text)
-    rating = Column(Integer)
-    images = relationship("ReviewImage", back_populates="review", cascade="all, delete-orphan")
-    is_approved = Column(Boolean, default=True)  # Модерация
-    is_verified_purchase = Column(Boolean, default=False)  # Проверенная покупка
-    created_at = Column(DateTime, default=datetime.utcnow)
-    user = relationship("User", back_populates="reviews")
-    product = relationship("Product", back_populates="reviews")
-    order = relationship("Order", back_populates="reviews")
-
-# Добавим relationships в существующие модели
-User.reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
-Product.reviews = relationship("Review", back_populates="product", cascade="all, delete-orphan")
-Order.reviews = relationship("Review", back_populates="order", cascade="all, delete-orphan")
-
-class SupportMessage(Base):
-    __tablename__ = "support_messages"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    message = Column(Text)
-    is_admin = Column(Boolean, default=False) # True if message is from admin
-    is_read = Column(Boolean, default=False)  # For notification tracking
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-# --- Profile Extended Models ---
-class UserAddress(Base):
-    __tablename__ = "user_addresses"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String, nullable=True)  # "Дом", "Работа", "Дача"
-    address = Column(String)
-    phone = Column(String)
-    recipient_name = Column(String)
-    lat = Column(Float, nullable=True)
-    lng = Column(Float, nullable=True)
-    is_default = Column(Boolean, default=False)
-    user = relationship("User", back_populates="addresses")
-
-class Favorite(Base):
-    __tablename__ = "favorites"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    product_id = Column(Integer, ForeignKey("products.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    user = relationship("User", back_populates="favorites")
-    product = relationship("Product", back_populates="favorites")
-
-class BonusTransaction(Base):
-    __tablename__ = "bonus_transactions"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    amount = Column(Integer)  # Положительный - начисление, отрицательный - списание
-    description = Column(String)
-    order_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    user = relationship("User", back_populates="bonus_transactions")
-
-class Notification(Base):
-    __tablename__ = "notifications"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String)
-    message = Column(Text)
-    type = Column(String, default="info")  # info, order, promo, reminder
-    is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    user = relationship("User", back_populates="notifications")
-
-class Reminder(Base):
-    __tablename__ = "reminders"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    title = Column(String)
-    date = Column(String)  # YYYY-MM-DD
-    recipient_name = Column(String)
-    recipient_phone = Column(String, nullable=True)
-    is_recurring = Column(Boolean, default=False)
-    recurring_type = Column(String, nullable=True)  # yearly, monthly
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    user = relationship("User", back_populates="reminders")
-
-class SavedCard(Base):
-    __tablename__ = "saved_cards"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    card_last_four = Column(String)
-    card_type = Column(String)  # visa, mastercard, etc.
-    is_default = Column(Boolean, default=False)
-    user = relationship("User", back_populates="saved_cards")
-
-class ReviewImage(Base):
-    __tablename__ = "review_images"
-    id = Column(Integer, primary_key=True, index=True)
-    review_id = Column(Integer, ForeignKey("reviews.id"))
-    url = Column(String)
-    review = relationship("Review", back_populates="images")
-
-# Add relationships to User model
-User.addresses = relationship("UserAddress", back_populates="user", cascade="all, delete-orphan")
-User.favorites = relationship("Favorite", back_populates="user", cascade="all, delete-orphan")
-User.bonus_transactions = relationship("BonusTransaction", back_populates="user", cascade="all, delete-orphan")
-User.notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-User.reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
-User.saved_cards = relationship("SavedCard", back_populates="user", cascade="all, delete-orphan")
-Product.favorites = relationship("Favorite", back_populates="product", cascade="all, delete-orphan")
-
-Base.metadata.create_all(bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# ============================================================
+# Helper Functions
+# ============================================================
 
 def create_notification(db: Session, user_id: int, title: str, message: str, notification_type: str = "info"):
     """Создать уведомление для пользователя"""
@@ -285,21 +76,21 @@ def create_notification(db: Session, user_id: int, title: str, message: str, not
         )
         db.add(notification)
         db.commit()
-        logger.info(f"🔔 Уведомление создано для пользователя #{user_id}: {title}")
+        logger.info("🔔 Уведомление создано для пользователя #%s: %s", user_id, title)
     except Exception as e:
-        logger.error(f"Ошибка при создании уведомления: {e}")
+        logger.error("Ошибка при создании уведомления: %s", e)
         db.rollback()
 
-def add_bonus_points(db: Session, user_id: int, amount: int, description: str, order_id: int = None):
+def add_bonus_points(db: Session, user_id: int, amount: int, description: str, order_id: Optional[int] = None):
     """Начислить бонусы пользователю с созданием уведомления"""
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             return
-        
+
         # Начисляем бонусы
         user.bonus_points += amount
-        
+
         # Создаем запись о транзакции
         transaction = BonusTransaction(
             user_id=user_id,
@@ -308,7 +99,7 @@ def add_bonus_points(db: Session, user_id: int, amount: int, description: str, o
             order_id=order_id
         )
         db.add(transaction)
-        
+
         # Создаем уведомление
         create_notification(
             db=db,
@@ -317,11 +108,11 @@ def add_bonus_points(db: Session, user_id: int, amount: int, description: str, o
             message=f"{description}. Вам начислено {amount} бонусов",
             notification_type="bonus"
         )
-        
+
         db.commit()
-        logger.info(f"⭐ Начислено {amount} бонусов пользователю #{user_id}")
+        logger.info("⭐ Начислено %s бонусов пользователю #%s", amount, user_id)
     except Exception as e:
-        logger.error(f"Ошибка при начислении бонусов: {e}")
+        logger.error("Ошибка при начислении бонусов: %s", e)
         db.rollback()
 
 # --- Security ---
@@ -329,7 +120,7 @@ def add_bonus_points(db: Session, user_id: int, amount: int, description: str, o
 logging.getLogger("passlib").setLevel(logging.ERROR)
 
 pwd_context = CryptContext(
-    schemes=["bcrypt"], 
+    schemes=["bcrypt"],
     deprecated="auto",
     bcrypt__truncate_error=True
 )
@@ -502,12 +293,27 @@ class SavedCardCreate(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
-    db = SessionLocal()
+    # Используем db_module для поддержки переопределения в тестах
+    import app.database as db_module
+
+    db = db_module.SessionLocal()
 
     # --- Migrations: Add new columns if missing ---
     from sqlalchemy import inspect, text
-    inspector = inspect(engine)
+    from sqlalchemy.exc import NoSuchTableError
     
+    inspector = inspect(db_module.engine)
+
+    # Проверяем существует ли таблица users
+    try:
+        inspector.get_columns("users")
+    except NoSuchTableError:
+        # Таблицы не существуют - создаём их
+        # Это происходит в тестах где таблицы создаются через conftest
+        db.close()
+        yield
+        return
+
     # Users table
     user_cols = [c['name'] for c in inspector.get_columns("users")]
     if 'bonus_points' not in user_cols:
@@ -579,9 +385,9 @@ async def lifespan(app: FastAPI):
     # --- Seed Logic ---
     if db.query(User).count() == 0:
         admin = User(
-            email="admin@test.com", 
-            hashed_password=pwd_context.hash("admin123"), 
-            full_name="Администратор", 
+            email="admin@test.com",
+            hashed_password=pwd_context.hash("admin123"),
+            full_name="Администратор",
             is_admin=True
         )
         db.add(admin)
@@ -641,9 +447,9 @@ async def lifespan(app: FastAPI):
     try:
         # Check if tables exist by querying them
         db.execute(text("SELECT 1 FROM user_addresses LIMIT 1"))
-    except:
+    except Exception:
         # Tables don't exist - create them
-        Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=db_module.engine)
         db.commit()
 
     # --- Migrations for Reviews ---
@@ -691,10 +497,10 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not pwd_context.verify(user.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
-    
+
     token = create_access_token({"sub": db_user.email})
-    logger.info(f"🔐 Вход: {db_user.email} (admin={db_user.is_admin})")
-    
+    logger.info("🔐 Вход: %s (admin=%s)", db_user.email, db_user.is_admin)
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -758,7 +564,7 @@ async def update_profile(
     try:
         # Merge the object into this session
         current_user = db.merge(current_user)
-        
+
         update_data = profile_data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(current_user, key, value)
@@ -766,7 +572,7 @@ async def update_profile(
         db.commit()
         db.refresh(current_user)
 
-        logger.info(f"👤 Профиль обновлен: {current_user.email}")
+        logger.info("👤 Профиль обновлен: %s", current_user.email)
         return {
             "id": current_user.id,
             "email": current_user.email,
@@ -795,7 +601,7 @@ async def change_password(
         current_user.hashed_password = pwd_context.hash(password_data.new_password)
         db.commit()
 
-        logger.info(f"🔑 Пароль изменен для: {current_user.email}")
+        logger.info("🔑 Пароль изменен для: %s", current_user.email)
         return {"detail": "Password changed successfully"}
     finally:
         db.close()
@@ -832,7 +638,7 @@ async def upload_avatar(
         current_user.image_url = f"/static/uploads/avatars/{unique_filename}"
         db.commit()
 
-        logger.info(f"📷 Аватар загружен для: {current_user.email}")
+        logger.info("📷 Аватар загружен для: %s", current_user.email)
         return {"url": f"/static/uploads/avatars/{unique_filename}"}
     finally:
         db.close()
@@ -843,7 +649,7 @@ async def get_addresses(current_user: User = Depends(get_current_user)):
     """Получить все адреса пользователя"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     return [
         {
             "id": a.id,
@@ -865,16 +671,16 @@ async def add_address(
     """Добавить новый адрес"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
-    
+
     # Если адрес по умолчанию, сбросим у остальных
     if address_data.is_default:
         db.query(UserAddress).filter(
             UserAddress.user_id == current_user.id,
-            UserAddress.is_default == True
+            UserAddress.is_default.is_(True)
         ).update({"is_default": False})
-    
+
     new_address = UserAddress(
         user_id=current_user.id,
         **address_data.model_dump()
@@ -882,8 +688,8 @@ async def add_address(
     db.add(new_address)
     db.commit()
     db.refresh(new_address)
-    
-    logger.info(f"📍 Адрес добавлен: {address_data.address}")
+
+    logger.info("📍 Адрес добавлен: %s", address_data.address)
     return {
         "id": new_address.id,
         "title": new_address.title,
@@ -902,32 +708,32 @@ async def update_address(
     """Обновить адрес"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     address = db.query(UserAddress).filter(
         UserAddress.id == address_id,
         UserAddress.user_id == current_user.id
     ).first()
-    
+
     if not address:
         raise HTTPException(status_code=404, detail="Address not found")
-    
+
     update_dict = address_data.model_dump(exclude_unset=True)
-    
+
     # Если устанавливаем is_default, сбросим у остальных
     if update_dict.get("is_default"):
         db.query(UserAddress).filter(
             UserAddress.user_id == current_user.id,
-            UserAddress.is_default == True,
+            UserAddress.is_default.is_(True),
             UserAddress.id != address_id
         ).update({"is_default": False})
-    
+
     for key, value in update_dict.items():
         setattr(address, key, value)
-    
+
     db.commit()
     db.refresh(address)
-    
+
     return {
         "id": address.id,
         "title": address.title,
@@ -945,20 +751,20 @@ async def delete_address(
     """Удалить адрес"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     address = db.query(UserAddress).filter(
         UserAddress.id == address_id,
         UserAddress.user_id == current_user.id
     ).first()
-    
+
     if not address:
         raise HTTPException(status_code=404, detail="Address not found")
-    
+
     db.delete(address)
     db.commit()
-    
-    logger.info(f"🗑️ Адрес #{address_id} удален")
+
+    logger.info("🗑️ Адрес #%s удален", address_id)
     return {"detail": "Address deleted"}
 
 # --- Favorites API ---
@@ -1058,16 +864,16 @@ async def get_my_orders(current_user: User = Depends(get_current_user)):
     """Получить мои заказы"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     orders = db.query(Order).filter(Order.user_id == current_user.id).order_by(Order.created_at.desc()).all()
-    
+
     result = []
     for o in orders:
         courier = None
         if o.courier_id:
             courier = db.query(Courier).filter(Courier.id == o.courier_id).first()
-        
+
         result.append({
             "id": o.id,
             "total_amount": o.total_amount,
@@ -1085,7 +891,7 @@ async def get_my_orders(current_user: User = Depends(get_current_user)):
                 "phone": courier.phone
             } if courier else None
         })
-    
+
     return result
 
 @app.get("/api/profile/orders/{order_id}")
@@ -1096,20 +902,20 @@ async def get_order_detail(
     """Получить детали заказа"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     order = db.query(Order).filter(
         Order.id == order_id,
         Order.user_id == current_user.id
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     courier = None
     if order.courier_id:
         courier = db.query(Courier).filter(Courier.id == order.courier_id).first()
-    
+
     return {
         "id": order.id,
         "total_amount": order.total_amount,
@@ -1138,16 +944,16 @@ async def repeat_order(
     """Повторить заказ"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     order = db.query(Order).filter(
         Order.id == order_id,
         Order.user_id == current_user.id
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     # Создаем новый заказ с теми же данными
     new_order = Order(
         user_id=current_user.id,
@@ -1162,12 +968,12 @@ async def repeat_order(
         delivery_time=order.delivery_time,
         comment=order.comment
     )
-    
+
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
-    
-    logger.info(f"🔄 Заказ #{order_id} повторен как #{new_order.id}")
+
+    logger.info("🔄 Заказ #%s повторен как #%s", order_id, new_order.id)
     return {"id": new_order.id, "detail": "Order repeated"}
 
 @app.get("/api/profile/orders/{order_id}/receipt")
@@ -1178,16 +984,16 @@ async def get_order_receipt(
     """Получить чек заказа (для печати)"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     order = db.query(Order).filter(
         Order.id == order_id,
         Order.user_id == current_user.id
     ).first()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     # Возвращаем данные для чека
     return {
         "order_id": order.id,
@@ -1205,12 +1011,12 @@ async def get_bonus_balance(current_user: User = Depends(get_current_user)):
     """Получить баланс бонусов и историю"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     transactions = db.query(BonusTransaction).filter(
         BonusTransaction.user_id == current_user.id
     ).order_by(BonusTransaction.created_at.desc()).all()
-    
+
     return {
         "balance": current_user.bonus_points,
         "transactions": [
@@ -1229,12 +1035,12 @@ async def get_my_promocodes(current_user: User = Depends(get_current_user)):
     """Получить персональные промокоды"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     # Персональные промокоды можно хранить в отдельной таблице
     # Пока вернем все активные промокоды
-    promocodes = db.query(PromoCode).filter(PromoCode.is_active == True).all()
-    
+    promocodes = db.query(PromoCode).filter(PromoCode.is_active.is_(True)).all()
+
     return [
         {
             "id": p.id,
@@ -1250,17 +1056,17 @@ async def get_notifications(current_user: User = Depends(get_current_user)):
     """Получить уведомления"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     notifications = db.query(Notification).filter(
         Notification.user_id == current_user.id
     ).order_by(Notification.created_at.desc()).limit(50).all()
-    
+
     unread_count = db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == False
+        Notification.is_read.is_(False)
     ).count()
-    
+
     return {
         "unread_count": unread_count,
         "notifications": [
@@ -1283,19 +1089,19 @@ async def mark_notification_read(
     """Отметить уведомление как прочитанное"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     notification = db.query(Notification).filter(
         Notification.id == notification_id,
         Notification.user_id == current_user.id
     ).first()
-    
+
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    
+
     notification.is_read = True
     db.commit()
-    
+
     return {"detail": "Notification marked as read"}
 
 @app.post("/api/profile/notifications/read-all")
@@ -1309,7 +1115,7 @@ async def mark_all_notifications_read(
     db = SessionLocal()
     db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == False
+        Notification.is_read.is_(False)
     ).update({"is_read": True})
     db.commit()
 
@@ -1329,7 +1135,7 @@ async def clear_all_notifications(
     ).delete()
     db.commit()
 
-    logger.info(f"🗑️ Удалено {deleted_count} уведомлений для пользователя #{current_user.id}")
+    logger.info("🗑️ Удалено %s уведомлений для пользователя #%s", deleted_count, current_user.id)
     return {"detail": f"Deleted {deleted_count} notifications", "count": deleted_count}
 
 # --- Reminders API ---
@@ -1338,13 +1144,13 @@ async def get_reminders(current_user: User = Depends(get_current_user)):
     """Получить напоминания"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     reminders = db.query(Reminder).filter(
         Reminder.user_id == current_user.id,
-        Reminder.is_active == True
+        Reminder.is_active.is_(True)
     ).order_by(Reminder.date.asc()).all()
-    
+
     return [
         {
             "id": r.id,
@@ -1365,7 +1171,7 @@ async def add_reminder(
     """Добавить напоминание"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     new_reminder = Reminder(
         user_id=current_user.id,
@@ -1374,8 +1180,8 @@ async def add_reminder(
     db.add(new_reminder)
     db.commit()
     db.refresh(new_reminder)
-    
-    logger.info(f"⏰ Напоминание добавлено: {reminder_data.title}")
+
+    logger.info("⏰ Напоминание добавлено: %s", reminder_data.title)
     return {
         "id": new_reminder.id,
         "title": new_reminder.title,
@@ -1392,23 +1198,23 @@ async def update_reminder(
     """Обновить напоминание"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     reminder = db.query(Reminder).filter(
         Reminder.id == reminder_id,
         Reminder.user_id == current_user.id
     ).first()
-    
+
     if not reminder:
         raise HTTPException(status_code=404, detail="Reminder not found")
-    
+
     update_dict = reminder_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
         setattr(reminder, key, value)
-    
+
     db.commit()
     db.refresh(reminder)
-    
+
     return {
         "id": reminder.id,
         "title": reminder.title,
@@ -1424,20 +1230,20 @@ async def delete_reminder(
     """Удалить напоминание"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     reminder = db.query(Reminder).filter(
         Reminder.id == reminder_id,
         Reminder.user_id == current_user.id
     ).first()
-    
+
     if not reminder:
         raise HTTPException(status_code=404, detail="Reminder not found")
-    
+
     db.delete(reminder)
     db.commit()
-    
-    logger.info(f"🗑️ Напоминание #{reminder_id} удалено")
+
+    logger.info("🗑️ Напоминание #%s удалено", reminder_id)
     return {"detail": "Reminder deleted"}
 
 # --- Reviews API ---
@@ -1448,7 +1254,7 @@ async def get_saved_cards(current_user: User = Depends(get_current_user)):
     """Получить сохраненные карты"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     return [
         {
             "id": c.id,
@@ -1466,16 +1272,16 @@ async def add_saved_card(
     """Сохранить карту"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
-    
+
     # Если карта по умолчанию, сбросим у остальных
     if card_data.is_default:
         db.query(SavedCard).filter(
             SavedCard.user_id == current_user.id,
-            SavedCard.is_default == True
+            SavedCard.is_default.is_(True)
         ).update({"is_default": False})
-    
+
     new_card = SavedCard(
         user_id=current_user.id,
         **card_data.model_dump()
@@ -1483,7 +1289,7 @@ async def add_saved_card(
     db.add(new_card)
     db.commit()
     db.refresh(new_card)
-    
+
     return {
         "id": new_card.id,
         "card_last_four": new_card.card_last_four,
@@ -1498,19 +1304,19 @@ async def delete_saved_card(
     """Удалить сохраненную карту"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     db = SessionLocal()
     card = db.query(SavedCard).filter(
         SavedCard.id == card_id,
         SavedCard.user_id == current_user.id
     ).first()
-    
+
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
-    
+
     db.delete(card)
     db.commit()
-    
+
     return {"detail": "Card deleted"}
 
 # ============================================
@@ -1539,7 +1345,7 @@ async def delete_category(cat_id: int, db: Session = Depends(get_db), admin: Use
 # --- Promo API ---
 @app.get("/api/promo-codes/{code}")
 async def get_promo_code(code: str, db: Session = Depends(get_db)):
-    promo = db.query(PromoCode).filter(PromoCode.code == code, PromoCode.is_active == True).first()
+    promo = db.query(PromoCode).filter(PromoCode.code == code, PromoCode.is_active.is_(True)).first()
     if not promo:
         raise HTTPException(status_code=404, detail="Promo code not found or inactive")
     return promo
@@ -1592,7 +1398,7 @@ async def get_products(
 
         return query.all()
     except Exception as e:
-        logger.error(f"Ошибка при загрузке товаров: {e}")
+        logger.error("Ошибка при загрузке товаров: %s", e)
         raise
 
 @app.get("/api/admin/products")
@@ -1667,7 +1473,7 @@ async def get_reviews(
     """Получить отзывы (для главной страницы)"""
     query = db.query(Review)
     if approved_only:
-        query = query.filter(Review.is_approved == True)
+        query = query.filter(Review.is_approved.is_(True))
     return query.order_by(Review.created_at.desc()).limit(limit).all()
 
 @app.get("/api/profile/reviews")
@@ -1675,9 +1481,9 @@ async def get_my_reviews(current_user: User = Depends(get_current_user), db: Ses
     """Получить мои отзывы"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     reviews = db.query(Review).filter(Review.user_id == current_user.id).order_by(Review.created_at.desc()).all()
-    
+
     result = []
     for r in reviews:
         product = db.query(Product).filter(Product.id == r.product_id).first()
@@ -1693,7 +1499,7 @@ async def get_my_reviews(current_user: User = Depends(get_current_user), db: Ses
             "created_at": r.created_at.isoformat(),
             "images": [img.url for img in r.images]
         })
-    
+
     return result
 
 @app.post("/api/profile/reviews")
@@ -1748,12 +1554,12 @@ async def create_review(
     create_notification(
         db=db,
         user_id=current_user.id,
-        title="⭐ Отзыв оставлен",
-        message=f"Спасибо за ваш отзыв!",
+        title="⭐ Отзыв ост����влен",
+        message="Спасибо за ваш отзыв!",
         notification_type="info"
     )
 
-    logger.info(f"⭐ Отзыв создан: {current_user.email}")
+    logger.info("⭐ Отзыв создан: %s", current_user.email)
 
     return {
         "id": new_review.id,
@@ -1772,21 +1578,21 @@ async def update_review(
     """Обновить свой отзыв"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     review = db.query(Review).filter(Review.id == review_id, Review.user_id == current_user.id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     if text is not None:
         review.text = text
     if rating is not None:
         if rating < 1 or rating > 5:
             raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
         review.rating = rating
-    
+
     db.commit()
     db.refresh(review)
-    
+
     return {"detail": "Review updated"}
 
 @app.delete("/api/profile/reviews/{review_id}")
@@ -1798,22 +1604,22 @@ async def delete_review(
     """Удалить свой отзыв"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     review = db.query(Review).filter(Review.id == review_id, Review.user_id == current_user.id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     # Удаляем фото
     for img in review.images:
         try:
             os.remove(img.url.lstrip('/'))
-        except:
+        except OSError:
             pass
-    
+
     db.delete(review)
     db.commit()
-    
-    logger.info(f"🗑️ Отзыв #{review_id} удалён")
+
+    logger.info("🗑️ Отзыв #%s удалён", review_id)
     return {"detail": "Review deleted"}
 
 # --- Admin Reviews API ---
@@ -1840,11 +1646,11 @@ async def approve_review(
     review = db.query(Review).filter(Review.id == review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     review.is_approved = approved
     db.commit()
-    
-    logger.info(f"{'✅' if approved else '❌'} Отзыв #{review_id} {'одобрен' if approved else 'отклонён'}")
+
+    logger.info("%s Отзыв #%s %s", "✅" if approved else "❌", review_id, "одобрен" if approved else "отклонён")
     return {"detail": f"Review {'approved' if approved else 'rejected'}"}
 
 @app.delete("/api/admin/reviews/{review_id}")
@@ -1857,18 +1663,18 @@ async def admin_delete_review(
     review = db.query(Review).filter(Review.id == review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     # Удаляем фото
     for img in review.images:
         try:
             os.remove(img.url.lstrip('/'))
-        except:
+        except OSError:
             pass
-    
+
     db.delete(review)
     db.commit()
-    
-    logger.info(f"🗑️ Админ удалил отзыв #{review_id}")
+
+    logger.info("🗑️ Админ удалил отзыв #%s", review_id)
     return {"detail": "Review deleted"}
 
 # --- Orders API ---
@@ -1878,15 +1684,15 @@ async def get_orders(db: Session = Depends(get_db), admin: User = Depends(get_cu
     result = []
     for o in orders:
         user = db.query(User).filter(User.id == o.user_id).first()
-        
+
         # Парсим items из JSON строки в массив
         items_data = []
         if o.items:
             try:
                 items_data = json.loads(o.items)
-            except:
+            except json.JSONDecodeError:
                 items_data = o.items  # Если не JSON, оставляем как строку
-        
+
         # Получаем информацию о курьере
         courier_info = None
         if o.courier_id:
@@ -1897,7 +1703,7 @@ async def get_orders(db: Session = Depends(get_db), admin: User = Depends(get_cu
                     "name": courier.name,
                     "phone": courier.phone
                 }
-        
+
         result.append({
             "id": o.id,
             "user_id": o.user_id,
@@ -1929,7 +1735,7 @@ async def clear_all_orders(db: Session = Depends(get_db), admin: User = Depends(
     """Удалить все заказы (админ)"""
     deleted_count = db.query(Order).delete()
     db.commit()
-    logger.info(f"🗑️ Удалено {deleted_count} заказов администратором")
+    logger.info("🗑️ Удалено %s заказов администратором", deleted_count)
     return {"detail": f"Deleted {deleted_count} orders", "count": deleted_count}
 
 
@@ -1943,12 +1749,13 @@ async def create_order(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
-        logger.info(f"📦 Новый заказ от user_id={current_user.id} | Телефон: {order.phone} | Адрес: {order.delivery_address} | Сумма: {order.total_amount}")
+        logger.info("📦 Новый заказ от user_id=%s | Телефон: %s | Адрес: %s | Сумма: %s",
+                    current_user.id, order.phone, order.delivery_address, order.total_amount)
         new_order = Order(**order.model_dump(), user_id=current_user.id)
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
-        
+
         # Создаем уведомление о заказе
         create_notification(
             db=db,
@@ -1957,7 +1764,7 @@ async def create_order(
             message=f"Ваш заказ #{new_order.id} на сумму {new_order.total_amount} сум принят в обработку",
             notification_type="order"
         )
-        
+
         # Начисляем бонусы (10% от суммы заказа)
         bonus_amount = int(new_order.total_amount * 0.1)
         if bonus_amount > 0:
@@ -1968,34 +1775,34 @@ async def create_order(
                 description=f"Бонусы за заказ #{new_order.id}",
                 order_id=new_order.id
             )
-        
-        logger.info(f"✅ Заказ #{new_order.id} успешно создан")
+
+        logger.info("✅ Заказ #%s успешно создан", new_order.id)
         return new_order
     except Exception as e:
-        logger.error(f"❌ ОШИБКА при создании заказа (user_id={current_user.id}, phone={order.phone}): {str(e)}")
+        logger.error("❌ ОШИБКА при создании заказа (user_id=%s, phone=%s): %s",
+                     current_user.id, order.phone, str(e))
         raise HTTPException(status_code=500, detail="Ошибка на стороне сервера. Попробуйте ещё раз.")
 
-import base64
 
 @app.get("/api/payment/create-link/{order_id}")
 async def create_payment_link(order_id: int, method: str, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(404, "Order not found")
-    
+
     amount = order.total_amount
     if method == "click":
         # Click link generation
         url = f"https://my.click.uz/services/pay?service_id={CLICK_SERVICE_ID}&merchant_id={CLICK_MERCHANT_ID}&amount={amount}&transaction_param={order.id}"
         return {"url": url}
-    
+
     elif method == "payme":
         # Payme link generation (base64 params)
         params = f"m={PAYME_MERCHANT_ID};ac.order_id={order.id};a={int(amount * 100)}"
         encoded = base64.b64encode(params.encode()).decode()
         url = f"https://checkout.paycom.uz/{encoded}"
         return {"url": url}
-    
+
     raise HTTPException(400, "Unsupported payment method")
 
 # --- Click Callback Handler ---
@@ -2003,10 +1810,9 @@ async def create_payment_link(order_id: int, method: str, db: Session = Depends(
 @app.get("/api/payment/click/callback")
 async def click_callback(request: Request, db: Session = Depends(get_db)):
     params = await request.form() if request.method == "POST" else request.query_params
-    
+
     click_trans_id = params.get("click_trans_id")
     service_id = params.get("service_id")
-    click_paydoc_id = params.get("click_paydoc_id")
     merchant_trans_id = params.get("merchant_trans_id")
     amount = params.get("amount")
     action = params.get("action")
@@ -2017,13 +1823,13 @@ async def click_callback(request: Request, db: Session = Depends(get_db)):
 
     # Verify signature
     my_sign = hashlib.md5(f"{click_trans_id}{service_id}{CLICK_SECRET_KEY}{merchant_trans_id}{amount}{action}{sign_time}".encode()).hexdigest()
-    
+
     if my_sign != sign_string:
         return {"error": "-1", "error_note": "SIGN CHECK FAILED"}
 
     order_id = int(merchant_trans_id)
     order = db.query(Order).filter(Order.id == order_id).first()
-    
+
     if not order:
         return {"error": "-5", "error_note": "ORDER NOT FOUND"}
 
@@ -2037,7 +1843,7 @@ async def click_callback(request: Request, db: Session = Depends(get_db)):
             "error": "0",
             "error_note": "Success"
         }
-    
+
     elif action == "1": # Complete
         if error == "0":
             order.payment_status = "payed"
@@ -2064,12 +1870,11 @@ async def payme_callback(request: Request, db: Session = Depends(get_db)):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Basic "):
         return {"error": {"code": -32504, "message": "Error Auth"}}
-    
+
     # Payme logic is complex with methods like CheckPerformTransaction, CreateTransaction, etc.
     # Here is a placeholder for basic flow alignment
     body = await request.json()
-    method = body.get("method")
-    
+
     # We will implement full Payme RPC logic if needed, but for now, we focus on the flow
     return {"result": {"allow": True}}
 
@@ -2115,7 +1920,7 @@ async def update_order_status(order_id: int, status_data: dict, db: Session = De
         existing_notification.is_read = False  # Помечаем как непрочитанное
         existing_notification.created_at = datetime.utcnow()  # Обновляем время
         db.commit()
-        logger.info(f"🔔 Уведомление для заказа #{order_id} обновлено")
+        logger.info("🔔 Уведомление для заказа #%s обновлено", order_id)
     else:
         # Создаем новое уведомление
         create_notification(
@@ -2140,11 +1945,11 @@ async def send_support_message(msg: SupportMessageCreate, db: Session = Depends(
 async def get_support_messages(user_id: int, db: Session = Depends(get_db)):
     # Mark messages as read when fetched
     db.query(SupportMessage).filter(
-        SupportMessage.user_id == user_id, 
-        SupportMessage.is_read == False
+        SupportMessage.user_id == user_id,
+        SupportMessage.is_read.is_(False)
     ).update({"is_read": True})
     db.commit()
-    
+
     messages = db.query(SupportMessage).filter(SupportMessage.user_id == user_id).order_by(SupportMessage.created_at.asc()).all()
     return [{
         "id": m.id,
@@ -2161,11 +1966,11 @@ async def get_support_sessions(db: Session = Depends(get_db), admin: User = Depe
         user = db.query(User).filter(User.id == u_id).first()
         last_msg = db.query(SupportMessage).filter(SupportMessage.user_id == u_id).order_by(SupportMessage.created_at.desc()).first()
         unread_count = db.query(SupportMessage).filter(
-            SupportMessage.user_id == u_id, 
-            SupportMessage.is_read == False,
-            SupportMessage.is_admin == False
+            SupportMessage.user_id == u_id,
+            SupportMessage.is_read.is_(False),
+            SupportMessage.is_admin.is_(False)
         ).count()
-        
+
         result.append({
             "user_id": u_id,
             "user_name": user.full_name if user else "Аноним",
@@ -2178,10 +1983,11 @@ async def get_support_sessions(db: Session = Depends(get_db), admin: User = Depe
 @app.get("/api/support/unread-total")
 async def get_unread_total(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     total = db.query(SupportMessage).filter(
-        SupportMessage.is_read == False,
-        SupportMessage.is_admin == False
+        SupportMessage.is_read.is_(False),
+        SupportMessage.is_admin.is_(False)
     ).count()
     return {"total": total}
+
 
 @app.post("/api/support/reply")
 async def reply_support_message(reply: SupportReply, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
@@ -2190,19 +1996,18 @@ async def reply_support_message(reply: SupportReply, db: Session = Depends(get_d
     db.commit()
     return {"status": "ok"}
 
-# --- Admin Extended APIs ---
-from sqlalchemy import func
 
+# --- Admin Extended APIs ---
 @app.get("/api/admin/stats")
 async def get_stats(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     total_revenue = db.query(func.sum(Order.total_amount)).filter(Order.status == 'completed').scalar() or 0
     total_orders = db.query(Order).count()
     total_customers = db.query(User).count()
-    
+
     # Top products (by frequency in orders)
     # Simple implementation: parse items JSON or just count orders for now
     top_products = db.query(Product).order_by(Product.is_popular.desc()).limit(5).all()
-    
+
     return {
         "revenue": total_revenue,
         "orders": total_orders,
@@ -2213,7 +2018,7 @@ async def get_stats(db: Session = Depends(get_db), admin: User = Depends(get_cur
 @app.get("/api/admin/customers")
 async def list_customers(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     # Возвращаем только обычных пользователей (не админов)
-    return db.query(User).filter(User.is_admin == False).all()
+    return db.query(User).filter(User.is_admin.is_(False)).all()
 
 # --- Admin Notifications API ---
 @app.post("/api/admin/notifications/create")
@@ -2225,8 +2030,8 @@ async def create_global_notification(
     admin: User = Depends(get_current_admin)
 ):
     """Создать уведомление для всех пользователей"""
-    users = db.query(User).filter(User.is_admin == False).all()
-    
+    users = db.query(User).filter(User.is_admin.is_(False)).all()
+
     created_count = 0
     for user in users:
         try:
@@ -2239,29 +2044,29 @@ async def create_global_notification(
             db.add(notification)
             created_count += 1
         except Exception as e:
-            logger.error(f"Ошибка при создании уведомления для пользователя #{user.id}: {e}")
-    
+            logger.error("Ошибка при создании уведомления для пользователя #%s: %s", user.id, e)
+
     db.commit()
-    logger.info(f"📢 Создано {created_count} уведомлений для всех пользователей")
+    logger.info("📢 Создано %s уведомлений для всех пользователей", created_count)
     return {"detail": f"Created {created_count} notifications", "count": created_count}
 
 @app.get("/api/admin/notifications/check-reminders")
 async def check_reminders(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     """Проверить напоминания и создать уведомления для тех, у кого скоро дата"""
     from datetime import datetime, timedelta
-    
+
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
-    
+
     reminders = db.query(Reminder).filter(
-        Reminder.is_active == True
+        Reminder.is_active.is_(True)
     ).all()
-    
+
     notified_count = 0
     for reminder in reminders:
         try:
             reminder_date = datetime.strptime(reminder.date, "%Y-%m-%d").date()
-            
+
             # Проверяем если напоминание на завтра
             if reminder_date == tomorrow:
                 create_notification(
@@ -2272,7 +2077,7 @@ async def check_reminders(db: Session = Depends(get_db), admin: User = Depends(g
                     notification_type="reminder"
                 )
                 notified_count += 1
-            
+
             # Для повторяющихся напоминаний проверяем yearly/monthly
             if reminder.is_recurring and reminder.recurring_type == "yearly":
                 # Проверяем день и месяц без года
@@ -2286,10 +2091,10 @@ async def check_reminders(db: Session = Depends(get_db), admin: User = Depends(g
                     )
                     notified_count += 1
         except Exception as e:
-            logger.error(f"Ошибка при проверке напоминания #{reminder.id}: {e}")
-    
+            logger.error("Ошибка при проверке напоминания #%s: %s", reminder.id, e)
+
     db.commit()
-    logger.info(f"🔔 Проверены напоминания, создано {notified_count} уведомлений")
+    logger.info("🔔 Проверены напоминания, создано %s уведомлений", notified_count)
     return {"detail": f"Checked reminders, notified {notified_count} users", "notified_count": notified_count}
 
 @app.put("/api/admin/customers/{user_id}/block")
@@ -2325,7 +2130,7 @@ async def add_zone(zone: DeliveryZoneBase, db: Session = Depends(get_db), admin:
     db.add(z)
     db.commit()
     db.refresh(z)
-    logger.info(f"✅ Зона доставки добавлена: {zone.name} — {zone.price} сум")
+    logger.info("✅ Зона доставки добавлена: %s — %s сум", zone.name, zone.price)
     return z
 
 @app.put("/api/admin/delivery-zones/{zone_id}")
@@ -2345,7 +2150,7 @@ async def delete_zone(zone_id: int, db: Session = Depends(get_db), admin: User =
         raise HTTPException(status_code=404, detail="Zone not found")
     db.delete(z)
     db.commit()
-    logger.info(f"🗑️ Зона доставки #{zone_id} удалена")
+    logger.info("🗑️ Зона доставки #%s удалена", zone_id)
     return {"detail": "Zone deleted"}
 
 @app.post("/api/admin/upload")
@@ -2366,7 +2171,7 @@ class BannerBase(BaseModel):
 
 @app.get("/api/banners")
 async def get_banners(db: Session = Depends(get_db)):
-    return db.query(Banner).filter(Banner.is_active == True).all()
+    return db.query(Banner).filter(Banner.is_active.is_(True)).all()
 
 @app.get("/api/admin/banners")
 async def list_banners(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
@@ -2378,7 +2183,7 @@ async def add_banner(banner: BannerBase, db: Session = Depends(get_db), admin: U
     db.add(new_banner)
     db.commit()
     db.refresh(new_banner)
-    logger.info(f"✅ Баннер добавлен: {banner.media_type}")
+    logger.info("✅ Баннер добавлен: %s", banner.media_type)
     return new_banner
 
 @app.put("/api/admin/banners/{banner_id}")
@@ -2399,7 +2204,7 @@ async def delete_banner(banner_id: int, db: Session = Depends(get_db), admin: Us
         raise HTTPException(status_code=404, detail="Banner not found")
     db.delete(db_banner)
     db.commit()
-    logger.info(f"🗑️ Баннер #{banner_id} удален")
+    logger.info("🗑️ Баннер #%s удален", banner_id)
     return {"detail": "Banner deleted"}
 
 @app.post("/api/admin/upload-banner")
@@ -2407,30 +2212,29 @@ async def upload_banner_file(file: UploadFile = File(...), admin: User = Depends
     # Проверка типа файла
     allowed_image_extensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
     allowed_video_extensions = [".mp4", ".webm", ".ogg", ".mov"]
-    
+
     filename = file.filename
     ext = os.path.splitext(filename)[1].lower()
-    
+
     if ext not in allowed_image_extensions + allowed_video_extensions:
         raise HTTPException(status_code=400, detail="Неподдерживаемый тип файла")
-    
+
     # Генерируем уникальное имя файла
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     unique_filename = f"{timestamp}_{filename}"
-    
+
     file_path = f"static/uploads/{unique_filename}"
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
+
     media_type = "video" if ext in allowed_video_extensions else "image"
-    logger.info(f"✅ Файл баннера загружен: {unique_filename} ({media_type})")
-    
+    logger.info("✅ Файл баннера загружен: %s (%s)", unique_filename, media_type)
+
     return {"url": f"/static/uploads/{unique_filename}", "media_type": media_type}
 
 # --- Pages ---
 @app.get("/favicon.ico")
 async def favicon():
-    from fastapi.responses import Response
     return Response(status_code=204)
 
 @app.get("/", response_class=HTMLResponse)
