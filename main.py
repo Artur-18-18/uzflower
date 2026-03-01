@@ -18,6 +18,7 @@ from jose import JWTError, jwt
 import bcrypt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 # ============================================================
 # Настройка логгера — все события пишутся в server_debug.log
