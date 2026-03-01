@@ -79,6 +79,10 @@ function updateAuthUI() {
     }
 }
 
+function openAuthModal() {
+    window.location.href = '/login';
+}
+
 function handleSignOut() {
     localStorage.removeItem('user');
     currentUser = null;
@@ -99,7 +103,7 @@ function renderProducts(products, animate = false) {
                 <div class="relative aspect-square overflow-hidden bg-gray-200">
                     <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-cover">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
-                    <button onclick="toggleFavorite(${product.id})" class="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors">
+                    <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
                         <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
                     </button>
                     ${product.is_sale ? '<div class="absolute top-3 left-3 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">АКЦИЯ</div>' : ''}
@@ -607,8 +611,8 @@ async function loadPopularProducts() {
                 <div class="w-72 flex-shrink-0 bg-gray-100 rounded-2xl shadow-sm border border-gray-200 overflow-hidden group">
                     <div class="relative h-64 overflow-hidden bg-gray-200">
                         <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <button onclick="toggleFavorite(${product.id})" class="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors">
-                            <i data-lucide="heart" class="w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
+                        <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="Избранное">
+                            <i data-lucide="heart" class="w-5 h-5 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
                         </button>
                     </div>
                     <div class="p-4">
@@ -811,8 +815,8 @@ function renderFavoritesAfterLoad(container) {
                 <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" class="p-2 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-all">
                     <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                 </button>
-                <button onclick="toggleFavorite(${product.id})" class="p-2 text-gray-400 hover:text-rose-500 transition-all">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <button type="button" onclick="toggleFavorite(${product.id})" class="fav-heart-btn min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-rose-500 active:scale-95 transition-all rounded-lg" aria-label="Удалить из избранного">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>

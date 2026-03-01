@@ -49,6 +49,61 @@
   align-items: center;
   min-height: 100vh;
   background: linear-gradient(90deg, #e2e2e2, #c9d6ff);
+  position: relative;
+}
+
+/* Кнопка «Назад» на странице входа */
+.login-back-btn {
+  position: fixed;
+  top: 24px;
+  left: 24px;
+  z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+.login-back-btn i {
+  font-size: 20px;
+  transition: transform 0.25s ease;
+}
+
+.login-back-btn:hover {
+  background: #fff;
+  color: #e11d48;
+  box-shadow: 0 6px 24px rgba(225, 29, 72, 0.2);
+  transform: translateY(-2px);
+}
+
+.login-back-btn:hover i {
+  transform: translateX(-3px);
+}
+
+.login-back-btn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 650px) {
+  .login-back-btn {
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    left: 16px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .login-back-btn i {
+    font-size: 18px;
+  }
 }
 
 .container {

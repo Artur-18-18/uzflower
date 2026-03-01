@@ -7,12 +7,13 @@
     .mobile-bottom-menu {
         display: block;
         position: fixed;
-        bottom: 0;
         left: 0;
         right: 0;
         width: 100%;
         height: 0;
         z-index: 1000;
+        /* Приподнято от низа экрана (удобнее на телефоне, учёт выреза/индикатора) */
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
 
     * {

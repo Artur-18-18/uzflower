@@ -1,6 +1,13 @@
-﻿/* ============================================
+/* ============================================
    RESPONSIVE STYLES - Mobile & Tablet
    ============================================ */
+
+/* Кнопка избранного (сердечко): удобный тап на телефоне, без задержки и двойного зума */
+.fav-heart-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
 
 /* ============================================
    HEADER - Mobile Adaptations
