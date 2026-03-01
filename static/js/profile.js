@@ -191,12 +191,36 @@ async function changePassword(event) {
 async function uploadAvatar(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
+    // Проверка размера файла (макс 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert('Размер файла не должен превышать 5MB');
+        event.target.value = '';
+        return;
+    }
+
+    // Проверка типа файла
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Поддерживаемые форматы: JPG, PNG, WEBP');
+        event.target.value = '';
+        return;
+    }
+
     const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('file', file);
-    
+
+    const uploadBtn = event.target.nextElementSibling;
+    const originalIcon = uploadBtn ? uploadBtn.innerHTML : '';
+
     try {
+        // Показываем индикатор загрузки
+        if (uploadBtn) {
+            uploadBtn.innerHTML = '<div class="animate-spin rounded-full h-3 w-3 border-b-2 border-rose-600"></div>';
+        }
+
         const res = await fetch('/api/profile/upload-avatar', {
             method: 'POST',
             headers: {
@@ -204,19 +228,42 @@ async function uploadAvatar(event) {
             },
             body: formData
         });
-        
-        if (!res.ok) throw new Error('Failed to upload avatar');
-        
+
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.detail || 'Failed to upload avatar');
+        }
+
         const result = await res.json();
+
+        // Обновляем аватар с cache-busting
+        const avatarImg = document.getElementById('sidebar-avatar');
+        const newUrl = result.url + '?t=' + Date.now();
+        avatarImg.src = newUrl;
         
-        // Update avatar
-        document.getElementById('sidebar-avatar').src = result.url + '?t=' + Date.now();
-        
+        // Также обновляем аватар в профиле если есть
+        const profileAvatar = document.getElementById('profile-avatar');
+        if (profileAvatar) {
+            profileAvatar.src = newUrl;
+        }
+
+        // Сохраняем URL аватара в localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        user.image_url = result.url;
+        localStorage.setItem('user', JSON.stringify(user));
+
         alert('Аватар успешно загружен!');
-        
+
     } catch (error) {
         console.error('Error uploading avatar:', error);
-        alert('Ошибка при загрузке аватара');
+        alert(error.message || 'Ошибка при загрузке аватара');
+    } finally {
+        // Возвращаем иконку обратно
+        if (uploadBtn) {
+            uploadBtn.innerHTML = originalIcon;
+        }
+        // Очищаем input
+        event.target.value = '';
     }
 }
 

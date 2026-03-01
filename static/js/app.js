@@ -98,8 +98,9 @@ function renderProducts(products, animate = false) {
     container.innerHTML = products.map((product, index) => {
         const isFav = favorites.includes(product.id);
         const animationStyle = animate ? `opacity: 0; animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 50}ms;` : '';
+        const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
         return `
-            <div class="bg-gray-100 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group" style="${animationStyle}">
+            <div class="bg-gray-100 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer" style="${animationStyle}" onclick="openProductDetail(${productJson})">
                 <div class="relative aspect-square overflow-hidden bg-gray-200">
                     <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-cover">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
@@ -118,10 +119,10 @@ function renderProducts(products, animate = false) {
                             ` : `<span class="text-2xl font-bold text-gray-900">${formatPrice(product.price)} сум</span>`}
                         </div>
                         <div class="flex gap-2">
-                             <button onclick="openProductDetail(${JSON.stringify(product).replace(/"/g, '&quot;')})" class="p-2 border border-gray-200 text-gray-500 rounded-lg hover:border-rose-300 hover:text-rose-600 transition-all">
+                             <button onclick="event.stopPropagation(); openProductDetail(${productJson})" class="p-2 border border-gray-200 text-gray-500 rounded-lg hover:border-rose-300 hover:text-rose-600 transition-all">
                                 <i data-lucide="eye" class="w-5 h-5"></i>
                             </button>
-                            <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" ${product.stock === 0 ? 'disabled' : ''} class="p-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all disabled:opacity-50">
+                            <button onclick="event.stopPropagation(); addToCart(${productJson})" ${product.stock === 0 ? 'disabled' : ''} class="p-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all disabled:opacity-50">
                                 <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -345,9 +346,17 @@ function navigateToMobile(path) {
 // Mobile search functions
 function openMobileSearch() {
     document.getElementById('mobile-search-modal').classList.add('active');
-    document.getElementById('mobile-search-input').focus();
+    setTimeout(() => {
+        document.getElementById('mobile-search-input').focus();
+    }, 100);
     document.body.style.overflow = 'hidden';
     lucide.createIcons();
+    
+    // Если товары ещё не загружены, показываем сообщение
+    if (allProductsList.length === 0) {
+        document.getElementById('mobile-search-results').innerHTML = 
+            '<p class="text-center text-gray-500 py-8">Загрузка товаров...</p>';
+    }
 }
 
 function closeMobileSearch() {
@@ -360,18 +369,24 @@ function closeMobileSearch() {
 function handleMobileSearch() {
     const query = document.getElementById('mobile-search-input').value.toLowerCase().trim();
     const resultsContainer = document.getElementById('mobile-search-results');
-    
+
+    // Если товары ещё не загружены
+    if (allProductsList.length === 0) {
+        resultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Товары загружаются...</p>';
+        return;
+    }
+
     if (!query) {
         resultsContainer.innerHTML = '';
         return;
     }
-    
+
     // Фильтруем товары
     const filtered = allProductsList.filter(p =>
         p.name.toLowerCase().includes(query) ||
         (p.description && p.description.toLowerCase().includes(query))
     );
-    
+
     if (filtered.length === 0) {
         resultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Ничего не найдено</p>';
     } else {
@@ -385,7 +400,7 @@ function handleMobileSearch() {
             </div>
         `).join('');
     }
-    
+
     lucide.createIcons();
 }
 
