@@ -530,13 +530,19 @@ def upload_file_to_storage(file_bytes: bytes, filename: str, folder: str = "uzfl
         return result["secure_url"]
     else:
         # Локальное сохранение (fallback)
-        os.makedirs(f"static/uploads/{folder}".replace("uzflower", "").strip("/") or "static/uploads", exist_ok=True)
-        local_folder = "static/uploads"
-        os.makedirs(local_folder, exist_ok=True)
-        file_path = f"{local_folder}/{unique_name}"
+        subfolder = folder.replace("uzflower", "").strip("/")
+        relative_folder = f"uploads/{subfolder}".strip("/")
+        full_folder_path = os.path.join("static", relative_folder)
+        
+        os.makedirs(full_folder_path, exist_ok=True)
+        file_path = os.path.join(full_folder_path, unique_name)
+        
         with open(file_path, "wb") as buf:
             buf.write(file_bytes)
-        return f"/static/uploads/{unique_name}"
+            
+        # Возвращаем путь для браузера
+        web_path = f"/static/{relative_folder}/{unique_name}".replace("//", "/")
+        return web_path
 
 # ============================================================
 # CORS Middleware - разрешаем запросы с любых доменов
