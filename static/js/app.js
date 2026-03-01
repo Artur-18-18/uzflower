@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadReviews();  // Загружаем отзывы
     setupNavigation();
     setupHeaderScroll();
+    setupMobileBottomNav();
     // Инициализируем счётчик избранного
     const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     updateMobileFavCount(localFavorites.length);
@@ -358,26 +359,103 @@ function navigateToMobile(path) {
     }
 }
 
+// Добавлено: Создание нижнего мобильного меню
+function setupMobileBottomNav() {
+    if (document.getElementById('mobile-bottom-nav')) return;
+
+    const nav = document.createElement('div');
+    nav.id = 'mobile-bottom-nav';
+    nav.className = 'fixed bottom-0 left-0 right-0 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 flex justify-around items-center py-3 px-2 md:hidden safe-area-bottom border-t border-gray-100';
+    
+    const isActive = (p) => window.location.pathname === p ? 'text-rose-600' : 'text-gray-400';
+
+    nav.innerHTML = `
+        <a href="/" class="flex flex-col items-center gap-1 ${isActive('/')} hover:text-rose-600 transition-colors w-16">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Главная</span>
+        </a>
+        <button onclick="openMobileSearch()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16">
+            <i data-lucide="search" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Поиск</span>
+        </button>
+        <button onclick="toggleMobileFavorites()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16 relative">
+            <i data-lucide="heart" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Избранное</span>
+            <span id="mobile-fav-count" class="absolute -top-1 right-3 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+        </button>
+        <button onclick="toggleMobileCart()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16 relative">
+            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Корзина</span>
+            <span id="mobile-cart-count" class="absolute -top-1 right-3 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+        </button>
+        <a href="/profile" class="flex flex-col items-center gap-1 ${isActive('/profile')} hover:text-rose-600 transition-colors w-16">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Профиль</span>
+        </a>
+    `;
+
+    document.body.appendChild(nav);
+    
+    // Добавляем отступ снизу для body
+    const style = document.createElement('style');
+    style.innerHTML = '@media (max-width: 768px) { body { padding-bottom: 80px; } }';
+    document.head.appendChild(style);
+    
+    lucide.createIcons();
+}
+
 // Mobile search functions
 function openMobileSearch() {
-    document.getElementById('mobile-search-modal').classList.add('active');
+    let modal = document.getElementById('mobile-search-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'mobile-search-modal';
+        modal.className = 'fixed inset-0 bg-white z-[60] hidden flex-col';
+        modal.innerHTML = `
+            <div class="p-4 border-b flex items-center gap-3 bg-white shadow-sm">
+                <div class="flex-1 relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." 
+                        class="w-full pl-10 pr-10 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-base"
+                        oninput="handleMobileSearch()">
+                    <button onclick="document.getElementById('mobile-search-input').value = ''; handleMobileSearch();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <button onclick="closeMobileSearch()" class="text-gray-500 font-medium px-2">Отмена</button>
+            </div>
+            <div id="mobile-search-results" class="flex-1 overflow-y-auto p-4 bg-gray-50"></div>
+        `;
+        document.body.appendChild(modal);
+        lucide.createIcons();
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
     setTimeout(() => {
-        document.getElementById('mobile-search-input').focus();
+        const input = document.getElementById('mobile-search-input');
+        if (input) input.focus();
     }, 100);
+    
     document.body.style.overflow = 'hidden';
-    lucide.createIcons();
     
     // Если товары ещё не загружены, показываем сообщение
     if (allProductsList.length === 0) {
-        document.getElementById('mobile-search-results').innerHTML = 
-            '<p class="text-center text-gray-500 py-8">Загрузка товаров...</p>';
+        document.getElementById('mobile-search-results').innerHTML = '<p class="text-center text-gray-500 py-8">Загрузка товаров...</p>';
     }
 }
 
 function closeMobileSearch() {
-    document.getElementById('mobile-search-modal').classList.remove('active');
-    document.getElementById('mobile-search-input').value = '';
-    document.getElementById('mobile-search-results').innerHTML = '';
+    const modal = document.getElementById('mobile-search-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        const input = document.getElementById('mobile-search-input');
+        if (input) input.value = '';
+        const results = document.getElementById('mobile-search-results');
+        if (results) results.innerHTML = '';
+    }
     document.body.style.overflow = '';
 }
 
@@ -403,15 +481,21 @@ function handleMobileSearch() {
     );
 
     if (filtered.length === 0) {
-        resultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Ничего не найдено</p>';
+        resultsContainer.innerHTML = `
+            <div class="text-center py-10">
+                <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
+                <p class="text-gray-500">Ничего не найдено</p>
+            </div>
+        `;
     } else {
         resultsContainer.innerHTML = filtered.map(product => `
-            <div class="search-result-item" onclick="openProductDetail(${JSON.stringify(product).replace(/"/g, '&quot;')}); closeMobileSearch();">
-                <img src="${product.image_url || 'https://placehold.co/60'}" alt="${product.name}">
+            <div class="search-result-item bg-white p-3 rounded-xl mb-3 shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform" onclick="openProductDetail(${JSON.stringify(product).replace(/"/g, '&quot;')}); closeMobileSearch();">
+                <img src="${product.image_url || 'https://placehold.co/60'}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg">
                 <div class="flex-1">
-                    <p class="font-semibold">${product.name}</p>
+                    <p class="font-semibold text-gray-900">${product.name}</p>
                     <p class="text-rose-600 font-bold">${formatPrice(product.price)} сум</p>
                 </div>
+                <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
             </div>
         `).join('');
     }
@@ -693,8 +777,7 @@ async function loadBanners() {
             
             if (banner.media_type === 'video' && banner.video_url) {
                 bannerContainer.innerHTML = `
-                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted playsinline>
-                        <source src="${banner.video_url}" type="video/mp4">
+                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted playsinline src="${banner.video_url}">
                         Ваш браузер не поддерживает видео.
                     </video>
                     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white pointer-events-none">
@@ -710,6 +793,11 @@ async function loadBanners() {
                 // Переключение после окончания видео
                 const video = document.getElementById('hero-video');
                 video.onended = () => {
+                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                    renderBanner(banners[currentBannerIndex]);
+                };
+                // Обработка ошибок загрузки видео
+                video.onerror = () => {
                     currentBannerIndex = (currentBannerIndex + 1) % banners.length;
                     renderBanner(banners[currentBannerIndex]);
                 };
@@ -756,8 +844,7 @@ function renderSingleBanner(container, banner) {
     
     if (banner.media_type === 'video' && banner.video_url) {
         container.innerHTML = `
-            <video class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline>
-                <source src="${banner.video_url}" type="video/mp4">
+            <video class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline src="${banner.video_url}">
                 Ваш браузер не поддерживает видео.
             </video>
             <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white">
@@ -1055,6 +1142,13 @@ function renderCart() {
     const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
     countElem.innerText = totalQuantity;
     countElem.classList.toggle('hidden', totalQuantity === 0);
+
+    // Обновляем бейдж в нижнем мобильном меню
+    const mobileCartCount = document.getElementById('mobile-cart-count');
+    if (mobileCartCount) {
+        mobileCartCount.innerText = totalQuantity;
+        mobileCartCount.style.display = totalQuantity > 0 ? 'flex' : 'none';
+    }
 
     if (cart.length === 0) {
         container.innerHTML = `
@@ -1650,8 +1744,13 @@ function toggleChat() {
 
 async function loadSupportMessages() {
     if (!currentUser || !currentUser.id) return;
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`/api/support/messages?user_id=${currentUser.id}`);
+        const res = await fetch(`/api/support/messages?user_id=${currentUser.id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         if (!res.ok) return;
         const messages = await res.json();
         if (Array.isArray(messages)) {
@@ -1696,12 +1795,20 @@ async function sendChatMessage() {
 
     if (!message) return;
 
+    const token = localStorage.getItem('token');
+
     try {
-        await fetch('/api/support/send', {
+        const res = await fetch('/api/support/send', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({ user_id: currentUser.id, message })
         });
+        
+        if (!res.ok) throw new Error('Failed to send message');
+        
         input.value = '';
         loadSupportMessages();
     } catch (e) {
