@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/output.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/i18n.js"></script>
     <style>
         .tab-active {
             background: linear-gradient(135deg, #e11d48 0%, #ec4899 100%);
@@ -67,6 +68,13 @@
                 </div>
 
                 <nav class="flex items-center gap-3">
+                    <!-- Language Switcher Button -->
+                    <button onclick="i18n.toggleLanguage()" 
+                        class="flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg transition-all font-medium"
+                        title="Переключить язык / Tilni o'zgartirish">
+                        <span id="lang-flag" class="text-lg">🇷🇺</span>
+                        <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
+                    </button>
                     <a href="/" class="p-2.5 bg-white/10 backdrop-blur-sm rounded-full text-white hover:bg-white/20 transition-all" title="На главную">
                         <i data-lucide="home" class="w-5 h-5"></i>
                     </a>
@@ -524,6 +532,15 @@
         </div>
     </div>
 
+    <script src="/static/js/i18n.js"></script>
+    <script>
+        // Инициализация системы переводов
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.i18n) {
+                i18n.init();
+            }
+        });
+    </script>
     <script src="/static/js/profile.js"></script>
 </body>
 </html>

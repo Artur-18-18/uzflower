@@ -137,6 +137,22 @@ const i18n = {
             const btnLang = btn.getAttribute('data-lang');
             btn.classList.toggle('active', btnLang === this.currentLang);
         });
+
+        // Обновляем флаг и код языка на кнопке переключения (десктоп)
+        const flagEl = document.getElementById('lang-flag');
+        const codeEl = document.getElementById('lang-code');
+        if (flagEl) {
+            flagEl.textContent = this.languages[this.currentLang].flag;
+        }
+        if (codeEl) {
+            codeEl.textContent = this.currentLang === 'ru' ? 'UZ' : 'RU';
+        }
+
+        // Обновляем флаг на мобильной кнопке
+        const mobileFlagEl = document.getElementById('mobile-lang-flag');
+        if (mobileFlagEl) {
+            mobileFlagEl.textContent = this.languages[this.currentLang].flag;
+        }
     },
 
     // Рендер переключателя языка
@@ -165,6 +181,22 @@ const i18n = {
     // Проверка RTL направления
     isRTL() {
         return this.getDirection() === 'rtl';
+    },
+
+    // Публичный метод для переключения языка (вызов из UI)
+    toggleLanguage() {
+        const newLang = this.currentLang === 'ru' ? 'uz' : 'ru';
+        this.setLang(newLang);
+    },
+
+    // Получение текущего языка для отображения в UI
+    getCurrentLang() {
+        return this.currentLang;
+    },
+
+    // Получение флага текущего языка
+    getCurrentFlag() {
+        return this.languages[this.currentLang].flag;
     }
 };
 

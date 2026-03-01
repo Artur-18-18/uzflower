@@ -368,10 +368,6 @@
                         <span>Назад в админку</span>
                     </button>
                     <a href="/" class="flex items-center gap-2 flex-shrink-0" onclick="navigate(event, '/')">
-                        <div
-                            class="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center">
-                            <span class="text-white font-bold text-xl">UZ</span>
-                        </div>
                         <span
                             class="logo-text text-xl sm:text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">uzflower</span>
                     </a>
@@ -400,9 +396,14 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <!-- Language Switcher -->
-                    <div class="lang-switcher hidden sm:flex"></div>
-                    
+                    <!-- Language Switcher Button -->
+                    <button onclick="i18n.toggleLanguage()" 
+                        class="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg"
+                        title="Переключить язык / Tilni o'zgartirish">
+                        <span id="lang-flag" class="text-lg">🇷🇺</span>
+                        <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
+                    </button>
+
                     <button onclick="toggleFavorites()"
                         class="relative p-2 text-gray-600 hover:text-rose-600 transition-all">
                         <i data-lucide="heart" class="w-6 h-6"></i>
@@ -1107,7 +1108,11 @@
   
     <!-- мобильное нижнее меню -->
     <nav class="mobile-bottom-menu md:hidden">
-        <div class="lang-switcher lang-switcher-mobile" aria-label="Выбор языка"></div>
+        <button onclick="i18n.toggleLanguage()" 
+            class="lang-btn-mobile absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-2 bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-full shadow-lg"
+            aria-label="Переключить язык">
+            <span id="mobile-lang-flag" class="text-base">🇷🇺</span>
+        </button>
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-search" name="mobile-menu" onclick="openMobileSearch()">

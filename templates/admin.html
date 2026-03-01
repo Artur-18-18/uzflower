@@ -23,38 +23,20 @@
             }
         }
 
-        /* Language Switcher Styles */
-        .lang-switcher {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .lang-buttons {
-            display: flex;
-            gap: 4px;
-        }
-
-        .lang-btn {
-            background: transparent;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 18px;
+        /* Tab Button Styles */
+        .tab-btn {
+            border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
-            opacity: 0.6;
         }
 
-        .lang-btn:hover {
-            opacity: 1;
-            background: rgba(224, 27, 78, 0.1);
+        .tab-btn:hover {
+            background: rgba(225, 29, 78, 0.05);
         }
 
-        .lang-btn.active {
-            opacity: 1;
-            border-color: #e01b4e;
-            background: rgba(224, 27, 78, 0.1);
+        .tab-btn.active {
+            border-bottom-color: #e01b4e;
+            color: #e01b4e;
+            background: rgba(225, 29, 78, 0.05);
         }
     </style>
 </head>
@@ -104,8 +86,13 @@
                     <h1 class="text-3xl font-bold" data-i18n="admin.title">Панель администратора</h1>
                     <p class="text-white/90 mt-2" data-i18n="admin.subtitle">Управление магазином uzflower</p>
                 </div>
-                <!-- Language Switcher -->
-                <div class="lang-switcher"></div>
+                <!-- Language Switcher Button -->
+                <button onclick="i18n.toggleLanguage()" 
+                    class="flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg transition-all font-medium"
+                    title="Переключить язык / Tilni o'zgartirish">
+                    <span id="lang-flag" class="text-lg">🇷🇺</span>
+                    <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
+                </button>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="openSite()"
