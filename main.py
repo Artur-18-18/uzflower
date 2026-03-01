@@ -504,6 +504,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request, exc):
     """Глобальный обработчик HTTPException - возвращает JSON вместо HTML"""
+    logger.error("HTTP Exception: %s - %s", exc.status_code, exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail, "status_code": exc.status_code}
@@ -512,9 +513,19 @@ async def http_exception_handler(request, exc):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     """Обработчик ошибок валидации"""
+    logger.error("Validation Error: %s", exc.errors())
     return JSONResponse(
         status_code=422,
         content={"detail": "Validation error", "errors": exc.errors()}
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    """Обработчик всех остальных исключений"""
+    logger.error("Unhandled Exception: %s - %s", type(exc).__name__, str(exc), exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error_type": type(exc).__name__}
     )
 
 # ============================================================
