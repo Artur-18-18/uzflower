@@ -28,11 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadReviews();  // Загружаем отзывы
     setupNavigation();
     setupHeaderScroll();
-    setupMobileBottomNav();
-    // Инициализируем счётчик избранного
+    // Инициализируем счётчики
     const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     updateMobileFavCount(localFavorites.length);
-    // Избранное будет обновлено после загрузки товаров в loadProducts()
+    const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const totalCartItems = localCart.reduce((sum, item) => sum + item.quantity, 0);
+    updateMobileCartCount(totalCartItems);
+    // Сбрасываем radio button в мобильном меню
+    const favRadio = document.getElementById('mobile-favorites');
+    const cartRadio = document.getElementById('mobile-cart');
+    if (favRadio) favRadio.checked = false;
+    if (cartRadio) cartRadio.checked = false;
+    // Избранное и корзина будут обновлены после загрузки товаров
 });
 
 function setupHeaderScroll() {
@@ -359,51 +366,6 @@ function navigateToMobile(path) {
     }
 }
 
-// Добавлено: Создание нижнего мобильного меню
-function setupMobileBottomNav() {
-    if (document.getElementById('mobile-bottom-nav')) return;
-
-    const nav = document.createElement('div');
-    nav.id = 'mobile-bottom-nav';
-    nav.className = 'fixed bottom-0 left-0 right-0 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 flex justify-around items-center py-3 px-2 md:hidden safe-area-bottom border-t border-gray-100';
-    
-    const isActive = (p) => window.location.pathname === p ? 'text-rose-600' : 'text-gray-400';
-
-    nav.innerHTML = `
-        <a href="/" class="flex flex-col items-center gap-1 ${isActive('/')} hover:text-rose-600 transition-colors w-16">
-            <i data-lucide="home" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Главная</span>
-        </a>
-        <button onclick="openMobileSearch()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16">
-            <i data-lucide="search" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Поиск</span>
-        </button>
-        <button onclick="toggleMobileFavorites()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16 relative">
-            <i data-lucide="heart" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Избранное</span>
-            <span id="mobile-fav-count" class="absolute -top-1 right-3 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
-        </button>
-        <button onclick="toggleMobileCart()" class="flex flex-col items-center gap-1 text-gray-400 hover:text-rose-600 transition-colors w-16 relative">
-            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Корзина</span>
-            <span id="mobile-cart-count" class="absolute -top-1 right-3 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
-        </button>
-        <a href="/profile" class="flex flex-col items-center gap-1 ${isActive('/profile')} hover:text-rose-600 transition-colors w-16">
-            <i data-lucide="user" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Профиль</span>
-        </a>
-    `;
-
-    document.body.appendChild(nav);
-    
-    // Добавляем отступ снизу для body
-    const style = document.createElement('style');
-    style.innerHTML = '@media (max-width: 768px) { body { padding-bottom: 80px; } }';
-    document.head.appendChild(style);
-    
-    lucide.createIcons();
-}
-
 // Mobile search functions
 function openMobileSearch() {
     let modal = document.getElementById('mobile-search-modal');
@@ -446,7 +408,8 @@ function openMobileSearch() {
     }
 }
 
-function closeMobileSearch() {
+function closeMobileSearch(event) {
+    if (event) event.stopPropagation();
     const modal = document.getElementById('mobile-search-modal');
     if (modal) {
         modal.classList.add('hidden');
@@ -557,25 +520,29 @@ function toggleMobileFavorites() {
 function closeMobileFavorites() {
     const sidebar = document.getElementById('mobile-favorites-sidebar');
     const overlay = document.getElementById('favorites-overlay');
-    
+
     if (sidebar) {
         sidebar.classList.remove('translate-y-0');
         sidebar.classList.add('translate-y-[110%]');
     }
-    
+
     if (overlay && !document.getElementById('mobile-cart-sidebar')?.classList.contains('translate-y-0')) {
         overlay.classList.add('opacity-0');
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
-    
+
     document.body.style.overflow = '';
+    
+    // Сбрасываем radio button
+    const favRadio = document.getElementById('mobile-favorites');
+    if (favRadio) favRadio.checked = false;
 }
 
 // Mobile Cart Functions
 function toggleMobileCart() {
     let sidebar = document.getElementById('mobile-cart-sidebar');
     let overlay = document.getElementById('favorites-overlay');
-    
+
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.id = 'favorites-overlay';
@@ -617,13 +584,13 @@ function toggleMobileCart() {
         closeMobileCart();
     } else {
         closeMobileFavorites(); // Закрываем избранное если открыто
-        
+
         sidebar.classList.remove('translate-y-[110%]');
         sidebar.classList.add('translate-y-0');
-        
+
         overlay.classList.remove('hidden');
         setTimeout(() => overlay.classList.remove('opacity-0'), 10);
-        
+
         document.body.style.overflow = 'hidden';
         renderMobileCart();
     }
@@ -632,18 +599,22 @@ function toggleMobileCart() {
 function closeMobileCart() {
     const sidebar = document.getElementById('mobile-cart-sidebar');
     const overlay = document.getElementById('favorites-overlay');
-    
+
     if (sidebar) {
         sidebar.classList.remove('translate-y-0');
         sidebar.classList.add('translate-y-[110%]');
     }
-    
+
     if (overlay && !document.getElementById('mobile-favorites-sidebar')?.classList.contains('translate-y-0')) {
         overlay.classList.add('opacity-0');
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
-    
+
     document.body.style.overflow = '';
+    
+    // Сбрасываем radio button
+    const cartRadio = document.getElementById('mobile-cart');
+    if (cartRadio) cartRadio.checked = false;
 }
 
 function renderMobileCart() {
@@ -731,7 +702,15 @@ function updateMobileFavCount(count) {
     const badge = document.getElementById('mobile-fav-count');
     if (badge) {
         badge.textContent = count;
-        badge.style.display = count > 0 ? 'block' : 'none';
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+}
+
+function updateMobileCartCount(count) {
+    const badge = document.getElementById('mobile-cart-count');
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
     }
 }
 
@@ -770,16 +749,15 @@ async function loadBanners() {
 
         // Слайдер с несколькими баннерами
         let currentBannerIndex = 0;
-        let bannerTimeout; // Переменная для хранения таймера
 
         const renderBanner = (banner) => {
-            if (bannerTimeout) clearTimeout(bannerTimeout); // Очищаем предыдущий таймер
             const bannerText = banner.text || 'Весенняя Коллекция';
             const bannerSubtext = banner.subtext || 'Создайте незабываемые моменты с нашими авторскими букетами';
-            
+
             if (banner.media_type === 'video' && banner.video_url) {
                 bannerContainer.innerHTML = `
-                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted playsinline src="${banner.video_url}">
+                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted playsinline>
+                        <source src="${banner.video_url}" type="video/mp4">
                         Ваш браузер не поддерживает видео.
                     </video>
                     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white pointer-events-none">
@@ -798,13 +776,6 @@ async function loadBanners() {
                     currentBannerIndex = (currentBannerIndex + 1) % banners.length;
                     renderBanner(banners[currentBannerIndex]);
                 };
-                // Обработка ошибок загрузки видео
-                video.onerror = () => {
-                    bannerTimeout = setTimeout(() => {
-                        currentBannerIndex = (currentBannerIndex + 1) % banners.length;
-                        renderBanner(banners[currentBannerIndex]);
-                    }, 3000); // Задержка при ошибке, чтобы не мелькало
-                };
 
             } else if (banner.image_url) {
                 bannerContainer.innerHTML = `
@@ -821,11 +792,11 @@ async function loadBanners() {
                     </div>
                 `;
 
-                // Для изображений — автопереключение через 7 секунд (было 5)
-                bannerTimeout = setTimeout(() => {
+                // Для изображений — автопереключение через 5 секунд
+                setTimeout(() => {
                     currentBannerIndex = (currentBannerIndex + 1) % banners.length;
                     renderBanner(banners[currentBannerIndex]);
-                }, 7000);
+                }, 5000);
             }
 
             // Клик по баннеру с ссылкой
@@ -1315,6 +1286,9 @@ document.addEventListener('input', (e) => {
 function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
     renderCart();
+    // Обновляем счётчик корзины в мобильном меню
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    updateMobileCartCount(totalItems);
 }
 
 // Функция отправки

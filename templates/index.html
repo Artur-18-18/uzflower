@@ -1221,13 +1221,13 @@
     <script src="/static/js/app.js"></script>
 
     <!-- Mobile Search Modal -->
-    <div id="mobile-search-modal" class="mobile-search-modal" onclick="if(event.target === this) closeMobileSearch()">
-        <div class="search-content">
+    <div id="mobile-search-modal" class="mobile-search-modal" onclick="closeMobileSearch(event)">
+        <div class="search-content" onclick="event.stopPropagation()">
             <div class="search-header">
                 <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
                 <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input"
                     oninput="handleMobileSearch()" onkeypress="if(event.key === 'Enter') this.blur()"
-                    autocomplete="off">
+                    autocomplete="off" onclick="event.stopPropagation()">
                 <button onclick="closeMobileSearch()" class="close-search">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -1249,6 +1249,11 @@
         <label for="mobile-favorites" class="menu-icon heart">
             <i data-lucide="heart" class="w-6 h-6"></i>
             <span id="mobile-fav-count" class="fav-badge">0</span>
+        </label>
+        <input type="radio" id="mobile-cart" name="mobile-menu" onclick="toggleMobileCart()">
+        <label for="mobile-cart" class="menu-icon cart">
+            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+            <span id="mobile-cart-count" class="fav-badge">0</span>
         </label>
         <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">
         <label for="mobile-profile" class="menu-icon bell"><i data-lucide="user" class="w-6 h-6"></i></label>
