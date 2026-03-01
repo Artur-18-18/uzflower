@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 
 <head>
@@ -50,6 +50,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -63,18 +64,24 @@
 
         /* Анимация подпрыгивания заголовка */
         @keyframes bounceTitle {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             30% {
                 transform: translateY(-15px);
             }
+
             50% {
                 transform: translateY(5px);
             }
+
             70% {
                 transform: translateY(-8px);
             }
+
             90% {
                 transform: translateY(2px);
             }
@@ -90,6 +97,7 @@
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -132,6 +140,7 @@
                 opacity: 0;
                 transform: translateY(20px) scale(0.95);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -174,15 +183,20 @@
         }
 
         @keyframes float {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translate(0, 0) scale(1);
             }
+
             25% {
                 transform: translate(10px, -10px) scale(1.05);
             }
+
             50% {
                 transform: translate(-5px, 5px) scale(0.95);
             }
+
             75% {
                 transform: translate(5px, 10px) scale(1.02);
             }
@@ -252,9 +266,11 @@
                 transform: scale(0);
                 opacity: 0;
             }
+
             50% {
                 transform: scale(1.2);
             }
+
             100% {
                 transform: scale(1);
                 opacity: 1;
@@ -270,11 +286,13 @@
         #page-checkout select,
         #page-checkout textarea {
             max-width: 100%;
-            font-size: 16px; /* Prevent zoom on iOS */
+            font-size: 16px;
+            /* Prevent zoom on iOS */
         }
 
         /* Prevent horizontal scroll */
-        html, body {
+        html,
+        body {
             overflow-x: hidden;
             max-width: 100vw;
         }
@@ -289,25 +307,25 @@
             #page-checkout h2 {
                 font-size: 1.5rem;
             }
-            
+
             #page-checkout .grid {
                 gap: 1rem;
             }
-            
+
             #page-checkout .payment-card-wrapper {
                 padding: 16px;
             }
-            
+
             #page-checkout .circle-1 {
                 width: 120px;
                 height: 120px;
             }
-            
+
             #page-checkout .circle-2 {
                 width: 100px;
                 height: 100px;
             }
-            
+
             #page-checkout .circle-3 {
                 width: 60px;
                 height: 60px;
@@ -358,13 +376,20 @@
 
 <body class="bg-emerald-50 min-h-screen flex flex-col">
     <!-- Header -->
-    <header id="main-header" class="bg-white shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300" style="backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.95);">
+    <header id="main-header" class="bg-white shadow-md fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style="backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.95);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-4">
                     <!-- Back Button (from Admin) -->
-                    <button id="back-to-admin" onclick="goBackToAdmin()" class="hidden items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                    <button id="back-to-admin" onclick="goBackToAdmin()"
+                        class="hidden items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg hover:-translate-y-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-arrow-left">
+                            <path d="m12 19-7-7 7-7"></path>
+                            <path d="M19 12H5"></path>
+                        </svg>
                         <span>Назад в админку</span>
                     </button>
                     <a href="/" class="flex items-center gap-2 flex-shrink-0" onclick="navigate(event, '/')">
@@ -389,7 +414,8 @@
                     <div class="relative w-full">
                         <i data-lucide="search"
                             class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-                        <input type="text" id="search-input" data-i18n-placeholder="header.search_placeholder" placeholder="Поиск цветов..."
+                        <input type="text" id="search-input" data-i18n-placeholder="header.search_placeholder"
+                            placeholder="Поиск цветов..."
                             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                             oninput="handleSearch()">
                     </div>
@@ -397,11 +423,11 @@
 
                 <div class="flex items-center gap-4">
                     <!-- Language Switcher Button -->
-                    <button onclick="i18n.toggleLanguage()" 
-                        class="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all font-medium border border-white/20"
+                    <button onclick="i18n.toggleLanguage()"
+                        class="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg transition-all font-medium border border-gray-200"
                         title="Переключить язык / Tilni o'zgartirish">
                         <span id="lang-flag" class="text-lg">🇷🇺</span>
-                        <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
+                        <span id="lang-code" class="hidden sm:inline text-sm font-bold">UZ</span>
                     </button>
 
                     <button onclick="toggleFavorites()"
@@ -437,8 +463,10 @@
                 </div>
                 <div
                     class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white">
-                    <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl" data-i18n="hero.title">Весенняя Коллекция</h1>
-                    <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg" data-i18n="hero.subtitle">Создайте незабываемые
+                    <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl" data-i18n="hero.title">
+                        Весенняя Коллекция</h1>
+                    <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg"
+                        data-i18n="hero.subtitle">Создайте незабываемые
                         моменты с нашими авторскими букетами</p>
                     <div class="flex gap-4">
                         <button onclick="scrollToCatalog()"
@@ -457,7 +485,8 @@
             <section class="py-20 bg-white">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-16">
-                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="categories.title">Наши Категории</h2>
+                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="categories.title">Наши
+                            Категории</h2>
                         <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
                     </div>
                     <div id="categories-grid" class="grid grid-cols-2 lg:grid-cols-6 gap-6">
@@ -471,12 +500,15 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between items-end mb-12">
                         <div>
-                            <h2 class="text-4xl font-serif font-bold text-gray-900 mb-2" data-i18n="products.popular">Популярные букеты</h2>
-                            <p class="text-gray-500" data-i18n="products.popular_subtitle">То, что чаще всего выбирают наши клиенты</p>
+                            <h2 class="text-4xl font-serif font-bold text-gray-900 mb-2" data-i18n="products.popular">
+                                Популярные букеты</h2>
+                            <p class="text-gray-500" data-i18n="products.popular_subtitle">То, что чаще всего выбирают
+                                наши клиенты</p>
                         </div>
                         <button onclick="scrollToCatalog()"
                             class="text-rose-600 font-bold flex items-center gap-2 hover:gap-3 transition-all">
-                            <span data-i18n="products.view_all">Весь каталог</span> <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                            <span data-i18n="products.view_all">Весь каталог</span> <i data-lucide="arrow-right"
+                                class="w-5 h-5"></i>
                         </button>
                     </div>
                     <div id="popular-products" class="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
@@ -494,32 +526,40 @@
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="truck" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fast_delivery.title">Быстрая доставка</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.fast_delivery.description">Привезем букет за 60 минут в любую точку города</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fast_delivery.title">Быстрая
+                                доставка</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.fast_delivery.description">Привезем
+                                букет за 60 минут в любую точку города</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="flower-2" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fresh_flowers.title">Свежие цветы</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.fresh_flowers.description">Прямые поставки каждое утро — гарантия свежести</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fresh_flowers.title">Свежие цветы
+                            </h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.fresh_flowers.description">Прямые
+                                поставки каждое утро — гарантия свежести</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="camera" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.photo_before_send.title">Фото перед отправкой</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.photo_before_send.description">Пришлем фото готового букета в Telegram/WhatsApp</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.photo_before_send.title">Фото перед
+                                отправкой</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.photo_before_send.description">
+                                Пришлем фото готового букета в Telegram/WhatsApp</p>
                         </div>
                         <div class="flex flex-col items-center">
                             <div
                                 class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
                                 <i data-lucide="credit-card" class="w-8 h-8"></i>
                             </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.convenient_payment.title">Удобная оплата</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.convenient_payment.description">Оплата картой на сайте или наличными курьеру</p>
+                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.convenient_payment.title">Удобная
+                                оплата</h3>
+                            <p class="text-gray-500 text-sm" data-i18n="advantages.convenient_payment.description">
+                                Оплата картой на сайте или наличными курьеру</p>
                         </div>
                     </div>
                 </div>
@@ -588,7 +628,8 @@
             <section id="reviews-section" class="py-16 bg-emerald-50 border-t">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-12">
-                        <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="reviews.title">Отзывы клиентов 💛</h2>
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="reviews.title">Отзывы клиентов 💛
+                        </h2>
                         <p class="text-gray-600" data-i18n="reviews.subtitle">Что говорят наши покупатели</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="reviews-display">
@@ -791,264 +832,285 @@
     </div>
 
     <!-- Full-page Checkout -->
-    <div id="page-checkout" class="hidden fixed inset-0 z-50 bg-gradient-to-br from-rose-50 via-pink-50 to-emerald-50 overflow-y-auto">
+    <div id="page-checkout"
+        class="hidden fixed inset-0 z-50 bg-gradient-to-br from-rose-50 via-pink-50 to-emerald-50 overflow-y-auto">
         <div class="min-h-screen py-4 sm:py-8">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-8">
-                <button onclick="hideCheckout()" class="flex items-center gap-2 text-gray-600 hover:text-rose-600 transition-colors group">
-                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
-                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    </div>
-                    <span class="font-medium">Назад</span>
-                </button>
-                <div class="flex items-center gap-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center">
-                        <span class="text-white font-bold text-lg">UZ</span>
-                    </div>
-                    <span class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">uzflower</span>
-                </div>
-            </div>
-
-            <!-- Title -->
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">🌸 Оформление заказа</h2>
-                <p class="text-gray-500">Заполните данные для доставки букета</p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Main Form -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Delivery Info -->
-                    <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-                                <i data-lucide="map-pin" class="w-5 h-5 text-rose-600"></i>
-                            </div>
-                            <h3 class="text-lg font-bold text-gray-900">Информация о доставке</h3>
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-8">
+                    <button onclick="hideCheckout()"
+                        class="flex items-center gap-2 text-gray-600 hover:text-rose-600 transition-colors group">
+                        <div
+                            class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
                         </div>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i data-lucide="home" class="w-4 h-4 inline mr-1"></i> Адрес доставки
-                                </label>
-                                <input type="text" id="order-address" placeholder="г. Ташкент, ул. ..."
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон
-                                </label>
-                                <input type="tel" id="order-phone" placeholder="+998 __ ___-__-__"
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
+                        <span class="font-medium">Назад</span>
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <div
+                            class="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">UZ</span>
+                        </div>
+                        <span
+                            class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent">uzflower</span>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">🌸 Оформление заказа</h2>
+                    <p class="text-gray-500">Заполните данные для доставки букета</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main Form -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Delivery Info -->
+                        <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="map-pin" class="w-5 h-5 text-rose-600"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900">Информация о доставке</h3>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i> Дата
+                                        <i data-lucide="home" class="w-4 h-4 inline mr-1"></i> Адрес доставки
                                     </label>
-                                    <input type="date" id="order-date"
+                                    <input type="text" id="order-address" placeholder="г. Ташкент, ул. ..."
                                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
                                 </div>
+
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i> Время
+                                        <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон
                                     </label>
-                                    <select id="order-time"
-                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all bg-white">
-                                        <option value="09:00-12:00">🌅 09:00-12:00</option>
-                                        <option value="12:00-15:00">☀️ 12:00-15:00</option>
-                                        <option value="15:00-18:00">🌤️ 15:00-18:00</option>
-                                        <option value="18:00-21:00">🌙 18:00-21:00</option>
-                                    </select>
+                                    <input type="tel" id="order-phone" placeholder="+998 __ ___-__-__"
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
                                 </div>
-                            </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i data-lucide="message-heart" class="w-4 h-4 inline mr-1"></i> Текст на открытке
-                                </label>
-                                <textarea id="order-postcard" placeholder="Дорогая, с любовью..."
-                                    class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all h-24 resize-none"></textarea>
-                                <input type="hidden" id="order-lat">
-                                <input type="hidden" id="order-lng">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Method -->
-                    <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <i data-lucide="credit-card" class="w-5 h-5 text-blue-600"></i>
-                            </div>
-                            <h3 class="text-lg font-bold text-gray-900">Способ оплаты</h3>
-                        </div>
-
-                        <div class="space-y-2 mb-6">
-                            <button onclick="selectPaymentMethod('click')" id="pay-click"
-                                class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all group">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-all">
-                                    <img src="/static/images/click-logo.svg" class="h-6 w-auto object-contain" alt="Click">
-                                </div>
-                                <span class="font-bold text-gray-700">Click</span>
-                                <i data-lucide="check-circle" class="w-5 h-5 text-blue-600 ml-auto hidden check-icon"></i>
-                            </button>
-                            <button onclick="selectPaymentMethod('payme')" id="pay-payme"
-                                class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-purple-500 hover:bg-purple-50 transition-all group">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-all">
-                                    <img src="https://cdn.payme.uz/logo/payme_color.svg" class="h-5 object-contain" alt="Payme">
-                                </div>
-                                <span class="font-bold text-gray-700">Payme</span>
-                                <i data-lucide="check-circle" class="w-5 h-5 text-purple-600 ml-auto hidden check-icon"></i>
-                            </button>
-                            <button onclick="selectPaymentMethod('cash')" id="pay-cash"
-                                class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-emerald-500 hover:bg-emerald-50 transition-all group border-emerald-500 bg-emerald-50">
-                                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                    <i data-lucide="banknote" class="w-5 h-5 text-emerald-600"></i>
-                                </div>
-                                <span class="font-bold text-gray-700">Наличные</span>
-                                <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 ml-auto check-icon"></i>
-                            </button>
-                        </div>
-
-                        <!-- при нажати на клик и пейми (Shown for Click/Payme) -->
-                        <div id="card-input-wrapper" class="hidden mb-6">
-                            <div class="payment-card-wrapper relative overflow-hidden rounded-3xl shadow-2xl">
-                                <!-- Анимационная карта -->
-                                <div class="circle circle-1"></div>
-                                <div class="circle circle-2"></div>
-                                <div class="circle circle-3"></div>
-
-                                <div class="relative z-10 p-6">
-                                    <div class="flex justify-between items-start mb-8">
-                                        <div>
-                                            <h3 class="text-white text-lg font-bold mb-1">Данные карты</h3>
-                                            <p class="text-white/60 text-sm">Безопасная оплата</p>
-                                        </div>
-                                        <div id="card-brand" class="brand-text text-white text-xl font-bold flex items-center gap-2">
-                                            <i data-lucide="credit-card" class="w-6 h-6"></i>
-                                            CARD
-                                        </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i> Дата
+                                        </label>
+                                        <input type="date" id="order-date"
+                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
                                     </div>
-
-                                    <div class="mb-6">
-                                        <label class="block text-xs uppercase tracking-widest text-white/60 mb-2">Номер карты</label>
-                                        <input type="text" id="card-number" maxlength="19" placeholder="0000 0000 0000 0000"
-                                            class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-2xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
-                                    </div>
-
-                                    <div class="grid grid-cols-2 gap-6 mb-6">
-                                        <div>
-                                            <label class="block text-xs uppercase tracking-widest text-white/60 mb-2">Срок действия</label>
-                                            <input type="text" id="card-exp" maxlength="5" placeholder="ММ/ГГ"
-                                                class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs uppercase tracking-widest text-white/60 mb-2">CVV</label>
-                                            <input type="password" id="card-cvv" maxlength="3" placeholder="123"
-                                                class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
-                                        </div>
-                                    </div>
-
-                                    <div class="flex items-center gap-3 pt-4 border-t border-white/20">
-                                        <i data-lucide="shield-check" class="w-5 h-5 text-white/80"></i>
-                                        <span class="text-white/80 text-sm">Платёж защищён SSL шифованием</span>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i> Время
+                                        </label>
+                                        <select id="order-time"
+                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all bg-white">
+                                            <option value="09:00-12:00">🌅 09:00-12:00</option>
+                                            <option value="12:00-15:00">☀️ 12:00-15:00</option>
+                                            <option value="15:00-18:00">🌤️ 15:00-18:00</option>
+                                            <option value="18:00-21:00">🌙 18:00-21:00</option>
+                                        </select>
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="message-heart" class="w-4 h-4 inline mr-1"></i> Текст на
+                                        открытке
+                                    </label>
+                                    <textarea id="order-postcard" placeholder="Дорогая, с любовью..."
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all h-24 resize-none"></textarea>
+                                    <input type="hidden" id="order-lat">
+                                    <input type="hidden" id="order-lng">
+                                </div>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-center gap-4 text-xs text-gray-500 pt-4 border-t">
-                            <div class="flex items-center gap-1">
-                                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
-                                <span>Безопасно</span>
+                        <!-- Payment Method -->
+                        <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="credit-card" class="w-5 h-5 text-blue-600"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900">Способ оплаты</h3>
                             </div>
-                            <div class="flex items-center gap-1">
-                                <i data-lucide="lock" class="w-4 h-4 text-emerald-600"></i>
-                                <span>SSL шифрование</span>
+
+                            <div class="space-y-2 mb-6">
+                                <button onclick="selectPaymentMethod('click')" id="pay-click"
+                                    class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all group">
+                                    <div
+                                        class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-all">
+                                        <img src="/static/images/click-logo.svg" class="h-6 w-auto object-contain"
+                                            alt="Click">
+                                    </div>
+                                    <span class="font-bold text-gray-700">Click</span>
+                                    <i data-lucide="check-circle"
+                                        class="w-5 h-5 text-blue-600 ml-auto hidden check-icon"></i>
+                                </button>
+                                <button onclick="selectPaymentMethod('payme')" id="pay-payme"
+                                    class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-purple-500 hover:bg-purple-50 transition-all group">
+                                    <div
+                                        class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-all">
+                                        <img src="https://cdn.payme.uz/logo/payme_color.svg" class="h-5 object-contain"
+                                            alt="Payme">
+                                    </div>
+                                    <span class="font-bold text-gray-700">Payme</span>
+                                    <i data-lucide="check-circle"
+                                        class="w-5 h-5 text-purple-600 ml-auto hidden check-icon"></i>
+                                </button>
+                                <button onclick="selectPaymentMethod('cash')" id="pay-cash"
+                                    class="payment-method-btn w-full p-3 border-2 rounded-xl flex items-center gap-3 hover:border-emerald-500 hover:bg-emerald-50 transition-all group border-emerald-500 bg-emerald-50">
+                                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="banknote" class="w-5 h-5 text-emerald-600"></i>
+                                    </div>
+                                    <span class="font-bold text-gray-700">Наличные</span>
+                                    <i data-lucide="check-circle"
+                                        class="w-5 h-5 text-emerald-600 ml-auto check-icon"></i>
+                                </button>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- поромокод -->
-                    <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                                <i data-lucide="percent" class="w-5 h-5 text-emerald-600"></i>
+                            <!-- при нажати на клик и пейми (Shown for Click/Payme) -->
+                            <div id="card-input-wrapper" class="hidden mb-6">
+                                <div class="payment-card-wrapper relative overflow-hidden rounded-3xl shadow-2xl">
+                                    <!-- Анимационная карта -->
+                                    <div class="circle circle-1"></div>
+                                    <div class="circle circle-2"></div>
+                                    <div class="circle circle-3"></div>
+
+                                    <div class="relative z-10 p-6">
+                                        <div class="flex justify-between items-start mb-8">
+                                            <div>
+                                                <h3 class="text-white text-lg font-bold mb-1">Данные карты</h3>
+                                                <p class="text-white/60 text-sm">Безопасная оплата</p>
+                                            </div>
+                                            <div id="card-brand"
+                                                class="brand-text text-white text-xl font-bold flex items-center gap-2">
+                                                <i data-lucide="credit-card" class="w-6 h-6"></i>
+                                                CARD
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-6">
+                                            <label
+                                                class="block text-xs uppercase tracking-widest text-white/60 mb-2">Номер
+                                                карты</label>
+                                            <input type="text" id="card-number" maxlength="19"
+                                                placeholder="0000 0000 0000 0000"
+                                                class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-2xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-6 mb-6">
+                                            <div>
+                                                <label
+                                                    class="block text-xs uppercase tracking-widest text-white/60 mb-2">Срок
+                                                    действия</label>
+                                                <input type="text" id="card-exp" maxlength="5" placeholder="ММ/ГГ"
+                                                    class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-xs uppercase tracking-widest text-white/60 mb-2">CVV</label>
+                                                <input type="password" id="card-cvv" maxlength="3" placeholder="123"
+                                                    class="w-full bg-white/10 backdrop-blur-sm border-b-2 border-white/30 text-white text-xl outline-none py-3 font-mono placeholder-white/30 focus:border-white transition-all">
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-3 pt-4 border-t border-white/20">
+                                            <i data-lucide="shield-check" class="w-5 h-5 text-white/80"></i>
+                                            <span class="text-white/80 text-sm">Платёж защищён SSL шифованием</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 class="text-lg font-bold text-gray-900">Промокод</h3>
-                        </div>
 
-                        <div class="flex gap-3">
-                            <input type="text" id="promo-code" placeholder="SALE20"
-                                class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all uppercase font-mono">
-                            <button onclick="applyPromoCode()"
-                                class="px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl">
-                                Применить
-                            </button>
-                        </div>
-                        <p id="promo-message" class="text-sm mt-2 hidden font-medium"></p>
-                    </div>
-                </div>
-
-                <!-- Order Summary -->
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100 sticky top-6">
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-                                <i data-lucide="shopping-bag" class="w-5 h-5 text-rose-600"></i>
-                            </div>
-                            <h3 class="text-lg font-bold text-gray-900">Ваш заказ</h3>
-                        </div>
-
-                        <!-- Order Items -->
-                        <div id="checkout-items" class="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                            <!-- Items will be inserted here -->
-                        </div>
-
-                        <!-- Итог -->
-                        <div class="border-t-2 border-dashed border-gray-200 pt-4 mb-6">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-gray-600">Подытог</span>
-                                <span id="checkout-subtotal" class="font-bold">0 сум</span>
-                            </div>
-                            <div class="flex justify-between items-center mb-2 text-emerald-600">
-                                <span class="text-emerald-600">Скидка</span>
-                                <span id="checkout-discount" class="font-bold">-0 сум</span>
-                            </div>
-                            <div class="flex justify-between items-center text-lg font-bold text-gray-900 pt-2 border-t">
-                                <span>Итого</span>
-                                <span id="checkout-total" class="text-rose-600">0 сум</span>
-                            </div>
-                        </div>
-
-                        <!-- Кнопка подтверждения заказа -->
-                        <button onclick="processFinalPayment()"
-                            class="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-rose-600 hover:to-pink-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95">
-                            <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
-                            Подтвердить заказ
-                        </button>
-
-                        <!-- Trust Badges -->
-                        <div class="mt-4 pt-4 border-t text-center">
-                            <div class="flex items-center justify-center gap-4 text-xs text-gray-500">
+                            <div class="flex items-center justify-center gap-4 text-xs text-gray-500 pt-4 border-t">
                                 <div class="flex items-center gap-1">
                                     <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
                                     <span>Безопасно</span>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <i data-lucide="truck" class="w-4 h-4 text-rose-600"></i>
-                                    <span>Быстрая доставка</span>
+                                    <i data-lucide="lock" class="w-4 h-4 text-emerald-600"></i>
+                                    <span>SSL шифрование</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- поромокод -->
+                        <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="percent" class="w-5 h-5 text-emerald-600"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900">Промокод</h3>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <input type="text" id="promo-code" placeholder="SALE20"
+                                    class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition-all uppercase font-mono">
+                                <button onclick="applyPromoCode()"
+                                    class="px-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl">
+                                    Применить
+                                </button>
+                            </div>
+                            <p id="promo-message" class="text-sm mt-2 hidden font-medium"></p>
+                        </div>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100 sticky top-6">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
+                                    <i data-lucide="shopping-bag" class="w-5 h-5 text-rose-600"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900">Ваш заказ</h3>
+                            </div>
+
+                            <!-- Order Items -->
+                            <div id="checkout-items" class="space-y-3 mb-6 max-h-64 overflow-y-auto">
+                                <!-- Items will be inserted here -->
+                            </div>
+
+                            <!-- Итог -->
+                            <div class="border-t-2 border-dashed border-gray-200 pt-4 mb-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-600">Подытог</span>
+                                    <span id="checkout-subtotal" class="font-bold">0 сум</span>
+                                </div>
+                                <div class="flex justify-between items-center mb-2 text-emerald-600">
+                                    <span class="text-emerald-600">Скидка</span>
+                                    <span id="checkout-discount" class="font-bold">-0 сум</span>
+                                </div>
+                                <div
+                                    class="flex justify-between items-center text-lg font-bold text-gray-900 pt-2 border-t">
+                                    <span>Итого</span>
+                                    <span id="checkout-total" class="text-rose-600">0 сум</span>
+                                </div>
+                            </div>
+
+                            <!-- Кнопка подтверждения заказа -->
+                            <button onclick="processFinalPayment()"
+                                class="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-rose-600 hover:to-pink-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95">
+                                <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
+                                Подтвердить заказ
+                            </button>
+
+                            <!-- Trust Badges -->
+                            <div class="mt-4 pt-4 border-t text-center">
+                                <div class="flex items-center justify-center gap-4 text-xs text-gray-500">
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Безопасно</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <i data-lucide="truck" class="w-4 h-4 text-rose-600"></i>
+                                        <span>Быстрая доставка</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
             </div>
         </div>
     </div>
@@ -1078,7 +1140,7 @@
                     class="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors shadow-sm">
                     <i data-lucide="send" class="w-4 h-4"></i>
                 </button>
-            </div>
+              </div>
         </div>
     </div>
 
@@ -1109,11 +1171,8 @@
         <div class="search-content">
             <div class="search-header">
                 <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
-                <input type="text" id="mobile-search-input" 
-                    placeholder="Поиск цветов..." 
-                    class="search-input"
-                    oninput="handleMobileSearch()"
-                    onkeypress="if(event.key === 'Enter') this.blur()"
+                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input"
+                    oninput="handleMobileSearch()" onkeypress="if(event.key === 'Enter') this.blur()"
                     autocomplete="off">
                 <button onclick="closeMobileSearch()" class="close-search">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -1130,7 +1189,8 @@
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-search" name="mobile-menu">
-        <label for="mobile-search" class="menu-icon search" onclick="openMobileSearch()"><i data-lucide="search" class="w-6 h-6"></i></label>
+        <label for="mobile-search" class="menu-icon search" onclick="openMobileSearch()"><i data-lucide="search"
+                class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleMobileFavorites()">
         <label for="mobile-favorites" class="menu-icon heart"><i data-lucide="heart" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">
@@ -1139,4 +1199,5 @@
         <div class="menu-effect"></div>
     </nav>
 </body>
+
 </html>

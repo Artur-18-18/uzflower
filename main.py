@@ -158,6 +158,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
     full_name: str
+    phone: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: str
@@ -219,6 +220,17 @@ class UserProfileUpdate(BaseModel):
 
 class PasswordChange(BaseModel):
     current_password: str
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    contact: str  # email или телефон
+
+class VerifyResetCode(BaseModel):
+    reset_token: str
+    code: str
+
+class ResetPassword(BaseModel):
+    reset_token: str
     new_password: str
 
 class UserAddressCreate(BaseModel):
@@ -522,17 +534,22 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
         db_user = db.query(User).filter(User.email == user.email).first()
         if db_user:
             raise HTTPException(status_code=400, detail="Email already registered")
-        
+
         # Raw bcrypt
         password_bytes = user.password.encode("utf-8")
         hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
         hashed_password = hashed_bytes.decode("utf-8")
-        
-        new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
+
+        new_user = User(
+            email=user.email,
+            hashed_password=hashed_password,
+            full_name=user.full_name,
+            phone=user.phone
+        )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name}
+        return {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name, "phone": new_user.phone}
     except HTTPException:
         raise
     except Exception as e:
@@ -544,13 +561,24 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post("/api/auth/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
-        db_user = db.query(User).filter(User.email == user.email).first()
+        # Поиск пользователя по email или телефону
+        db_user = None
+        
+        # Проверяем, email это или телефон
+        if '@' in user.email:
+            # Это email
+            db_user = db.query(User).filter(User.email == user.email.lower()).first()
+        else:
+            # Это телефон (ищем по номеру)
+            phone_clean = user.email.replace('+', '').replace(' ', '')
+            db_user = db.query(User).filter(User.phone == phone_clean).first()
+        
         if not db_user:
             raise HTTPException(status_code=400, detail="Invalid email or password")
-            
+
         password_bytes = user.password.encode("utf-8")
         hashed_bytes = db_user.hashed_password.encode("utf-8")
-        
+
         if not bcrypt.checkpw(password_bytes, hashed_bytes):
             raise HTTPException(status_code=400, detail="Invalid email or password")
 
@@ -565,6 +593,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
                 "id": db_user.id,
                 "email": db_user.email,
                 "full_name": db_user.full_name,
+                "phone": db_user.phone,
                 "is_admin": db_user.is_admin,
                 "bonus_points": db_user.bonus_points
             }
@@ -576,6 +605,141 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         error_msg = traceback.format_exc()
         logger.error(f"LOGIN ERR: {error_msg}")
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)} | Trace: {error_msg}")
+
+# ============================================
+# --- PASSWORD RESET API ---
+# ============================================
+
+# Хранилище кодов сброса пароля (в памяти для демонстрации)
+# В продакшене используйте Redis или базу данных
+password_reset_codes = {}  # {reset_token: {"code": "123456", "contact": "email", "expires": datetime}}
+
+import random
+import string
+from datetime import datetime, timedelta
+
+def generate_reset_token():
+    """Генерация токена сброса пароля"""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
+def generate_reset_code():
+    """Генерация 6-значного кода сброса"""
+    return ''.join(random.choices(string.digits, k=6))
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Запрос на сброс пароля"""
+    try:
+        contact = request.contact.strip().lower()
+        
+        # Поиск пользователя по email или телефону
+        user = None
+        if '@' in contact:
+            user = db.query(User).filter(User.email == contact).first()
+        else:
+            # Поиск по телефону (убираем + и пробелы)
+            phone_clean = contact.replace('+', '').replace(' ', '')
+            user = db.query(User).filter(User.phone == phone_clean).first()
+        
+        if not user:
+            # Возвращаем успех даже если пользователь не найден (безопасность)
+            return {"detail": "Если пользователь найден, код отправлен", "reset_token": "demo-token"}
+        
+        # Генерируем токен и код
+        reset_token = generate_reset_token()
+        reset_code = generate_reset_code()
+        
+        # Сохраняем код с временем жизни 15 минут
+        password_reset_codes[reset_token] = {
+            "code": reset_code,
+            "contact": contact,
+            "user_id": user.id,
+            "expires": datetime.now() + timedelta(minutes=15)
+        }
+        
+        # В продакшене здесь отправка SMS или email
+        # Для демонстрации логируем код
+        logger.info(f"🔑 Код сброса пароля для {contact}: {reset_code}")
+        
+        return {
+            "detail": "Код сброса пароля отправлен",
+            "reset_token": reset_token
+        }
+    except Exception as e:
+        logger.error(f"FORGOT_PASSWORD ERR: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+
+@app.post("/api/auth/verify-reset-code")
+async def verify_reset_code(request: VerifyResetCode, db: Session = Depends(get_db)):
+    """Проверка кода сброса пароля"""
+    try:
+        reset_token = request.reset_token
+        code = request.code
+        
+        if reset_token not in password_reset_codes:
+            raise HTTPException(status_code=400, detail="Неверный токен сброса")
+        
+        reset_data = password_reset_codes[reset_token]
+        
+        # Проверка времени жизни
+        if datetime.now() > reset_data["expires"]:
+            del password_reset_codes[reset_token]
+            raise HTTPException(status_code=400, detail="Код истёк")
+        
+        # Проверка кода
+        if reset_data["code"] != code:
+            raise HTTPException(status_code=400, detail="Неверный код")
+        
+        # Код верный, возвращаем успех
+        return {"detail": "Код подтверждён"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"VERIFY_CODE ERR: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
+
+@app.post("/api/auth/reset-password")
+async def reset_password(request: ResetPassword, db: Session = Depends(get_db)):
+    """Сброс пароля с новым паролем"""
+    try:
+        reset_token = request.reset_token
+        new_password = request.new_password
+        
+        if reset_token not in password_reset_codes:
+            raise HTTPException(status_code=400, detail="Неверный токен сброса")
+        
+        reset_data = password_reset_codes[reset_token]
+        
+        # Проверка времени жизни
+        if datetime.now() > reset_data["expires"]:
+            del password_reset_codes[reset_token]
+            raise HTTPException(status_code=400, detail="Код истёк")
+        
+        # Получаем пользователя
+        user = db.query(User).filter(User.id == reset_data["user_id"]).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        # Хэшируем новый пароль
+        password_bytes = new_password.encode("utf-8")
+        hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+        hashed_password = hashed_bytes.decode("utf-8")
+        
+        # Обновляем пароль
+        user.hashed_password = hashed_password
+        db.commit()
+        
+        # Удаляем токен
+        del password_reset_codes[reset_token]
+        
+        logger.info(f"🔑 Пароль сброшен для пользователя: {user.email}")
+        
+        return {"detail": "Пароль успешно сброшен"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"RESET_PASSWORD ERR: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка сервера")
 
 # ============================================
 # --- PROFILE API ---
@@ -1643,7 +1807,7 @@ async def update_review(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Обновить свой отзыв"""
+    """Обновить свой о��зыв"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -2320,6 +2484,10 @@ async def read_profile(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 async def read_login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+async def read_forgot_password(request: Request):
+    return templates.TemplateResponse("forgot-password.html", {"request": request})
 
 if __name__ == "__main__":
     import uvicorn

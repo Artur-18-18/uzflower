@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Вход - UzFlower</title>
+  <title data-i18n="auth.login_title">Вход - UzFlower</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
   <script src="/static/js/i18n.js"></script>
@@ -16,60 +16,64 @@
     <span id="lang-flag" class="text-lg">🇷🇺</span>
     <span id="lang-code" class="text-sm">UZ</span>
   </button>
-  
+
   <a href="/" class="login-back-btn" title="На главную">
     <i class="bx bx-arrow-back"></i>
-    <span>Назад</span>
+    <span data-i18n="common.back">Назад</span>
   </a>
   <div class="container">
     <div class="form-box login">
       <form action="#" autocomplete="on">
-        <h1>Войти</h1>
+        <h1 data-i18n="auth.login_title">Войти</h1>
         <div class="input-box">
-          <input type="email" name="email" placeholder="Email" required autocomplete="email" />
-          <i class="bx bxs-envelope"></i>
+          <input type="text" name="email_phone" data-i18n-placeholder="auth.phone_or_email" placeholder="Телефон или Email" required autocomplete="username" />
+          <i class="bx bxs-contact"></i>
         </div>
         <div class="input-box">
-          <input type="password" name="password" placeholder="Пароль" required autocomplete="current-password" />
+          <input type="password" name="password" data-i18n-placeholder="auth.password" placeholder="Пароль" required autocomplete="current-password" />
           <i class="bx bxs-lock-alt"></i>
         </div>
         <div class="forgot-link">
-          <a href="#">Забыли пароль?</a>
+          <a href="/forgot-password" data-i18n="auth.forgot_password">Забыли пароль?</a>
         </div>
-        <button type="submit" class="btn">Войти</button>
+        <button type="submit" class="btn" data-i18n="auth.login_now">Войти</button>
       </form>
     </div>
 
     <div class="form-box register">
       <form action="#" autocomplete="on">
-        <h1>Регистрация</h1>
+        <h1 data-i18n="auth.register_title">Регистрация</h1>
         <div class="input-box">
-          <input type="text" name="full_name" placeholder="Ваше имя" required autocomplete="name" />
+          <input type="text" name="full_name" data-i18n-placeholder="auth.full_name" placeholder="Ваше имя" required autocomplete="name" />
           <i class="bx bxs-user"></i>
         </div>
         <div class="input-box">
-          <input type="email" name="email" placeholder="Email" required autocomplete="email" />
+          <input type="email" name="email" data-i18n-placeholder="auth.email" placeholder="Email" required autocomplete="email" />
           <i class="bx bxs-envelope"></i>
         </div>
         <div class="input-box">
-          <input type="password" name="password" placeholder="Пароль (мин. 6 символов)" required minlength="6" autocomplete="new-password" />
+          <input type="tel" name="phone" data-i18n-placeholder="auth.phone" placeholder="Телефон" autocomplete="tel" />
+          <i class="bx bxs-phone"></i>
+        </div>
+        <div class="input-box">
+          <input type="password" name="password" data-i18n-placeholder="auth.password" placeholder="Пароль (мин. 6 символов)" required minlength="6" autocomplete="new-password" />
           <i class="bx bxs-lock-alt"></i>
         </div>
-        <button type="submit" class="btn">Зарегистрироваться</button>
+        <button type="submit" class="btn" data-i18n="auth.register_now">Зарегистрироваться</button>
       </form>
     </div>
 
     <div class="toggle-box">
       <div class="toggle-panel toggle-left">
-        <h1 style="color: rgb(50, 33, 33)">Добро пожаловать!</h1>
-        <p style="color: rgb(50, 33, 33);">Нет аккаунта?</p>
-        <button class="btn register-btn" style="color: rgb(96, 83, 83)">Зарегистрироваться</button>
+        <h1 style="color: rgb(50, 33, 33)" data-i18n="auth.login_title">Добро пожаловать!</h1>
+        <p style="color: rgb(50, 33, 33);" data-i18n="auth.no_account">Нет аккаунта?</p>
+        <button class="btn register-btn" style="color: rgb(96, 83, 83)" data-i18n="auth.register_now">Зарегистрироваться</button>
       </div>
 
       <div class="toggle-panel toggle-right">
-        <h1 style="color: rgb(50, 33, 33)">Добро пожаловать!</h1>
-        <p style="color: rgb(50, 33, 33);">У вас уже есть аккаунт?</p>
-        <button class="btn login-btn" style="color: rgb(96, 83, 83)">Войти</button>
+        <h1 style="color: rgb(50, 33, 33)" data-i18n="auth.have_account">Добро пожаловать!</h1>
+        <p style="color: rgb(50, 33, 33);" data-i18n="auth.have_account">У вас уже есть аккаунт?</p>
+        <button class="btn login-btn" style="color: rgb(96, 83, 83)" data-i18n="auth.login_now">Войти</button>
       </div>
     </div>
   </div>
@@ -94,7 +98,7 @@
         const first = detail[0];
         return (first.msg || first.message || JSON.stringify(first));
       }
-      return 'Произошла ошибка';
+      return i18n.t('common.error') || 'Произошла ошибка';
     }
 
     // Обработка формы входа
@@ -103,24 +107,38 @@
       e.preventDefault();
 
       const inputs = loginForm.querySelectorAll('input');
-      const email = (inputs[0].value || '').trim().toLowerCase();
+      const emailPhone = (inputs[0].value || '').trim();
       const password = (inputs[1].value || '').trim();
       const submitBtn = loginForm.querySelector('.btn');
 
-      if (!email || !password) {
-        showAlert(loginForm, 'Введите email и пароль', 'error');
+      if (!emailPhone || !password) {
+        showAlert(loginForm, i18n.t('validation.required') || 'Введите логин и пароль', 'error');
         return;
+      }
+
+      // Определяем, email это или телефон
+      let email = null;
+      let phone = null;
+      
+      if (emailPhone.includes('@')) {
+        email = emailPhone.toLowerCase();
+      } else {
+        phone = emailPhone.replace('+', '').replace(' ', '');
       }
 
       const originalText = submitBtn.innerHTML;
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Вход...';
+      submitBtn.innerHTML = '<span class="spinner"></span> ' + (i18n.t('common.loading') || 'Вход...');
 
       try {
+        // Используем email для входа, а телефон передаём как дополнительный параметр
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ 
+            email: email || phone, 
+            password 
+          }),
         });
 
         const textData = await response.text();
@@ -129,7 +147,7 @@
           data = JSON.parse(textData);
         } catch (e) {
           console.error("Non-JSON response from server:", textData);
-          throw new Error(response.ok ? "Неверный ответ сервера" : (textData || "Внутренняя ошибка сервера (500)"));
+          throw new Error(response.ok ? i18n.t('common.error') : (textData || i18n.t('common.error')));
         }
 
         if (response.ok) {
@@ -142,13 +160,13 @@
             window.location.href = '/';
           }
         } else {
-          showAlert(loginForm, parseApiDetail(data.detail) || 'Ошибка входа', 'error');
+          showAlert(loginForm, parseApiDetail(data.detail) || i18n.t('notifications.login_required'), 'error');
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
       } catch (error) {
         console.error('Login error:', error);
-        showAlert(loginForm, error.message || 'Ошибка соединения. Проверьте интернет и попробуйте снова.', 'error');
+        showAlert(loginForm, error.message || i18n.t('common.error'), 'error');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
       }
@@ -162,27 +180,28 @@
       const inputs = registerForm.querySelectorAll('input');
       const full_name = (inputs[0].value || '').trim();
       const email = (inputs[1].value || '').trim().toLowerCase();
-      const password = (inputs[2].value || '').trim();
+      const phone = (inputs[2].value || '').trim();
+      const password = (inputs[3].value || '').trim();
       const submitBtn = registerForm.querySelector('.btn');
 
       if (!full_name || !email || !password) {
-        showAlert(registerForm, 'Заполните имя, email и пароль', 'error');
+        showAlert(registerForm, i18n.t('validation.required') || 'Заполните имя, email и пароль', 'error');
         return;
       }
       if (password.length < 6) {
-        showAlert(registerForm, 'Пароль должен быть не менее 6 символов', 'error');
+        showAlert(registerForm, i18n.t('validation.password_min_length') || 'Пароль должен быть не менее 6 символов', 'error');
         return;
       }
 
       const originalText = submitBtn.innerHTML;
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span class="spinner"></span> Регистрация...';
+      submitBtn.innerHTML = '<span class="spinner"></span> ' + (i18n.t('auth.register_now') || 'Регистрация...');
 
       try {
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, full_name }),
+          body: JSON.stringify({ email, password, full_name, phone: phone || null }),
         });
 
         const textData = await response.text();
@@ -191,23 +210,23 @@
           data = JSON.parse(textData);
         } catch (e) {
           console.error("Non-JSON response from server:", textData);
-          throw new Error(response.ok ? "Неверный ответ сервера" : (textData || "Внутренняя ошибка сервера (500)"));
+          throw new Error(response.ok ? i18n.t('common.error') : (textData || i18n.t('common.error')));
         }
 
         if (response.ok) {
-          showAlert(registerForm, 'Аккаунт создан! Теперь войдите.', 'success');
+          showAlert(registerForm, i18n.t('auth.register_success') || 'Аккаунт создан! Теперь войдите.', 'success');
           container.classList.remove('active');
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         } else {
-          const msg = parseApiDetail(data.detail) || 'Ошибка регистрации';
-          showAlert(registerForm, msg === 'Email already registered' ? 'Этот email уже зарегистрирован' : msg, 'error');
+          const msg = parseApiDetail(data.detail) || i18n.t('common.error');
+          showAlert(registerForm, msg === 'Email already registered' ? i18n.t('auth.email_registered') : msg, 'error');
           submitBtn.disabled = false;
           submitBtn.innerHTML = originalText;
         }
       } catch (error) {
         console.error('Register error:', error);
-        showAlert(registerForm, error.message || 'Ошибка соединения. Проверьте интернет и попробуйте снова.', 'error');
+        showAlert(registerForm, error.message || i18n.t('common.error'), 'error');
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
       }
