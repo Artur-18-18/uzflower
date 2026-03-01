@@ -370,18 +370,38 @@
         display: block;
     }
 
-    /* Language Switcher in Mobile Menu */
-    .mobile-bottom-menu .lang-switcher {
+    /* Language Switcher in Mobile Menu — над нижней панелью */
+    .mobile-bottom-menu .lang-switcher-mobile {
         position: absolute;
-        top: 8px;
-        right: 50%;
-        transform: translateX(50%);
+        bottom: 82px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 50px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(8px);
+    }
+
+    .mobile-bottom-menu .lang-switcher-mobile .lang-buttons {
+        display: flex;
+        gap: 4px;
     }
 
     .mobile-bottom-menu .lang-btn {
-        font-size: 16px;
-        padding: 4px 8px;
+        font-size: 18px;
+        padding: 6px 10px;
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 }
 

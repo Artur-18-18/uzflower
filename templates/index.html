@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 
 <head>
@@ -367,13 +367,13 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                         <span>Назад в админку</span>
                     </button>
-                    <a href="/" class="flex items-center gap-2" onclick="navigate(event, '/')">
+                    <a href="/" class="flex items-center gap-2 flex-shrink-0" onclick="navigate(event, '/')">
                         <div
-                            class="w-10 h-10 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center">
+                            class="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-rose-500 to-pink-600 rounded-full flex items-center justify-center">
                             <span class="text-white font-bold text-xl">UZ</span>
                         </div>
                         <span
-                            class="text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent hidden sm:block">uzflower</span>
+                            class="logo-text text-xl sm:text-2xl font-bold bg-gradient-to-r from-rose-600 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">uzflower</span>
                     </a>
                 </div>
 
@@ -1107,19 +1107,16 @@
   
     <!-- мобильное нижнее меню -->
     <nav class="mobile-bottom-menu md:hidden">
+        <div class="lang-switcher lang-switcher-mobile" aria-label="Выбор языка"></div>
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
-        <input type="radio" id="mobile-search" name="mobile-menu" onclick="navigateToMobile('#catalog')">
+        <input type="radio" id="mobile-search" name="mobile-menu" onclick="openMobileSearch()">
         <label for="mobile-search" class="menu-icon search"><i data-lucide="search" class="w-6 h-6"></i></label>
-        <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleFavorites()">
+        <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleMobileFavorites()">
         <label for="mobile-favorites" class="menu-icon heart"><i data-lucide="heart" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">
         <label for="mobile-profile" class="menu-icon bell"><i data-lucide="user" class="w-6 h-6"></i></label>
         <div id="mobile-box"></div>
-        <span class="menu-title home">Glavnaya</span>
-        <span class="menu-title search">Katalog</span>
-        <span class="menu-title heart">Izbrannoe</span>
-        <span class="menu-title bell">Profil</span>
         <div class="menu-effect"></div>
     </nav>
 </body>
