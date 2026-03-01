@@ -464,7 +464,7 @@ async function loadOrderDetail(orderId) {
 
 function hideOrderDetail() {
     document.getElementById('order-detail-modal').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
     selectedOrder = null;
 }
 
@@ -749,10 +749,12 @@ function showAddAddressModal() {
     document.getElementById('address-phone').value = '';
     document.getElementById('address-recipient').value = '';
     document.getElementById('address-default').checked = false;
+    document.body.classList.add('modal-open');
 }
 
 function hideAddAddressModal() {
     document.getElementById('add-address-modal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
 }
 
 async function addAddress(event) {
@@ -960,10 +962,12 @@ function showAddReminderModal() {
     document.getElementById('reminder-recurring').checked = false;
     document.getElementById('reminder-recurring-type').value = 'yearly';
     document.getElementById('recurring-type-container').classList.add('hidden');
+    document.body.classList.add('modal-open');
 }
 
 function hideAddReminderModal() {
     document.getElementById('add-reminder-modal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
 }
 
 function toggleRecurringType() {
@@ -1290,7 +1294,7 @@ async function loadProductsForReview() {
 
 function showReviewModal() {
     document.getElementById('review-modal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
     setRating(5);
     selectedPhotos = [];
     document.getElementById('review-photo-preview').innerHTML = '';
@@ -1299,7 +1303,7 @@ function showReviewModal() {
 
 function hideReviewModal() {
     document.getElementById('review-modal').classList.add('hidden');
-    document.body.style.overflow = '';
+    document.body.classList.remove('modal-open');
 }
 
 function setRating(rating) {
