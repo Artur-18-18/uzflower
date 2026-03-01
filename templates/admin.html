@@ -87,7 +87,7 @@
                     <p class="text-white/90 mt-2" data-i18n="admin.subtitle">Управление магазином uzflower</p>
                 </div>
                 <!-- Language Switcher Button -->
-                <button onclick="i18n.toggleLanguage()" 
+                <button onclick="i18n.toggleLanguage()"
                     class="flex items-center gap-2 px-3 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg transition-all font-medium"
                     title="Переключить язык / Tilni o'zgartirish">
                     <span id="lang-flag" class="text-lg">🇷🇺</span>
@@ -411,7 +411,7 @@
             };
 
             const res = await fetch(url, options);
-            
+
             // Проверяем ответ на авторизацию
             if (res.status === 401 || res.status === 403) {
                 localStorage.removeItem('admin_token');
@@ -428,12 +428,12 @@
             }
 
             const data = await res.json();
-            
+
             // Если сервер вернул ошибку в JSON формате
             if (!res.ok) {
                 throw new Error(data.detail || data.message || `Error ${res.status}`);
             }
-            
+
             return data;
         }
 
@@ -505,7 +505,7 @@
         async function checkUnreadSupport() {
             try {
                 const res = await adminFetch('/api/support/unread-total');
-                const data = await res.json();
+                const data = res; // res is already data
                 const badge = document.getElementById('support-badge');
                 if (data.total > 0) {
                     badge.innerText = data.total;
@@ -1021,23 +1021,18 @@
             try {
                 const url = id ? `/api/products/${id}` : '/api/products';
                 const method = id ? 'PUT' : 'POST';
-                const response = await adminFetch(url, {
+                await adminFetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
 
-                if (response.ok) {
-                    closeModal();
-                    loadData('products');
-                    alert("Успешно со��������������ранено!");
-                } else {
-                    const error = await response.json();
-                    alert("Ошибка: " + (error.detail || "Неизвестная ошибка"));
-                }
+                closeModal();
+                loadData('products');
+                alert("Успешно сохранено!");
             } catch (err) {
                 console.error("Save product error:", err);
-                alert("Ошибка при сохранен��и: " + err.message);
+                alert("Ошибка при сохранении: " + err.message);
             }
         }
 
@@ -1054,14 +1049,12 @@
 
         async function updateOrderStatus(id, status) {
             try {
-                const res = await adminFetch(`/api/orders/${id}/status`, {
+                await adminFetch(`/api/orders/${id}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status })
                 });
-                if (res.ok) {
-                    alert("Статус обновлен");
-                }
+                alert("Статус обновлен");
             } catch (e) {
                 alert("Ошибка при обновлении статуса");
             }
@@ -1109,15 +1102,13 @@
             if (!message || !activeChatUser) return;
 
             try {
-                const res = await adminFetch('/api/support/reply', {
+                await adminFetch('/api/support/reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: activeChatUser, message })
                 });
-                if (res.ok) {
-                    input.value = '';
-                    loadAdminMessages();
-                }
+                input.value = '';
+                loadAdminMessages();
             } catch (e) {
                 alert("Ошибка отпра��ки");
             }
@@ -1137,12 +1128,12 @@
             const slug = prompt("Слаг (например, romance):", name.toLowerCase().replace(/\s+/g, '-'));
             if (!slug) return;
 
-            const res = await adminFetch('/api/categories', {
+            await adminFetch('/api/categories', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, slug })
             });
-            if (res.ok) loadData('categories');
+            loadData('categories');
         }
 
         async function deleteCategory(id) {
@@ -1158,12 +1149,12 @@
             const discount = prompt("Процент скидки:", "10");
             if (!discount) return;
 
-            const res = await adminFetch('/api/promo-codes', {
+            await adminFetch('/api/promo-codes', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code, discount_percent: parseFloat(discount), is_active: true })
             });
-            if (res.ok) loadData('promo');
+            loadData('promo');
         }
 
         async function deletePromo(id) {
@@ -1176,8 +1167,8 @@
         // --- Admin Management Functions ---
         async function toggleBlockUser(userId, block) {
             try {
-                const res = await adminFetch(`/api/admin/customers/${userId}/block?block=${block}`, { method: 'PUT' });
-                if (res.ok) loadData('customers');
+                await adminFetch(`/api/admin/customers/${userId}/block?block=${block}`, { method: 'PUT' });
+                loadData('customers');
             } catch (e) { alert("Ошибка при блокировке"); }
         }
 
@@ -1203,12 +1194,12 @@
 
         async function togglePayment(orderId, paid) {
             try {
-                const res = await adminFetch(`/api/orders/${orderId}/status`, {
+                await adminFetch(`/api/orders/${orderId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ is_paid: paid })
                 });
-                if (res.ok) loadData('orders');
+                loadData('orders');
             } catch (e) { alert("Ошибка при обновлении оплаты"); }
         }
 
@@ -1265,17 +1256,12 @@
             if (!price || isNaN(parseFloat(price))) return;
 
             try {
-                const res = await adminFetch('/api/admin/delivery-zones', {
+                await adminFetch('/api/admin/delivery-zones', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name.trim(), price: parseFloat(price) })
                 });
-                if (res.ok) {
-                    loadData('delivery');
-                } else {
-                    const err = await res.json();
-                    alert("Ошибка: " + (err.detail || "Не удалось добавить зону"));
-                }
+                loadData('delivery');
             } catch (e) { alert("Ошибка при добавлении зоны"); }
         }
 
@@ -1286,28 +1272,20 @@
             if (!price || isNaN(parseFloat(price))) return;
 
             try {
-                const res = await adminFetch(`/api/admin/delivery-zones/${id}`, {
+                await adminFetch(`/api/admin/delivery-zones/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name.trim(), price: parseFloat(price) })
                 });
-                if (res.ok) {
-                    loadData('delivery');
-                } else {
-                    alert("Ошибка при обновлении зоны");
-                }
+                loadData('delivery');
             } catch (e) { alert("Ошибка соединения"); }
         }
 
         async function deleteZone(id) {
             if (!confirm("Удалить зону доставки?")) return;
             try {
-                const res = await adminFetch(`/api/admin/delivery-zones/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    loadData('delivery');
-                } else {
-                    alert("Ошибка при удалении зоны");
-                }
+                await adminFetch(`/api/admin/delivery-zones/${id}`, { method: 'DELETE' });
+                loadData('delivery');
             } catch (e) { alert("Ошибка соединения"); }
         }
 
@@ -1372,26 +1350,19 @@
             formData.append('file', file);
 
             try {
-                const res = await adminFetch('/api/admin/upload-banner', {
+                const data = await adminFetch('/api/admin/upload-banner', {
                     method: 'POST',
                     body: formData
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    const mediaType = document.querySelector('input[name="banner-media-type"]:checked').value;
+                const mediaType = document.querySelector('input[name="banner-media-type"]:checked').value;
 
-                    if (mediaType === 'video') {
-                        document.getElementById('banner-video-url').value = data.url;
-                    } else {
-                        document.getElementById('banner-image-url').value = data.url;
-                    }
-                    alert("Файл успешно загружен!");
+                if (mediaType === 'video') {
+                    document.getElementById('banner-video-url').value = data.url;
                 } else {
-                    const error = await res.text();
-                    console.error("Upload error:", error);
-                    alert("Ошибка при загрузке файла на сервер");
+                    document.getElementById('banner-image-url').value = data.url;
                 }
+                alert("Файл успешно загружен!");
             } catch (e) {
                 console.error("Fetch error:", e);
                 alert("Ошибка соединения с сервером при загрузке");
@@ -1426,19 +1397,14 @@
                 const url = bannerId ? `/api/admin/banners/${bannerId}` : '/api/admin/banners';
                 const method = bannerId ? 'PUT' : 'POST';
 
-                const res = await adminFetch(url, {
+                await adminFetch(url, {
                     method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(bannerData)
                 });
 
-                if (res.ok) {
-                    closeBannerModal();
-                    loadData('marketing');
-                } else {
-                    const err = await res.json();
-                    alert("Ошибка: " + (err.detail || "Не удалось сохранить баннер"));
-                }
+                closeBannerModal();
+                loadData('marketing');
             } catch (e) {
                 console.error("Save error:", e);
                 alert("Ошибка соединения с сервером");
@@ -1447,13 +1413,10 @@
 
         async function editBanner(id) {
             try {
-                const res = await adminFetch('/api/admin/banners');
-                if (res.ok) {
-                    const banners = await res.json();
-                    const banner = banners.find(b => b.id === id);
-                    if (banner) {
-                        openBannerModal(banner);
-                    }
+                const banners = await adminFetch('/api/admin/banners');
+                const banner = banners.find(b => b.id === id);
+                if (banner) {
+                    openBannerModal(banner);
                 }
             } catch (e) {
                 console.error("Edit error:", e);
@@ -1465,12 +1428,8 @@
             if (!confirm("Удалить этот баннер?")) return;
 
             try {
-                const res = await adminFetch(`/api/admin/banners/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    loadData('marketing');
-                } else {
-                    alert("Ошибка при удалении баннера");
-                }
+                await adminFetch(`/api/admin/banners/${id}`, { method: 'DELETE' });
+                loadData('marketing');
             } catch (e) {
                 console.error("Delete error:", e);
                 alert("Ошибка соединения с сервером");
@@ -1479,31 +1438,24 @@
 
         async function toggleBannerActive(id, isActive) {
             try {
-                const res = await adminFetch('/api/admin/banners');
-                if (res.ok) {
-                    const banners = await res.json();
-                    const banner = banners.find(b => b.id === id);
-                    if (banner) {
-                        const bannerData = {
-                            media_type: banner.media_type,
-                            image_url: banner.image_url,
-                            video_url: banner.video_url,
-                            link: banner.link,
-                            is_active: isActive
-                        };
+                const banners = await adminFetch('/api/admin/banners');
+                const banner = banners.find(b => b.id === id);
+                if (banner) {
+                    const bannerData = {
+                        media_type: banner.media_type,
+                        image_url: banner.image_url,
+                        video_url: banner.video_url,
+                        link: banner.link,
+                        is_active: isActive
+                    };
 
-                        const updateRes = await adminFetch(`/api/admin/banners/${id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(bannerData)
-                        });
+                    await adminFetch(`/api/admin/banners/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bannerData)
+                    });
 
-                        if (updateRes.ok) {
-                            loadData('marketing');
-                        } else {
-                            alert("Ошибка при обновлении статуса");
-                        }
-                    }
+                    loadData('marketing');
                 }
             } catch (e) {
                 console.error("Toggle error:", e);
