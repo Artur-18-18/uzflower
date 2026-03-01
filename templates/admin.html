@@ -411,13 +411,29 @@
             };
 
             const res = await fetch(url, options);
+            
+            // Проверяем ответ на авторизацию
             if (res.status === 401 || res.status === 403) {
                 localStorage.removeItem('admin_token');
                 showLogin();
                 throw new Error("Unauthorized");
             }
 
+            // Проверяем Content-Type перед парсингом JSON
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Server returned non-JSON response:', text.substring(0, 200));
+                throw new Error(`Server error: expected JSON, got ${res.status} ${res.statusText}`);
+            }
+
             const data = await res.json();
+            
+            // Если сервер вернул ошибку в JSON формате
+            if (!res.ok) {
+                throw new Error(data.detail || data.message || `Error ${res.status}`);
+            }
+            
             return data;
         }
 
@@ -1028,15 +1044,11 @@
         async function deleteProduct(id) {
             if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
             try {
-                const res = await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    loadData('products');
-                } else {
-                    alert("Ошибка при удалении");
-                }
+                await adminFetch(`/api/products/${id}`, { method: 'DELETE' });
+                loadData('products');
             } catch (err) {
                 console.error("Delete error:", err);
-                alert("Ошибка: " + err.message);
+                alert("Ошибка при удалении: " + err.message);
             }
         }
 

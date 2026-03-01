@@ -496,6 +496,28 @@ app.add_middleware(
 )
 
 # ============================================================
+# Global Exception Handler - возвращаем JSON вместо HTML
+# ============================================================
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    """Глобальный обработчик HTTPException - возвращает JSON вместо HTML"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "status_code": exc.status_code}
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    """Обработчик ошибок валидации"""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "Validation error", "errors": exc.errors()}
+    )
+
+# ============================================================
 # Debug / Health Check Endpoint
 # ============================================================
 @app.get("/api/debug")
@@ -1765,7 +1787,7 @@ async def create_review(
     db.commit()
     db.refresh(new_review)
 
-    # Загрузка фото
+    # Заг��узка фото
     if files:
         os.makedirs("static/uploads/reviews", exist_ok=True)
         for file in files:
