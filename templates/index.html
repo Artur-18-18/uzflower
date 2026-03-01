@@ -445,7 +445,7 @@
                         data-i18n="header.contacts">Контакты</a>
                 </nav>
 
-                <div class="hidden md:flex flex-1 max-w-xl mx-8">
+                <div class="hidden lg:flex flex-1 max-w-xl mx-8">
                     <div class="relative w-full">
                         <i data-lucide="search"
                             class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
@@ -466,7 +466,7 @@
                     </button>
 
                     <button onclick="toggleFavorites()"
-                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden md:flex">
+                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden lg:flex">
                         <i data-lucide="heart" class="w-6 h-6"></i>
                         <span id="fav-count"
                             class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
@@ -1237,7 +1237,7 @@
     </div>
 
     <!-- мобильное нижнее меню -->
-    <nav class="mobile-bottom-menu md:hidden">
+    <nav class="mobile-bottom-menu lg:hidden">
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-search" name="mobile-menu">
