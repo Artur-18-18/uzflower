@@ -3,7 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>UzFlower - Свежие цветы</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -1237,7 +1239,7 @@
     </div>
 
     <!-- мобильное нижнее меню -->
-    <nav class="mobile-bottom-menu xl:hidden !flex">
+    <nav class="mobile-bottom-menu md:hidden !flex">
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-search" name="mobile-menu">
