@@ -147,12 +147,6 @@ const i18n = {
         if (codeEl) {
             codeEl.textContent = this.currentLang === 'ru' ? 'UZ' : 'RU';
         }
-
-        // Обновляем флаг на мобильной кнопке
-        const mobileFlagEl = document.getElementById('mobile-lang-flag');
-        if (mobileFlagEl) {
-            mobileFlagEl.textContent = this.languages[this.currentLang].flag;
-        }
     },
 
     // Рендер переключателя языка

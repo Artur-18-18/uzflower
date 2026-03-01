@@ -398,7 +398,7 @@
                 <div class="flex items-center gap-4">
                     <!-- Language Switcher Button -->
                     <button onclick="i18n.toggleLanguage()" 
-                        class="flex items-center gap-2 px-3 py-2 bg-gradient-to-br from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg"
+                        class="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white rounded-lg transition-all font-medium border border-white/20"
                         title="Переключить язык / Tilni o'zgartirish">
                         <span id="lang-flag" class="text-lg">🇷🇺</span>
                         <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
@@ -1104,19 +1104,33 @@
         async defer></script>
     <script src="/static/js/app.js"></script>
 
+    <!-- Mobile Search Modal -->
+    <div id="mobile-search-modal" class="mobile-search-modal" onclick="if(event.target === this) closeMobileSearch()">
+        <div class="search-content">
+            <div class="search-header">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
+                <input type="text" id="mobile-search-input" 
+                    placeholder="Поиск цветов..." 
+                    class="search-input"
+                    oninput="handleMobileSearch()"
+                    onkeypress="if(event.key === 'Enter') this.blur()"
+                    autocomplete="off">
+                <button onclick="closeMobileSearch()" class="close-search">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="mobile-search-results" class="search-results">
+                <!-- Results will be inserted here -->
+            </div>
+        </div>
+    </div>
 
-  
     <!-- мобильное нижнее меню -->
     <nav class="mobile-bottom-menu md:hidden">
-        <button onclick="i18n.toggleLanguage()" 
-            class="lang-btn-mobile absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-1 px-3 py-2 bg-gradient-to-br from-rose-500 to-pink-600 text-white rounded-full shadow-lg"
-            aria-label="Переключить язык">
-            <span id="mobile-lang-flag" class="text-base">🇷🇺</span>
-        </button>
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
-        <input type="radio" id="mobile-search" name="mobile-menu" onclick="openMobileSearch()">
-        <label for="mobile-search" class="menu-icon search"><i data-lucide="search" class="w-6 h-6"></i></label>
+        <input type="radio" id="mobile-search" name="mobile-menu">
+        <label for="mobile-search" class="menu-icon search" onclick="openMobileSearch()"><i data-lucide="search" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleMobileFavorites()">
         <label for="mobile-favorites" class="menu-icon heart"><i data-lucide="heart" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">

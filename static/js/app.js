@@ -347,6 +347,7 @@ function openMobileSearch() {
     document.getElementById('mobile-search-modal').classList.add('active');
     document.getElementById('mobile-search-input').focus();
     document.body.style.overflow = 'hidden';
+    lucide.createIcons();
 }
 
 function closeMobileSearch() {

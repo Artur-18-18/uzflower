@@ -369,19 +369,6 @@
     .favorites-overlay.active {
         display: block;
     }
-
-    /* Mobile Language Switcher Button */
-    .lang-btn-mobile {
-        transition: all 0.3s ease;
-        min-width: 44px;
-        min-height: 44px;
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .lang-btn-mobile:active {
-        transform: translateX(-50%) scale(0.95);
-    }
 }
 
 @media (max-width: 480px) {

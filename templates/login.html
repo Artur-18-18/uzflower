@@ -8,41 +8,13 @@
   <link rel="stylesheet" href="/static/css/style.css" />
   <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
   <script src="/static/js/i18n.js"></script>
-  <style>
-    /* Language Switcher Button */
-    .lang-switch-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 100;
-      display: flex;
-      items-center;
-      gap: 8px;
-      padding: 10px 16px;
-      background: linear-gradient(135deg, #e11d48 0%, #ec4899 100%);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(225, 29, 78, 0.3);
-    }
-    .lang-switch-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(225, 29, 78, 0.4);
-    }
-    .lang-switch-btn:active {
-      transform: translateY(0);
-    }
-  </style>
 </head>
 
 <body class="login-body">
   <!-- Language Switcher Button -->
-  <button onclick="i18n.toggleLanguage()" class="lang-switch-btn" title="Переключить язык / Tilni o'zgartirish">
+  <button onclick="i18n.toggleLanguage()" class="login-back-btn" title="Переключить язык / Tilni o'zgartirish" style="right: 70px; left: auto;">
     <span id="lang-flag" class="text-lg">🇷🇺</span>
-    <span id="lang-code" class="hidden sm:inline text-sm">UZ</span>
+    <span id="lang-code" class="text-sm">UZ</span>
   </button>
   
   <a href="/" class="login-back-btn" title="На главную">
