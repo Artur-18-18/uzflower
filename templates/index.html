@@ -37,7 +37,7 @@
         }
         
         #product-detail-modal > div:nth-child(2) {
-            max-height: 90vh;
+            max-height: 100vh;
             overflow-y: auto;
         }
 
@@ -48,7 +48,8 @@
                 left: 0;
                 right: 0;
                 top: auto;
-                max-height: 85vh;
+                max-height: 100vh;
+                height: 100vh;
                 border-radius: 20px 20px 0 0;
                 animation: slideUp 0.3s ease;
             }
@@ -464,7 +465,7 @@
                     </button>
 
                     <button onclick="toggleFavorites()"
-                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all">
+                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden md:flex">
                         <i data-lucide="heart" class="w-6 h-6"></i>
                         <span id="fav-count"
                             class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
@@ -745,16 +746,26 @@
     <!-- Product Detail Modal -->
     <div id="product-detail-modal" class="fixed inset-0 z-[60] hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeProductDetail()"></div>
+        <!-- Mobile: full screen scrollable | Desktop: centered modal -->
         <div
-            class="absolute inset-x-0 bottom-0 top-auto md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-5xl bg-white rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden max-h-[85vh] md:max-h-[90vh]">
+            class="absolute inset-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-5xl bg-white md:rounded-3xl shadow-2xl flex flex-col h-full md:h-auto md:max-h-[90vh] overflow-hidden">
+            <!-- Close button -->
             <button onclick="closeProductDetail()"
-                class="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-md rounded-full hover:bg-white transition-all shadow-lg">
+                class="absolute top-3 right-3 z-20 p-2 bg-white/90 backdrop-blur-md rounded-full hover:bg-white transition-all shadow-lg">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div class="w-full md:w-1/2 h-64 md:h-auto bg-gray-100 relative flex-shrink-0">
-                <img id="detail-image" src="" alt="Product" class="w-full h-full object-cover">
-            </div>
-            <div class="flex-1 p-5 md:p-8 overflow-y-auto">
+            <!-- Scrollable content wrapper -->
+            <div class="flex-1 overflow-y-auto md:overflow-hidden">
+                <div class="flex flex-col md:flex-row h-full">
+                    <!-- Image section - Desktop: fixed height, Mobile: full width -->
+                    <div class="w-full md:w-1/2 bg-gray-100 relative md:flex-shrink-0">
+                        <div class="w-full h-auto md:h-full flex items-center justify-center p-4 md:p-0">
+                            <img id="detail-image" src="" alt="Product" 
+                                class="w-full h-auto max-h-[60vh] md:max-h-[70vh] object-contain">
+                        </div>
+                    </div>
+                    <!-- Content section -->
+                    <div class="flex-1 p-5 md:p-8 overflow-y-auto">
                 <div class="mb-6">
                     <h2 id="detail-name" class="text-3xl font-serif font-bold text-gray-900 mb-2"></h2>
                     <div id="detail-price" class="text-2xl font-bold text-rose-600"></div>
@@ -1225,7 +1236,10 @@
         <label for="mobile-search" class="menu-icon search" onclick="openMobileSearch()"><i data-lucide="search"
                 class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleMobileFavorites()">
-        <label for="mobile-favorites" class="menu-icon heart"><i data-lucide="heart" class="w-6 h-6"></i></label>
+        <label for="mobile-favorites" class="menu-icon heart">
+            <i data-lucide="heart" class="w-6 h-6"></i>
+            <span id="mobile-fav-count" class="fav-badge">0</span>
+        </label>
         <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">
         <label for="mobile-profile" class="menu-icon bell"><i data-lucide="user" class="w-6 h-6"></i></label>
         <div id="mobile-box"></div>

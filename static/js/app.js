@@ -143,14 +143,27 @@ function openProductDetail(product) {
     const modal = document.getElementById('product-detail-modal');
     if (!modal) return;
 
-    document.getElementById('detail-image').src = product.image_url || 'https://placehold.co/600';
+    // Устанавливаем изображение с cache-busting
+    const img = document.getElementById('detail-image');
+    img.src = product.image_url || 'https://placehold.co/600';
+    
+    // Сбрасываем скролл в начало
+    const scrollContainer = modal.querySelector('.overflow-y-auto');
+    if (scrollContainer) {
+        scrollContainer.scrollTop = 0;
+    }
+    
     document.getElementById('detail-name').innerText = product.name;
     document.getElementById('detail-desc').innerText = product.description || 'Описание отсутствует';
     document.getElementById('detail-composition').innerText = product.composition || 'Состав уточняйте у флориста';
 
     updateDetailPrice();
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
+    
+    // Блокируем прокрутку body только на десктопе
+    if (window.innerWidth > 768) {
+        document.body.style.overflow = 'hidden';
+    }
 }
 
 function updateDetailPrice() {
@@ -217,7 +230,9 @@ function addToCart(product) {
 }
 
 function closeProductDetail() {
-    document.getElementById('product-detail-modal').classList.add('hidden');
+    const modal = document.getElementById('product-detail-modal');
+    modal.classList.add('hidden');
+    // Восстанавливаем прокрутку body
     document.body.style.overflow = '';
 }
 
@@ -790,11 +805,20 @@ function toggleFavorites() {
 function renderFavorites() {
     const container = document.getElementById('fav-items');
     const countBadge = document.getElementById('fav-count');
+    const mobileCountBadge = document.getElementById('mobile-fav-count');
 
-    if (!countBadge || !container) return;
+    // Обновляем оба бейджа (десктоп + мобильный)
+    if (countBadge) {
+        countBadge.innerText = favorites.length;
+        countBadge.classList.toggle('hidden', favorites.length === 0);
+    }
+    
+    if (mobileCountBadge) {
+        mobileCountBadge.innerText = favorites.length;
+        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
+    }
 
-    countBadge.innerText = favorites.length;
-    countBadge.classList.toggle('hidden', favorites.length === 0);
+    if (!container) return;
 
     if (favorites.length === 0) {
         container.innerHTML = '<p class="text-center text-gray-500 mt-10">Список избранного пуст</p>';

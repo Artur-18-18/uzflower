@@ -201,6 +201,13 @@
         min-width: 18px;
         text-align: center;
         z-index: 10;
+        display: none;
+    }
+    
+    .fav-badge:not(:empty) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Mobile Search Modal */
