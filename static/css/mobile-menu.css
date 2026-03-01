@@ -4,7 +4,7 @@
     /* Hidden by default on desktop */
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1280px) {
     .mobile-bottom-menu {
         display: block;
         position: fixed;
@@ -381,6 +381,13 @@
 
     .favorites-overlay.active {
         display: block;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1280px) {
+    .mobile-bottom-menu {
+        transform: scale(1.2);
+        bottom: calc(30px + env(safe-area-inset-bottom, 0px));
     }
 }
 

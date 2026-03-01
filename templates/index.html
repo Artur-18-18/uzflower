@@ -9,8 +9,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/output.css">
     <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/mobile-menu.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
+    <link rel="stylesheet" href="/static/css/mobile-menu.css">
     <script src="/static/js/i18n.js"></script>
     <style>
         /* Fixed Header Styles */
@@ -433,7 +433,7 @@
                     </a>
                 </div>
 
-                <nav class="hidden lg:flex items-center gap-8 ml-8">
+                <nav class="hidden xl:flex items-center gap-8 ml-8">
                     <a href="/" onclick="scrollToTop(event)"
                         class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
                         data-i18n="header.home">Главная</a>
@@ -445,7 +445,7 @@
                         data-i18n="header.contacts">Контакты</a>
                 </nav>
 
-                <div class="hidden lg:flex flex-1 max-w-xl mx-8">
+                <div class="hidden xl:flex flex-1 max-w-xl mx-8">
                     <div class="relative w-full">
                         <i data-lucide="search"
                             class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"></i>
@@ -466,7 +466,7 @@
                     </button>
 
                     <button onclick="toggleFavorites()"
-                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden lg:flex">
+                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden xl:flex">
                         <i data-lucide="heart" class="w-6 h-6"></i>
                         <span id="fav-count"
                             class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
@@ -648,7 +648,7 @@
 
                         <!-- Products Grid -->
                         <div class="flex-1">
-                            <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                                 <!-- Loaded via JS -->
                                 <div class="col-span-full text-center py-20">
                                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto">
@@ -1237,7 +1237,7 @@
     </div>
 
     <!-- мобильное нижнее меню -->
-    <nav class="mobile-bottom-menu lg:hidden">
+    <nav class="mobile-bottom-menu xl:hidden !flex">
         <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
         <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
         <input type="radio" id="mobile-search" name="mobile-menu">
