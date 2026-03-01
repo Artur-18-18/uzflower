@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import io
 import json
 import logging
 import os
@@ -7,6 +8,9 @@ import shutil
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
+
+import cloudinary
+import cloudinary.uploader
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -486,6 +490,55 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # ============================================================
+# Cloudinary Configuration
+# ============================================================
+cld_cloud = os.getenv("CLOUDINARY_CLOUD_NAME")
+cld_key = os.getenv("CLOUDINARY_API_KEY")
+cld_secret = os.getenv("CLOUDINARY_API_SECRET")
+
+USE_CLOUDINARY = bool(cld_cloud and cld_key and cld_secret)
+
+if USE_CLOUDINARY:
+    cloudinary.config(
+        cloud_name=cld_cloud,
+        api_key=cld_key,
+        api_secret=cld_secret,
+        secure=True
+    )
+    logger.info("☁️  Cloudinary настроен: %s", cld_cloud)
+else:
+    logger.warning("⚠️  Cloudinary не настроен — файлы сохраняются локально (не рекомендуется на Render)")
+
+
+def upload_file_to_storage(file_bytes: bytes, filename: str, folder: str = "uzflower") -> str:
+    """Загружает файл в Cloudinary (если настроен) или сохраняет локально."""
+    ext = os.path.splitext(filename)[1].lower()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_name = f"{timestamp}_{filename}"
+
+    if USE_CLOUDINARY:
+        # Определяем тип ресурса
+        video_exts = {".mp4", ".webm", ".ogg", ".mov"}
+        resource_type = "video" if ext in video_exts else "image"
+        result = cloudinary.uploader.upload(
+            io.BytesIO(file_bytes),
+            folder=folder,
+            public_id=f"{timestamp}_{os.path.splitext(filename)[0]}",
+            resource_type=resource_type,
+            overwrite=False,
+        )
+        return result["secure_url"]
+    else:
+        # Локальное сохранение (fallback)
+        os.makedirs(f"static/uploads/{folder}".replace("uzflower", "").strip("/") or "static/uploads", exist_ok=True)
+        local_folder = "static/uploads"
+        os.makedirs(local_folder, exist_ok=True)
+        file_path = f"{local_folder}/{unique_name}"
+        with open(file_path, "wb") as buf:
+            buf.write(file_bytes)
+        return f"/static/uploads/{unique_name}"
+
+# ============================================================
 # CORS Middleware - разрешаем запросы с любых доменов
 # ============================================================
 app.add_middleware(
@@ -887,25 +940,19 @@ async def upload_avatar(
     if ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail="Неподдерживаемый тип файла")
 
-    # Генерируем уникальное имя файла
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    unique_filename = f"avatar_{current_user.id}_{timestamp}{ext}"
+    file_bytes = await file.read()
+    unique_filename = f"avatar_{current_user.id}{ext}"
+    url = upload_file_to_storage(file_bytes, unique_filename, folder="uzflower/avatars")
 
-    file_path = f"static/uploads/avatars/{unique_filename}"
-    os.makedirs("static/uploads/avatars", exist_ok=True)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    # Сохраняем путь к аватару в поле image_url (добавим если нет)
+    # Сохраняем путь к аватару
     db = SessionLocal()
     try:
         current_user = db.merge(current_user)
-        current_user.image_url = f"/static/uploads/avatars/{unique_filename}"
+        current_user.image_url = url
         db.commit()
 
         logger.info("📷 Аватар загружен для: %s", current_user.email)
-        return {"url": f"/static/uploads/avatars/{unique_filename}"}
+        return {"url": url}
     finally:
         db.close()
 
@@ -1799,19 +1846,15 @@ async def create_review(
     db.commit()
     db.refresh(new_review)
 
-    # Заг��узка фото
+    # Загрузка фото
     if files:
-        os.makedirs("static/uploads/reviews", exist_ok=True)
         for file in files:
             if file.filename and file.filename.split('.')[-1].lower() in ['jpg', 'jpeg', 'png', 'webp']:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                unique_filename = f"review_{new_review.id}_{timestamp}_{file.filename}"
-                file_path = f"static/uploads/reviews/{unique_filename}"
+                file_bytes = await file.read()
+                unique_filename = f"review_{new_review.id}_{file.filename}"
+                url = upload_file_to_storage(file_bytes, unique_filename, folder="uzflower/reviews")
 
-                with open(file_path, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-
-                review_img = ReviewImage(review_id=new_review.id, url=f"/static/uploads/reviews/{unique_filename}")
+                review_img = ReviewImage(review_id=new_review.id, url=url)
                 db.add(review_img)
 
         db.commit()
@@ -2421,10 +2464,9 @@ async def delete_zone(zone_id: int, db: Session = Depends(get_db), admin: User =
 
 @app.post("/api/admin/upload")
 async def upload_file(file: UploadFile = File(...), admin: User = Depends(get_current_admin)):
-    file_path = f"static/uploads/{file.filename}"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"url": f"/static/uploads/{file.filename}"}
+    file_bytes = await file.read()
+    url = upload_file_to_storage(file_bytes, file.filename, folder="uzflower/products")
+    return {"url": url}
 
 class BannerBase(BaseModel):
     image_url: Optional[str] = None
@@ -2485,18 +2527,13 @@ async def upload_banner_file(file: UploadFile = File(...), admin: User = Depends
     if ext not in allowed_image_extensions + allowed_video_extensions:
         raise HTTPException(status_code=400, detail="Неподдерживаемый тип файла")
 
-    # Генерируем уникальное имя файла
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    unique_filename = f"{timestamp}_{filename}"
-
-    file_path = f"static/uploads/{unique_filename}"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
+    file_bytes = await file.read()
     media_type = "video" if ext in allowed_video_extensions else "image"
-    logger.info("✅ Файл баннера загружен: %s (%s)", unique_filename, media_type)
 
-    return {"url": f"/static/uploads/{unique_filename}", "media_type": media_type}
+    url = upload_file_to_storage(file_bytes, filename, folder="uzflower/banners")
+    logger.info("✅ Файл баннера загружен: %s (%s)", filename, media_type)
+
+    return {"url": url, "media_type": media_type}
 
 # --- Pages ---
 @app.get("/favicon.ico")

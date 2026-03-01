@@ -28,6 +28,9 @@ httpx==0.26.0
 # Environment
 python-dotenv==1.0.0
 
+# Cloud File Storage
+cloudinary>=1.36.0
+
 # ============================================
 # Development Requirements
 # ============================================
