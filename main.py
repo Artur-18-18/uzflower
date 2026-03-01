@@ -22,7 +22,7 @@ from jose import JWTError, jwt
 import bcrypt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 # ============================================================
 # Настройка логгера — все события пишутся в server_debug.log
@@ -1697,6 +1697,7 @@ async def get_products(
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
     sort_by: Optional[str] = None, # price_asc, price_desc, popular
+    search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     try:
@@ -1707,6 +1708,15 @@ async def get_products(
             query = query.filter(Product.price >= min_price)
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
+
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Product.name.ilike(search_term),
+                    Product.description.ilike(search_term)
+                )
+            )
 
         if sort_by == "price_asc":
             query = query.order_by(Product.price.asc())

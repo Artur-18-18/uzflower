@@ -421,30 +421,189 @@ function handleMobileSearch() {
 
 // Mobile favorites functions
 function toggleMobileFavorites() {
-    const sidebar = document.getElementById('mobile-favorites-sidebar');
-    const overlay = document.getElementById('favorites-overlay');
+    let sidebar = document.getElementById('mobile-favorites-sidebar');
+    let overlay = document.getElementById('favorites-overlay');
     
     // Создаём overlay если нет
     if (!overlay) {
-        const newOverlay = document.createElement('div');
-        newOverlay.id = 'favorites-overlay';
-        newOverlay.className = 'favorites-overlay';
-        newOverlay.onclick = closeMobileFavorites;
-        document.body.appendChild(newOverlay);
+        overlay = document.createElement('div');
+        overlay.id = 'favorites-overlay';
+        overlay.className = 'fixed inset-0 bg-black/50 z-30 hidden transition-opacity duration-300 opacity-0';
+        overlay.onclick = () => {
+            closeMobileFavorites();
+            closeMobileCart();
+        };
+        document.body.appendChild(overlay);
     }
     
-    sidebar.classList.toggle('active');
-    document.getElementById('favorites-overlay').classList.toggle('active');
-    document.body.style.overflow = 'hidden';
+    // Создаём sidebar если нет
+    if (!sidebar) {
+        sidebar = document.createElement('div');
+        sidebar.id = 'mobile-favorites-sidebar';
+        sidebar.className = 'fixed inset-x-0 bottom-[80px] z-40 bg-white rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform transition-transform duration-300 translate-y-[110%] flex flex-col max-h-[80vh]';
+        sidebar.innerHTML = `
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-3xl sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-gray-900">Избранное</h2>
+                <button onclick="closeMobileFavorites()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                </button>
+            </div>
+            <div id="mobile-favorites-list" class="p-4 overflow-y-auto flex-1 pb-20"></div>
+        `;
+        document.body.appendChild(sidebar);
+        lucide.createIcons();
+    }
     
-    // Загружаем избранное
-    loadMobileFavorites();
+    if (sidebar.classList.contains('translate-y-0')) {
+        closeMobileFavorites();
+    } else {
+        closeMobileCart(); // Закрываем корзину если открыта
+        
+        sidebar.classList.remove('translate-y-[110%]');
+        sidebar.classList.add('translate-y-0');
+        
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        
+        document.body.style.overflow = 'hidden';
+        loadMobileFavorites();
+    }
 }
 
 function closeMobileFavorites() {
-    document.getElementById('mobile-favorites-sidebar').classList.remove('active');
-    document.getElementById('favorites-overlay').classList.remove('active');
+    const sidebar = document.getElementById('mobile-favorites-sidebar');
+    const overlay = document.getElementById('favorites-overlay');
+    
+    if (sidebar) {
+        sidebar.classList.remove('translate-y-0');
+        sidebar.classList.add('translate-y-[110%]');
+    }
+    
+    if (overlay && !document.getElementById('mobile-cart-sidebar')?.classList.contains('translate-y-0')) {
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+    
     document.body.style.overflow = '';
+}
+
+// Mobile Cart Functions
+function toggleMobileCart() {
+    let sidebar = document.getElementById('mobile-cart-sidebar');
+    let overlay = document.getElementById('favorites-overlay');
+    
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'favorites-overlay';
+        overlay.className = 'fixed inset-0 bg-black/50 z-30 hidden transition-opacity duration-300 opacity-0';
+        overlay.onclick = () => {
+            closeMobileFavorites();
+            closeMobileCart();
+        };
+        document.body.appendChild(overlay);
+    }
+
+    if (!sidebar) {
+        sidebar = document.createElement('div');
+        sidebar.id = 'mobile-cart-sidebar';
+        sidebar.className = 'fixed inset-x-0 bottom-[80px] z-40 bg-white rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] transform transition-transform duration-300 translate-y-[110%] flex flex-col max-h-[80vh]';
+        sidebar.innerHTML = `
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-3xl sticky top-0 z-10">
+                <h2 class="text-xl font-bold text-gray-900">Корзина</h2>
+                <button onclick="closeMobileCart()" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                </button>
+            </div>
+            <div id="mobile-cart-list" class="p-4 overflow-y-auto flex-1"></div>
+            <div class="p-5 border-t border-gray-100 bg-white sticky bottom-0 z-10">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-gray-500">Итого:</span>
+                    <span id="mobile-cart-total" class="text-xl font-bold text-rose-600">0 сум</span>
+                </div>
+                <button onclick="handleCheckout()" class="w-full py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">
+                    Оформить заказ
+                </button>
+            </div>
+        `;
+        document.body.appendChild(sidebar);
+        lucide.createIcons();
+    }
+
+    if (sidebar.classList.contains('translate-y-0')) {
+        closeMobileCart();
+    } else {
+        closeMobileFavorites(); // Закрываем избранное если открыто
+        
+        sidebar.classList.remove('translate-y-[110%]');
+        sidebar.classList.add('translate-y-0');
+        
+        overlay.classList.remove('hidden');
+        setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        
+        document.body.style.overflow = 'hidden';
+        renderMobileCart();
+    }
+}
+
+function closeMobileCart() {
+    const sidebar = document.getElementById('mobile-cart-sidebar');
+    const overlay = document.getElementById('favorites-overlay');
+    
+    if (sidebar) {
+        sidebar.classList.remove('translate-y-0');
+        sidebar.classList.add('translate-y-[110%]');
+    }
+    
+    if (overlay && !document.getElementById('mobile-favorites-sidebar')?.classList.contains('translate-y-0')) {
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+    
+    document.body.style.overflow = '';
+}
+
+function renderMobileCart() {
+    const container = document.getElementById('mobile-cart-list');
+    const totalElem = document.getElementById('mobile-cart-total');
+    
+    if (!container || !totalElem) return;
+    
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 text-gray-400">
+                <i data-lucide="shopping-bag" class="w-16 h-16 mb-4 opacity-20"></i>
+                <p>Корзина пуста</p>
+            </div>
+        `;
+        totalElem.innerText = '0 сум';
+        lucide.createIcons();
+        return;
+    }
+    
+    container.innerHTML = cart.map(item => `
+        <div class="flex gap-3 mb-4 bg-gray-50 p-3 rounded-xl">
+            <img src="${item.image_url || 'https://placehold.co/80'}" class="w-20 h-20 object-cover rounded-lg">
+            <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-sm text-gray-900 truncate">${item.name}</h4>
+                <p class="text-xs text-gray-500 mb-1">${item.size ? `Размер: ${item.size}` : ''}</p>
+                <p class="text-rose-600 font-bold text-sm">${formatPrice(item.sale_price || item.price)} сум</p>
+                
+                <div class="flex items-center gap-3 mt-2">
+                    <button onclick="updateQuantity(${item.id}, -1)" class="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">-</button>
+                    <span class="text-sm font-bold">${item.quantity}</span>
+                    <button onclick="updateQuantity(${item.id}, 1)" class="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">+</button>
+                </div>
+            </div>
+            <button onclick="removeFromCart(${item.id})" class="self-start text-gray-300 hover:text-red-500">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    const total = cart.reduce((sum, item) => sum + (item.sale_price || item.price) * item.quantity, 0);
+    totalElem.innerText = formatPrice(total) + ' сум';
+    
+    lucide.createIcons();
 }
 
 function loadMobileFavorites() {
@@ -934,6 +1093,9 @@ function renderCart() {
     totalElem.innerText = formatPrice(total) + ' сум';
 
     lucide.createIcons();
+
+    // Обновляем мобильную корзину
+    renderMobileCart();
 }
 
 function updateQuantity(productId, delta) {
