@@ -489,7 +489,7 @@ function handleMobileSearch() {
         `;
     } else {
         resultsContainer.innerHTML = filtered.map(product => `
-            <div class="search-result-item bg-white p-3 rounded-xl mb-3 shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform" onclick="openProductDetail(${JSON.stringify(product).replace(/"/g, '&quot;')}); closeMobileSearch();">
+            <div class="search-result-item bg-white p-3 rounded-xl mb-3 shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform" onclick="openProductDetail(allProductsList.find(p => p.id === ${product.id})); closeMobileSearch();">
                 <img src="${product.image_url || 'https://placehold.co/60'}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg">
                 <div class="flex-1">
                     <p class="font-semibold text-gray-900">${product.name}</p>
@@ -770,8 +770,10 @@ async function loadBanners() {
 
         // Слайдер с несколькими баннерами
         let currentBannerIndex = 0;
+        let bannerTimeout; // Переменная для хранения таймера
 
         const renderBanner = (banner) => {
+            if (bannerTimeout) clearTimeout(bannerTimeout); // Очищаем предыдущий таймер
             const bannerText = banner.text || 'Весенняя Коллекция';
             const bannerSubtext = banner.subtext || 'Создайте незабываемые моменты с нашими авторскими букетами';
             
@@ -798,8 +800,10 @@ async function loadBanners() {
                 };
                 // Обработка ошибок загрузки видео
                 video.onerror = () => {
-                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
-                    renderBanner(banners[currentBannerIndex]);
+                    bannerTimeout = setTimeout(() => {
+                        currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                        renderBanner(banners[currentBannerIndex]);
+                    }, 3000); // Задержка при ошибке, чтобы не мелькало
                 };
 
             } else if (banner.image_url) {
@@ -817,11 +821,11 @@ async function loadBanners() {
                     </div>
                 `;
 
-                // Для изображений — автопереключение через 5 секунд
-                setTimeout(() => {
+                // Для изображений — автопереключение через 7 секунд (было 5)
+                bannerTimeout = setTimeout(() => {
                     currentBannerIndex = (currentBannerIndex + 1) % banners.length;
                     renderBanner(banners[currentBannerIndex]);
-                }, 5000);
+                }, 7000);
             }
 
             // Клик по баннеру с ссылкой
