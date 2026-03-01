@@ -463,8 +463,15 @@ async function loadOrderDetail(orderId) {
 }
 
 function hideOrderDetail() {
-    document.getElementById('order-detail-modal').classList.add('hidden');
+    const modal = document.getElementById('order-detail-modal');
+    modal.classList.add('hidden');
+    
+    // Восстанавливаем прокрутку body
+    const scrollY = document.body.style.top;
     document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    
     selectedOrder = null;
 }
 
@@ -743,18 +750,28 @@ async function loadAddresses() {
 }
 
 function showAddAddressModal() {
-    document.getElementById('add-address-modal').classList.remove('hidden');
+    const modal = document.getElementById('add-address-modal');
+    modal.classList.remove('hidden');
     document.getElementById('address-title').value = '';
     document.getElementById('address-full').value = '';
     document.getElementById('address-phone').value = '';
     document.getElementById('address-recipient').value = '';
     document.getElementById('address-default').checked = false;
+    
+    // Блокируем прокрутку body
     document.body.classList.add('modal-open');
+    document.body.style.top = `-${window.scrollY}px`;
 }
 
 function hideAddAddressModal() {
-    document.getElementById('add-address-modal').classList.add('hidden');
+    const modal = document.getElementById('add-address-modal');
+    modal.classList.add('hidden');
+    
+    // Восстанавливаем прокрутку body
+    const scrollY = document.body.style.top;
     document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
 }
 
 async function addAddress(event) {
@@ -954,7 +971,8 @@ async function loadReminders() {
 }
 
 function showAddReminderModal() {
-    document.getElementById('add-reminder-modal').classList.remove('hidden');
+    const modal = document.getElementById('add-reminder-modal');
+    modal.classList.remove('hidden');
     document.getElementById('reminder-title').value = '';
     document.getElementById('reminder-date').value = '';
     document.getElementById('reminder-recipient').value = '';
@@ -962,12 +980,21 @@ function showAddReminderModal() {
     document.getElementById('reminder-recurring').checked = false;
     document.getElementById('reminder-recurring-type').value = 'yearly';
     document.getElementById('recurring-type-container').classList.add('hidden');
+    
+    // Блокируем прокрутку body
     document.body.classList.add('modal-open');
+    document.body.style.top = `-${window.scrollY}px`;
 }
 
 function hideAddReminderModal() {
-    document.getElementById('add-reminder-modal').classList.add('hidden');
+    const modal = document.getElementById('add-reminder-modal');
+    modal.classList.add('hidden');
+    
+    // Восстанавливаем прокрутку body
+    const scrollY = document.body.style.top;
     document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
 }
 
 function toggleRecurringType() {
@@ -1293,8 +1320,13 @@ async function loadProductsForReview() {
 }
 
 function showReviewModal() {
-    document.getElementById('review-modal').classList.remove('hidden');
+    const modal = document.getElementById('review-modal');
+    modal.classList.remove('hidden');
+    
+    // Блокируем прокрутку body
     document.body.classList.add('modal-open');
+    document.body.style.top = `-${window.scrollY}px`;
+    
     setRating(5);
     selectedPhotos = [];
     document.getElementById('review-photo-preview').innerHTML = '';
@@ -1302,8 +1334,14 @@ function showReviewModal() {
 }
 
 function hideReviewModal() {
-    document.getElementById('review-modal').classList.add('hidden');
+    const modal = document.getElementById('review-modal');
+    modal.classList.add('hidden');
+    
+    // Восстанавливаем прокрутку body
+    const scrollY = document.body.style.top;
     document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
 }
 
 function setRating(rating) {

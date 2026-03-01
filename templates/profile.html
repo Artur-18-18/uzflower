@@ -54,10 +54,17 @@
             font-weight: 600;
         }
         
-        /* Modal Styles - Fix z-index and overflow */
-        #review-modal .sticky {
-            z-index: 20;
-            background: white;
+        /* Fix modal z-index - must be higher than mobile menu (z-1000) */
+        .modal-overlay {
+            z-index: 99999 !important;
+        }
+        
+        /* Review photo preview - fix image overflow */
+        #review-photo-preview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
         }
         
         #review-photo-preview img {
@@ -65,11 +72,14 @@
             height: 100px;
             object-fit: cover;
             border-radius: 8px;
+            display: block;
         }
         
         /* Prevent body scroll when modal is open */
         body.modal-open {
             overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
     </style>
 </head>
@@ -369,9 +379,9 @@
     </main>
 
     <!-- Add Address Modal -->
-    <div id="add-address-modal" class="fixed inset-0 z-[9999] hidden">
+    <div id="add-address-modal" class="fixed inset-0 modal-overlay hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideAddAddressModal()"></div>
-        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in">
+        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in" style="z-index: 100000;">
             <div class="p-6 h-full overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-gray-900">Новый адрес</h3>
@@ -411,9 +421,9 @@
     </div>
 
     <!-- Add Reminder Modal -->
-    <div id="add-reminder-modal" class="fixed inset-0 z-[9999] hidden">
+    <div id="add-reminder-modal" class="fixed inset-0 modal-overlay hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideAddReminderModal()"></div>
-        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in">
+        <div class="absolute inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl slide-in" style="z-index: 100000;">
             <div class="p-6 h-full overflow-y-auto">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-gray-900">Новое напоминание</h3>
@@ -459,11 +469,11 @@
     </div>
 
     <!-- Review Modal -->
-    <div id="review-modal" class="fixed inset-0 z-[9999] hidden">
+    <div id="review-modal" class="fixed inset-0 modal-overlay hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideReviewModal()"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto" style="z-index: 100000;">
             <div class="p-6">
-                <div class="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b z-10">
+                <div class="flex justify-between items-center mb-6 sticky top-0 bg-white pb-4 border-b" style="z-index: 10;">
                     <h3 class="text-xl font-bold text-gray-900">Оставить отзыв</h3>
                     <button onclick="hideReviewModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         <i data-lucide="x" class="w-6 h-6"></i>
@@ -523,9 +533,9 @@
     </div>
 
     <!-- Order Detail Modal -->
-    <div id="order-detail-modal" class="fixed inset-0 z-[9999] hidden">
+    <div id="order-detail-modal" class="fixed inset-0 modal-overlay hidden">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="hideOrderDetail()"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto" style="z-index: 100000;">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-gray-900">Заказ #<span id="detail-order-id"></span></h3>
