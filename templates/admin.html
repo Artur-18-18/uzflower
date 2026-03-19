@@ -25,6 +25,21 @@
             }
         }
 
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Tab Button Styles */
         .tab-btn {
             border-bottom: 3px solid transparent;
@@ -159,11 +174,9 @@
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
                         <i data-lucide="users" class="w-5 h-5"></i> <span data-i18n="admin.tabs.users">Клиенты</span>
                     </button>
-                    <button onclick="switchTab('support')" id="tab-support"
-                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900 relative">
-                        <i data-lucide="headset" class="w-5 h-5"></i> <span data-i18n="admin.tabs.reviews">Отзывы</span>
-                        <span id="support-badge"
-                            class="absolute top-2 right-2 w-5 h-5 bg-rose-600 text-white text-[10px] rounded-full flex items-center justify-center hidden">0</span>
+                    <button onclick="switchTab('reviews')" id="tab-reviews"
+                        class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
+                        <i data-lucide="message-square" class="w-5 h-5"></i> <span data-i18n="admin.tabs.reviews">Отзывы</span>
                     </button>
                     <button onclick="switchTab('categories')" id="tab-categories"
                         class="tab-btn flex items-center gap-2 px-6 py-4 font-semibold transition-colors whitespace-nowrap text-gray-600 hover:text-gray-900">
@@ -270,20 +283,45 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">URL изображения</label>
-                        <input type="text" id="prod-image-url" placeholder="https://... или путь к файлу"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent">
-                    </div>
-                    <div class="relative">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Или загрузить файл</label>
-                        <div class="flex items-center gap-2">
-                            <input type="file" id="prod-image-file" accept="image/*" onchange="handleFileUpload(this)"
-                                class="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-gray-50 hover:bg-white transition-colors cursor-pointer">
-                            <div id="upload-status" class="hidden">
-                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-rose-600"></div>
+                <!-- Блок изображений -->
+                <div class="border border-gray-200 rounded-xl p-4 bg-gray-50/50 space-y-4">
+                    <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="image" class="w-4 h-4 text-rose-500"></i>
+                        Изображения товара
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Главное фото (обложка)</label>
+                            <p class="text-xs text-gray-500 mb-2">Отображается на карточке и первым в галерее</p>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <input type="text" id="prod-image-url" placeholder="URL или путь к файлу"
+                                    class="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm">
+                                <label class="inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 cursor-pointer text-sm">
+                                    <i data-lucide="upload" class="w-4 h-4 text-gray-500"></i>
+                                    <span>Загрузить</span>
+                                    <input type="file" id="prod-image-file" accept="image/*" onchange="handleFileUpload(this)" class="hidden">
+                                </label>
+                                <div id="upload-status" class="hidden">
+                                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-rose-500 border-t-transparent"></div>
+                                </div>
                             </div>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Дополнительные фото (галерея)</label>
+                            <p class="text-xs text-gray-500 mb-2">Показываются при свайпе в карточке товара. Можно выбрать несколько файлов.</p>
+                            <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center bg-white hover:border-rose-300 transition-colors">
+                                <input type="file" id="prod-images-multiple" accept="image/*" multiple
+                                    onchange="handleMultipleFileUpload(this)" class="hidden" />
+                                <label for="prod-images-multiple" class="cursor-pointer flex flex-col items-center gap-1">
+                                    <i data-lucide="image-plus" class="w-10 h-10 text-rose-400"></i>
+                                    <span class="text-sm font-medium text-gray-600">Добавить фото в галерею</span>
+                                    <span class="text-xs text-gray-500">JPG, PNG, WebP. До 10 фото.</span>
+                                </label>
+                                <div id="upload-multiple-status" class="hidden mt-2">
+                                    <div class="animate-spin rounded-full h-5 w-5 border-2 border-rose-500 border-t-transparent mx-auto"></div>
+                                </div>
+                            </div>
+                            <div id="additional-images-list" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-3"></div>
                         </div>
                     </div>
                 </div>
@@ -311,6 +349,54 @@
                     <i data-lucide="save" class="w-5 h-5"></i> Сохранить
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Sidebar Banner Modal -->
+    <div id="sidebar-banner-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h3 class="text-xl font-bold text-gray-900">Добавить боковой баннер</h3>
+                <button onclick="closeSidebarBannerModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">URL видео</label>
+                    <input type="text" id="modal-sidebar-banner-video" placeholder="/static/uploads/banners/promo-video.mp4"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                    <p class="text-xs text-gray-500 mt-1">Вертикальное видео 9:16 (до 5MB)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Или загрузить видео файл</label>
+                    <input type="file" id="modal-sidebar-banner-file" accept="video/*"
+                        onchange="handleSidebarBannerFileUpload(this)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50">
+                    <div id="modal-sidebar-banner-upload-status" class="hidden mt-2">
+                        <div class="flex items-center gap-2 text-sm text-gray-600">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-rose-600"></div>
+                            Загрузка видео...
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Текст под видео</label>
+                    <input type="text" id="modal-sidebar-banner-text" placeholder="🌸 Красота в каждом букете"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent outline-none">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="saveSidebarBannerFromModal()"
+                        class="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 transition-all font-semibold flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-5 h-5"></i> Сохранить
+                    </button>
+                    <button type="button" onclick="deleteSidebarBannerFromModal()"
+                        class="flex-1 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all font-semibold flex items-center justify-center gap-2">
+                        <i data-lucide="trash-2" class="w-5 h-5"></i> Удалить
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -420,11 +506,24 @@
 
         // --- Auth Helpers ---
         function getAuthToken() {
+            // Для обычных эндпоинтов админ-панели используем JWT токен
             return localStorage.getItem('admin_token');
+        }
+        
+        function getBotApiSecret() {
+            // Для эндпоинтов админ-бота используем TELEGRAM_API_SECRET
+            return localStorage.getItem('telegram_api_secret');
         }
 
         async function adminFetch(url, options = {}) {
-            const token = getAuthToken();
+            // Определяем, какой токен использовать
+            let token = getAuthToken();
+            
+            // Для эндпоинтов админ-бота используем API secret
+            if (url.startsWith('/api/admin/bot/') || url.startsWith('/api/telegram/') || url.startsWith('/api/users/')) {
+                token = getBotApiSecret() || token;
+            }
+            
             if (!token) {
                 showLogin();
                 throw new Error("No token");
@@ -460,6 +559,39 @@
             }
 
             return data;
+        }
+
+        // Показать уведомление
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                warning: 'bg-amber-500',
+                info: 'bg-blue-500'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'alert-circle',
+                warning: 'alert-triangle',
+                info: 'info'
+            };
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 ${colors[type] || colors.info} text-white px-6 py-3 rounded-lg shadow-lg z-[200] flex items-center gap-3 animate-fade-in`;
+            notification.innerHTML = `
+                <i data-lucide="${icons[type] || icons.info}" class="w-5 h-5"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            document.body.appendChild(notification);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
         function showLogin() {
@@ -502,6 +634,11 @@
 
         async function initAdmin() {
             lucide.createIcons();
+            
+            // Сохраняем API secret для эндпоинтов админ-бота
+            // Используем тот же секрет, что настроен на сервере
+            localStorage.setItem('telegram_api_secret', 'telegram-bot-secret-key');
+            
             loadData('stats');
             setInterval(checkUnreadSupport, 10000);
             checkUnreadSupport();
@@ -569,12 +706,21 @@
                 else if (type === 'customers') endpoint = '/api/admin/customers';
                 else if (type === 'promo') endpoint = '/api/promo-codes';
                 else if (type === 'products') endpoint = '/api/admin/products';
+                else if (type === 'reviews') {
+                    loadReviews();
+                    return;
+                }
                 else endpoint = `/api/${type}`;
 
                 const data = await adminFetch(endpoint);
 
                 if (['products', 'orders', 'support', 'categories', 'promo', 'customers', 'reviews', 'stats', 'delivery', 'marketing'].includes(type)) {
                     renderContent(type, data);
+
+                    // Если вкладка маркетинга - загружаем настройки бокового баннера
+                    if (type === 'marketing') {
+                        setTimeout(() => loadSidebarBannerSettings(), 200);
+                    }
                     return;
                 }
 
@@ -685,8 +831,16 @@
                 content.innerHTML = `
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">Маркетинг</h2>
+                        <button onclick="openSidebarBannerModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg flex items-center gap-2 hover:bg-rose-700 transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Добавить боковой баннер
+                        </button>
+                    </div>
+
+                    <!-- Основные баннеры -->
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">Основные баннеры</h2>
                         <button onclick="openBannerModal()" class="px-4 py-2 bg-rose-600 text-white rounded-lg flex items-center gap-2 hover:bg-rose-700 transition-all">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Добавить баннер
+                            <i data-lucide="plus" class="w-4 h-4"></i> Добавить основной баннер
                         </button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="banners-grid">
@@ -723,7 +877,9 @@
                     }
                     </div>
                 `;
+                content.innerHTML = content.innerHTML; // Применяем HTML
                 lucide.createIcons();
+
                 // Автозапуск видео при наведении
                 document.querySelectorAll('#banners-grid video').forEach(video => {
                     video.addEventListener('mouseenter', () => video.play());
@@ -967,24 +1123,194 @@
                     </div>
                 `;
             } else if (tab === 'reviews') {
-                content.innerHTML = '<h2 class="text-2xl font-bold text-gray-900 mb-6">Отзывы</h2>' + data.map(r => `
-                    <div class="p-4 border shadow-sm bg-white rounded-xl mb-4">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="font-bold text-gray-900">${r.user_name}</span>
-                            <div class="flex text-rose-500 text-xs">${'★'.repeat(r.rating)}</div>
-                        </div>
-                        <p class="text-[10px] text-gray-400 mb-2 uppercase tracking-wider">Товар ID: ${r.product_id}</p>
-                        <p class="text-sm text-gray-600 italic">"${r.text}"</p>
-                    </div>
-                `).join('');
+                renderReviews(data);
             }
             lucide.createIcons();
         }
 
+        // === Reviews Management ===
+        
+        async function loadReviews() {
+            try {
+                const reviews = await adminFetch('/api/admin/reviews');
+                renderReviews(reviews);
+            } catch (e) {
+                console.error("Ошибка загрузки отзывов:", e);
+                showNotification('Ошибка при загрузке отзывов', 'error');
+            }
+        }
+
+        function renderReviews(reviews) {
+            const content = document.getElementById('content-area');
+            
+            if (!reviews || reviews.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12">
+                        <i data-lucide="message-square" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Отзывов нет</h2>
+                        <p class="text-gray-500">Отзывы появятся после того, как клиенты оставят их на сайте</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const approvedCount = reviews.filter(r => r.is_approved).length;
+            const pendingCount = reviews.filter(r => !r.is_approved).length;
+
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4">Отзывы клиентов</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border">
+                            <div class="text-sm text-gray-500 mb-1">Всего отзывов</div>
+                            <div class="text-2xl font-bold text-gray-900">${reviews.length}</div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-200">
+                            <div class="text-sm text-green-600 mb-1">Одобренные</div>
+                            <div class="text-2xl font-bold text-green-700">${approvedCount}</div>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-xl shadow-sm border border-amber-200">
+                            <div class="text-sm text-amber-600 mb-1">На модерации</div>
+                            <div class="text-2xl font-bold text-amber-700">${pendingCount}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="filterReviews('all')" class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all text-sm font-medium">Все</button>
+                        <button onclick="filterReviews('pending')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">На модерации</button>
+                        <button onclick="filterReviews('approved')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">Одобренные</button>
+                    </div>
+                </div>
+                
+                <div id="reviews-list" class="space-y-4"></div>
+            `;
+
+            renderReviewsList(reviews);
+        }
+
+        function renderReviewsList(reviews) {
+            const container = document.getElementById('reviews-list');
+            if (!container) return;
+
+            container.innerHTML = reviews.map(r => `
+                <div class="p-5 bg-white rounded-xl shadow-sm border ${!r.is_approved ? 'border-amber-300 bg-amber-50' : 'border-gray-200'}">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                                ${r.user_name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900">${r.user_name || 'Аноним'}</div>
+                                <div class="text-xs text-gray-500">${new Date(r.created_at).toLocaleDateString('ru-RU')}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex text-amber-400">
+                                ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}
+                            </div>
+                            ${r.is_approved 
+                                ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Одобрен</span>' 
+                                : '<span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">На модерации</span>'
+                            }
+                        </div>
+                    </div>
+                    
+                    ${r.product_id ? `
+                        <div class="mb-3">
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Товар ID: ${r.product_id}</span>
+                        </div>
+                    ` : ''}
+                    
+                    <p class="text-gray-700 mb-4 leading-relaxed">${r.text}</p>
+                    
+                    ${r.images && r.images.length > 0 ? `
+                        <div class="flex gap-2 mb-4 overflow-x-auto">
+                            ${r.images.map(img => `
+                                <img src="${img.url}" alt="Фото отзыва" class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="window.open('${img.url}', '_blank')">
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="flex gap-2 pt-3 border-t">
+                        ${!r.is_approved ? `
+                            <button onclick="approveReview(${r.id}, true)" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-medium flex items-center justify-center gap-2">
+                                <i data-lucide="check" class="w-4 h-4"></i> Одобрить
+                            </button>
+                            <button onclick="approveReview(${r.id}, false)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium">
+                                Отклонить
+                            </button>
+                        ` : `
+                            <button onclick="approveReview(${r.id}, false)" class="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-all text-sm font-medium flex items-center gap-2">
+                                <i data-lucide="undo" class="w-4 h-4"></i> Снять одобрение
+                            </button>
+                        `}
+                        <button onclick="deleteReview(${r.id})" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all text-sm font-medium flex items-center gap-2">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function filterReviews(filter) {
+            adminFetch('/api/admin/reviews').then(reviews => {
+                let filtered = reviews;
+                if (filter === 'pending') {
+                    filtered = reviews.filter(r => !r.is_approved);
+                } else if (filter === 'approved') {
+                    filtered = reviews.filter(r => r.is_approved);
+                }
+                renderReviewsList(filtered);
+            });
+        }
+
+        async function approveReview(reviewId, approved) {
+            if (!confirm(`Вы уверены, что хотите ${approved ? 'одобрить' : 'отклонить'} этот отзыв?`)) return;
+
+            try {
+                // Передаём approved как query параметр
+                await adminFetch(`/api/admin/reviews/${reviewId}/approve?approved=${approved}`, {
+                    method: 'PUT'
+                });
+                
+                showNotification(`Отзыв ${approved ? 'одобрен' : 'отклонён'}`, 'success');
+                loadReviews();
+            } catch (e) {
+                console.error("Ошибка при одобрении отзыва:", e);
+                showNotification('Ошибка при обновлении отзыва', 'error');
+            }
+        }
+
+        async function deleteReview(reviewId) {
+            if (!confirm('Вы уверены, что хотите удалить этот отзыв? Это действие нельзя отменить.')) return;
+
+            try {
+                await adminFetch(`/api/admin/reviews/${reviewId}`, {
+                    method: 'DELETE'
+                });
+                
+                showNotification('Отзыв удалён', 'success');
+                loadReviews();
+            } catch (e) {
+                console.error("Ошибка при удалении отзыва:", e);
+                showNotification('Ошибка при удалении отзыва', 'error');
+            }
+        }
+
         // Product Actions
+        let currentEditingProductId = null;
+
         function openModal(product = null) {
             const modal = document.getElementById('product-modal');
             const title = document.getElementById('modal-title');
+
+            // Сохраняем ID редактируемого товара
+            currentEditingProductId = product ? product.id : null;
+
+            // Сбрасываем дополнительные изображения
+            additionalImages = [];
 
             if (product) {
                 title.innerText = 'Редактирование товара';
@@ -1005,11 +1331,19 @@
                 document.getElementById('prod-price-m').value = product.price_m || '';
                 document.getElementById('prod-price-l').value = product.price_l || '';
 
+                // Загружаем дополнительные изображения если есть
+                // Используем images (массив URL) для отображения
+                if (product.images && Array.isArray(product.images)) {
+                    additionalImages = [...product.images];
+                }
+                renderAdditionalImages();
+
                 loadCategoriesToSelect(product.category_id);
             } else {
                 title.innerText = 'Добавление товара';
                 document.getElementById('product-form').reset();
                 document.getElementById('prod-id').value = '';
+                currentEditingProductId = null;
                 loadCategoriesToSelect();
             }
 
@@ -1046,11 +1380,46 @@
             try {
                 const url = id ? `/api/products/${id}` : '/api/products';
                 const method = id ? 'PUT' : 'POST';
-                await adminFetch(url, {
+
+                // Сначала сохраняем товар
+                const response = await adminFetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+
+                const productId = id ? parseInt(id) : response.id;
+                console.log('💾 Сохранение товара #%s, дополнительные изображения:', productId, additionalImages.length);
+
+                // Если есть дополнительные изображения, сохраняем их
+                if (additionalImages.length > 0) {
+                    // Получаем текущие изображения товара
+                    const product = await adminFetch(`/api/products/${productId}`);
+                    const existingImages = product.images || [];
+                    console.log('📷 Текущие изображения товара:', existingImages);
+
+                    // Добавляем новые изображения
+                    let addedCount = 0;
+                    for (const imgUrl of additionalImages) {
+                        // Если изображение ещё не добавлено
+                        if (!existingImages.includes(imgUrl)) {
+                            try {
+                                await adminFetch(`/api/products/${productId}/images`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ image_url: imgUrl })
+                                });
+                                addedCount++;
+                                console.log('✅ Изображение добавлено:', imgUrl);
+                            } catch (imgErr) {
+                                console.error("❌ Ошибка при добавлении изображения:", imgErr);
+                            }
+                        } else {
+                            console.log('⚠️ Изображение уже существует:', imgUrl);
+                        }
+                    }
+                    console.log('📸 Добавлено изображений:', addedCount);
+                }
 
                 closeModal();
                 loadData('products');
@@ -1259,7 +1628,11 @@
                     const urlInput = document.getElementById('prod-image-url');
                     urlInput.value = data.url;
                     urlInput.dispatchEvent(new Event('input'));
-                    alert("Изображение успешно загружено!");
+                    
+                    // Перерисовываем галерею чтобы обновить метку главного фото
+                    renderAdditionalImages();
+                    
+                    alert("✅ Изображение успешно загружено и установлено как главное!");
                 } else {
                     const errorData = await res.json().catch(() => ({ detail: 'Ошибка загрузки' }));
                     console.error("Upload error:", errorData);
@@ -1271,6 +1644,192 @@
             } finally {
                 statusIndicator.classList.add('hidden');
                 input.value = '';
+            }
+        }
+
+        // Массив для хранения дополнительных изображений
+        let additionalImages = [];
+
+        async function handleMultipleFileUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+
+            const statusIndicator = document.getElementById('upload-multiple-status');
+            statusIndicator.classList.remove('hidden');
+
+            const files = Array.from(input.files);
+            const formData = new FormData();
+            files.forEach(file => formData.append('files', file));
+
+            try {
+                const res = await fetch('/api/admin/upload-multiple', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.urls && data.urls.length > 0) {
+                        console.log('📸 Загружено изображений:', data.urls.length);
+                        
+                        let isFirstPhoto = false;
+                        
+                        // Если главное фото ещё не установлено, устанавливаем первое загруженное
+                        const mainImageInput = document.getElementById('prod-image-url');
+                        if (!mainImageInput.value && data.urls.length > 0) {
+                            mainImageInput.value = data.urls[0];
+                            isFirstPhoto = true;
+                            console.log('✅ Первое фото установлено как главное:', data.urls[0]);
+                            
+                            // Остальные фото добавляем в галерею
+                            if (data.urls.length > 1) {
+                                additionalImages = [...additionalImages, ...data.urls.slice(1)];
+                                console.log('📷 Добавлено дополнительных фото:', data.urls.length - 1);
+                            }
+                        } else {
+                            // Если главное фото уже есть, все загруженные добавляем в галерею
+                            additionalImages = [...additionalImages, ...data.urls];
+                            console.log('📷 Добавлено фото в галерею:', data.urls.length);
+                        }
+                        
+                        renderAdditionalImages();
+                        
+                        let message = `✅ Загружено фото: ${data.urls.length}`;
+                        if (isFirstPhoto && data.urls.length > 0) {
+                            message += '\n📸 Первое фото установлено как главное!';
+                        }
+                        alert(message);
+                    }
+                } else {
+                    const errorData = await res.json().catch(() => ({ detail: 'Ошибка загрузки' }));
+                    console.error("Upload error:", errorData);
+                    alert(errorData.detail || "Ошибка при загрузке файлов");
+                }
+            } catch (e) {
+                console.error("Fetch error:", e);
+                alert("Ошибка соединения с сервером: " + e.message);
+            } finally {
+                statusIndicator.classList.add('hidden');
+                input.value = '';
+            }
+        }
+
+        function renderAdditionalImages() {
+            const container = document.getElementById('additional-images-list');
+            if (!container) return;
+
+            if (additionalImages.length === 0) {
+                container.innerHTML = '<p class="col-span-full text-xs text-gray-400 py-2">Нет дополнительных фото. Загрузите через блок выше.</p>';
+                return;
+            }
+
+            const mainImageUrl = document.getElementById('prod-image-url')?.value || '';
+
+            container.innerHTML = additionalImages.map((url, index) => {
+                const isSaved = currentEditingProductId !== null; // Если редактируем товар, значит фото уже сохранены
+                // Передаём null как imageId - функция сама найдёт ID по URL
+                const deleteAction = isSaved 
+                    ? `deleteProductImage(${currentEditingProductId}, null, '${url}')`
+                    : `removeAdditionalImage(${index})`;
+                const tooltip = isSaved ? 'Удалить из товара' : 'Удалить из галереи';
+                
+                // Проверяем, является ли это изображение главным
+                const isMainImage = url === mainImageUrl;
+
+                return `
+                <div class="relative group rounded-xl overflow-hidden border ${isMainImage ? 'border-rose-500 ring-2 ring-rose-300' : 'border-gray-200'} bg-white shadow-sm">
+                    <img src="${url}" alt="Фото ${index + 1}" class="w-full aspect-square object-cover" />
+                    ${isMainImage ? '<div class="absolute top-1 left-1 bg-rose-500 text-white text-[10px] px-2 py-1 rounded-full font-medium">📸 Главное</div>' : ''}
+                    <button type="button" onclick="${deleteAction}"
+                        class="absolute ${isMainImage ? 'top-1 right-20' : 'top-1 right-1'} bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-opacity opacity-90 hover:opacity-100"
+                        title="${tooltip}">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    ${!isMainImage ? `
+                    <button type="button" onclick="setAsMainImage('${url}')"
+                        class="absolute bottom-1 right-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-1.5 shadow-md transition-opacity opacity-90 hover:opacity-100"
+                        title="Сделать главным фото">
+                        <i data-lucide="star" class="w-3.5 h-3.5"></i>
+                    </button>
+                    ` : ''}
+                    <span class="absolute bottom-1 ${!isMainImage ? 'left-8' : 'left-1'} bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded">${index + 1}</span>
+                </div>
+            `}).join('');
+
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        /**
+         * Установить изображение как главное (обложку товара)
+         */
+        function setAsMainImage(url) {
+            const mainImageInput = document.getElementById('prod-image-url');
+            if (mainImageInput) {
+                mainImageInput.value = url;
+                console.log('✅ Главное фото изменено:', url);
+                renderAdditionalImages(); // Перерисовать галерею с новым главным фото
+            }
+        }
+
+        function removeAdditionalImage(index) {
+            additionalImages.splice(index, 1);
+            renderAdditionalImages();
+        }
+
+        /**
+         * Удалить изображение из товара (из базы данных)
+         * @param {number} productId - ID товара
+         * @param {number|null} imageId - ID изображения (если известен)
+         * @param {string} imageUrl - URL изображения
+         */
+        async function deleteProductImage(productId, imageId, imageUrl) {
+            if (!confirm('Удалить это изображение из товара?')) return;
+
+            try {
+                let targetImageId = imageId;
+
+                // Если ID изображения не передан, получаем список изображений и находим по URL
+                if (targetImageId === null || targetImageId === undefined) {
+                    const product = await adminFetch(`/api/products/${productId}`);
+                    // Используем images_data если есть (массив объектов {id, url})
+                    const imagesData = product.images_data || [];
+                    
+                    // Ищем изображение по URL
+                    const imgObj = imagesData.find(img => img.url === imageUrl);
+                    if (imgObj && imgObj.id) {
+                        targetImageId = imgObj.id;
+                        console.log('🔍 Найдено изображение по ID:', targetImageId);
+                    }
+                    
+                    if (targetImageId === null || targetImageId === undefined) {
+                        console.warn('⚠️ Не удалось найти ID изображения для удаления');
+                        alert('Не удалось найти изображение для удаления. Попробуйте обновить страницу.');
+                        return;
+                    }
+                }
+
+                await adminFetch(`/api/products/${productId}/images/${targetImageId}`, {
+                    method: 'DELETE'
+                });
+                console.log('✅ Изображение удалено из БД');
+
+                // Удаляем из массива additionalImages
+                const imgIndex = additionalImages.indexOf(imageUrl);
+                if (imgIndex > -1) {
+                    additionalImages.splice(imgIndex, 1);
+                    renderAdditionalImages();
+                }
+
+                // Перезагружаем данные
+                loadData('products');
+                alert('✅ Изображение удалено');
+            } catch (err) {
+                console.error("❌ Ошибка при удалении изображения:", err);
+                alert("Ошибка при удалении: " + err.message);
             }
         }
 
@@ -1736,6 +2295,117 @@
 
         function closeCustomersModal() {
             document.getElementById('customers-modal').classList.add('hidden');
+        }
+
+        // === Боковой баннер ===
+
+        // Обработка загрузки файла бокового баннера
+        async function handleSidebarBannerFileUpload(input) {
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const statusIndicator = document.getElementById('modal-sidebar-banner-upload-status');
+            if (statusIndicator) statusIndicator.classList.remove('hidden');
+
+            try {
+                const data = await adminFetch('/api/admin/upload-banner', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // Вставляем загруженный URL в поле
+                document.getElementById('modal-sidebar-banner-video').value = data.url;
+                alert('✅ Видео успешно загружено!');
+            } catch (e) {
+                console.error('Upload error:', e);
+                alert('Ошибка загрузки видео: ' + e.message);
+            } finally {
+                if (statusIndicator) statusIndicator.classList.add('hidden');
+                input.value = '';
+            }
+        }
+
+        // Открыть модалку бокового баннера
+        function openSidebarBannerModal() {
+            const modal = document.getElementById('sidebar-banner-modal');
+            modal.classList.remove('hidden');
+
+            // Загрузить текущие настройки
+            loadSidebarBannerSettingsToModal();
+
+            lucide.createIcons();
+        }
+
+        // Закрыть модалку бокового баннера
+        function closeSidebarBannerModal() {
+            document.getElementById('sidebar-banner-modal').classList.add('hidden');
+        }
+
+        // Загрузка настроек бокового баннера в модалку
+        async function loadSidebarBannerSettingsToModal() {
+            try {
+                const data = await adminFetch('/api/admin/bot/settings/sidebar-banner');
+                
+                const videoInput = document.getElementById('modal-sidebar-banner-video');
+                const textInput = document.getElementById('modal-sidebar-banner-text');
+                
+                if (videoInput && textInput) {
+                    videoInput.value = data.video_url || '';
+                    textInput.value = data.text || '🌸 Красота в каждом букете';
+                }
+            } catch (error) {
+                if (error.message !== 'Unauthorized') {
+                    console.error('Ошибка загрузки настроек:', error);
+                }
+            }
+        }
+
+        // Сохранение настроек бокового баннера из модалки
+        async function saveSidebarBannerFromModal() {
+            try {
+                const videoUrl = document.getElementById('modal-sidebar-banner-video').value;
+                const text = document.getElementById('modal-sidebar-banner-text').value;
+
+                const data = await adminFetch('/api/admin/bot/settings/sidebar-banner', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ video_url: videoUrl, text: text })
+                });
+
+                if (data.status === 'ok') {
+                    alert('✅ Настройки бокового баннера сохранены!');
+                    closeSidebarBannerModal();
+                } else {
+                    alert('Ошибка сохранения настроек');
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
+        }
+
+        // Удаление бокового баннера из модалки
+        async function deleteSidebarBannerFromModal() {
+            if (!confirm('⚠️ Вы уверены, что хотите удалить боковой баннер?')) {
+                return;
+            }
+
+            try {
+                const data = await adminFetch('/api/admin/bot/settings/sidebar-banner', {
+                    method: 'DELETE'
+                });
+
+                if (data.status === 'ok') {
+                    alert('✅ Боковой баннер удалён!');
+                    closeSidebarBannerModal();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            }
         }
     </script>
 </body>

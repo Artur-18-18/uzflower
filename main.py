@@ -4,25 +4,37 @@ import io
 import json
 import logging
 import os
+import secrets
 import shutil
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List, Optional
 
+from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
+import httpx
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.inmemory import InMemoryBackend
+from fastapi_cache.decorator import cache
+from starlette.middleware.base import BaseHTTPMiddleware
 from jose import JWTError, jwt
 import bcrypt
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
+
+# Загружаем переменные окружения из .env файла
+load_dotenv()
 
 # ============================================================
 # Настройка логгера — все события пишутся в server_debug.log
@@ -51,6 +63,7 @@ from app.database import (
     Favorite,
     Notification,
     Order,
+    OrderItem,
     Product,
     ProductImage,
     PromoCode,
@@ -86,6 +99,228 @@ def create_notification(db: Session, user_id: int, title: str, message: str, not
     except Exception as e:
         logger.error("Ошибка при создании уведомления: %s", e)
         db.rollback()
+
+
+async def send_to_admin_bot(order: Order, customer_telegram_id: Optional[int] = None):
+    """
+    Отправить уведомление о заказе в админ-бот.
+
+    Args:
+        order: Объект заказа
+        customer_telegram_id: Telegram ID покупателя (для кнопки "Написать")
+    """
+    admin_bot_token = os.getenv("ADMIN_BOT_TOKEN", "")
+    admin_user_id = os.getenv("ADMIN_USER_ID", "0")
+
+    if not admin_bot_token or admin_user_id == "0":
+        logger.warning("⚠️ Админ-бот не настроен (ADMIN_BOT_TOKEN или ADMIN_USER_ID)")
+        return
+
+    # ✅ Сначала пробуем получить товары из OrderItem (relationship)
+    items_text = ""
+    if hasattr(order, 'items') and order.items:
+        try:
+            items_list = [
+                f"  • {item.product_name} — {item.product_price:,.0f} сум x {item.quantity}"
+                for item in order.items
+                if hasattr(item, 'product_name')  # Это OrderItem
+            ]
+            if items_list:
+                items_text = "\n".join(items_list)
+        except Exception as e:
+            logger.debug("Не удалось получить товары из OrderItem: %s", e)
+
+    # ✅ Если не получилось, пробуем получить из JSON строки
+    if not items_text and order.items:
+        try:
+            items = json.loads(order.items) if isinstance(order.items, str) else order.items
+            if items and len(items) > 0:
+                items_text = "\n".join([
+                    f"  • {item.get('name', 'Товар')} — {item.get('price', 0):,.0f} сум x {item.get('quantity', 1)}"
+                    for item in items if isinstance(item, dict)
+                ])
+        except Exception as e:
+            logger.debug("Не удалось распарсить JSON товаров: %s", e)
+            items_text = str(order.items)[:100]
+
+    if not items_text:
+        items_text = "  • Товары не указаны"
+
+    # Статус заказа
+    status_emoji = {
+        "pending": "🆕",
+        "new": "🆕",
+        "accepted": "✅",
+        "processing": "⚙️",
+        "delivering": "🚚",
+        "completed": "✔️",
+        "cancelled": "❌",
+        "shipping": "📦"
+    }.get(order.status, "📦")
+
+    # Формируем сообщение
+    message = (
+        f"{status_emoji} <b>🚨 Новый заказ #{order.id}</b>\n\n"
+        f"👤 <b>Покупатель:</b> {order.customer_name or 'Не указано'}\n"
+        f"📞 <b>Телефон:</b> {order.phone}\n\n"
+        f"🛒 <b>Товары:</b>\n{items_text}\n\n"
+        f"💰 <b>Общая сумма:</b> {order.total_amount:,.0f} сум\n"
+        f"📍 <b>Адрес доставки:</b> {order.delivery_address or 'Не указан'}"
+    )
+
+    if order.delivery_date:
+        message += f"\n📅 <b>Дата доставки:</b> {order.delivery_date}"
+    if order.delivery_time:
+        message += f"\n⏰ <b>Время:</b> {order.delivery_time}"
+    if order.comment:
+        message += f"\n💬 <b>Комментарий:</b> {order.comment}"
+    if order.postcard_text:
+        message += f"\n🎁 <b>Текст открытки:</b> {order.postcard_text}"
+
+    message += f"\n\n<b>Статус:</b> {order.status}"
+    message += "\n\nВыберите действие:"
+
+    # Создаём клавиатуру с кнопками
+    keyboard = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ Принять", "callback_data": f"accept_{order.id}"},
+                {"text": "❌ Отменить", "callback_data": f"cancel_{order.id}"}
+            ],
+            [
+                {"text": "💬 Написать покупателю", "url": f"tg://user?id={customer_telegram_id or order.user_id}"}
+            ],
+            [
+                {"text": "📋 Детали заказа", "callback_data": f"details_{order.id}"},
+                {"text": "🚚 В доставке", "callback_data": f"delivering_{order.id}"}
+            ],
+            [
+                {"text": "✔️ Завершён", "callback_data": f"completed_{order.id}"}
+            ]
+        ]
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{admin_bot_token}/sendMessage",
+                json={
+                    "chat_id": int(admin_user_id),
+                    "text": message,
+                    "parse_mode": "HTML",
+                    "reply_markup": keyboard
+                },
+                timeout=10.0
+            )
+        logger.info("✅ Уведомление о заказе #%s отправлено в админ-бот", order.id)
+    except Exception as e:
+        logger.error("❌ Ошибка при отправке в админ-бот: %s", e)
+
+
+async def send_message_to_customer(
+    customer_telegram_id: int,
+    order: Order,
+    bot_token: Optional[str] = None
+):
+    """
+    Отправить сообщение покупателю о статусе заказа.
+
+    Args:
+        customer_telegram_id: Telegram ID покупателя
+        order: Объект заказа
+        bot_token: Токен бота (по умолчанию основной бот)
+    """
+    if not customer_telegram_id:
+        logger.warning("⚠️ Telegram ID покупателя не указан, уведомление не отправлено")
+        return
+
+    if not bot_token:
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+
+    if not bot_token:
+        logger.warning("⚠️ TELEGRAM_BOT_TOKEN не настроен")
+        return
+
+    # Статус заказа
+    status_text = {
+        "pending": "принят в обработку",
+        "new": "принят в обработку",
+        "accepted": "принят",
+        "processing": "в обработке",
+        "delivering": "доставляется",
+        "completed": "завершён",
+        "cancelled": "отменён",
+        "shipping": "передан в доставку"
+    }.get(order.status, order.status)
+
+    # ✅ Сначала пробуем получить товары из OrderItem (relationship)
+    items_text = ""
+    if hasattr(order, 'items') and order.items:
+        try:
+            items_list = [
+                f"• {item.product_name} — {item.product_price:,.0f} сум x {item.quantity}"
+                for item in order.items
+                if hasattr(item, 'product_name')
+            ]
+            if items_list:
+                items_text = "\n".join(items_list)
+        except Exception as e:
+            logger.debug("Не удалось получить товары из OrderItem: %s", e)
+
+    # ✅ Если не получилось, пробуем получить из JSON строки
+    if not items_text and order.items:
+        try:
+            items = json.loads(order.items) if isinstance(order.items, str) else order.items
+            if items and len(items) > 0:
+                items_text = "\n".join([
+                    f"• {item.get('name', 'Товар')} — {item.get('price', 0):,.0f} сум x {item.get('quantity', 1)}"
+                    for item in items if isinstance(item, dict)
+                ])
+        except Exception as e:
+            logger.debug("Не удалось распарсить JSON товаров: %s", e)
+
+    if not items_text:
+        items_text = "Товары не указаны"
+
+    message = (
+        f"✅ <b>Ваш заказ #{order.id} {status_text}!</b>\n\n"
+        f"🛒 <b>Товары:</b>\n{items_text}\n\n"
+        f"💰 <b>Общая сумма:</b> {order.total_amount:,.0f} сум\n"
+        f"📍 <b>Адрес доставки:</b> {order.delivery_address or 'Не указан'}"
+    )
+
+    if order.delivery_date:
+        message += f"\n📅 <b>Дата доставки:</b> {order.delivery_date}"
+    if order.delivery_time:
+        message += f"\n⏰ <b>Время:</b> {order.delivery_time}"
+
+    if order.status in ["pending", "new", "accepted"]:
+        message += (
+            "\n\n🙏 <b>Спасибо за заказ!</b>\n"
+            "Наш менеджер скоро свяжется с вами для подтверждения."
+        )
+    elif order.status == "delivering":
+        message += "\n\n🚚 <b>Курьер уже в пути!</b>"
+    elif order.status == "completed":
+        message += "\n\n✨ <b>Заказ завершён! Надеемся, вам всё понравилось!</b>"
+    elif order.status == "cancelled":
+        message += "\n\n❌ <b>Ваш заказ был отменён.</b>\nПо вопросам обращайтесь в поддержку."
+
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={
+                    "chat_id": customer_telegram_id,
+                    "text": message,
+                    "parse_mode": "HTML"
+                },
+                timeout=10.0
+            )
+        logger.info("✅ Уведомление отправлено покупателю #%s (заказ #%s)", customer_telegram_id, order.id)
+    except Exception as e:
+        logger.error("❌ Ошибка при отправке уведомления покупателю #%s: %s", customer_telegram_id, e)
+
 
 def add_bonus_points(db: Session, user_id: int, amount: int, description: str, order_id: Optional[int] = None):
     """Начислить бонусы пользователю с созданием уведомления"""
@@ -166,7 +401,7 @@ class UserCreate(BaseModel):
     phone: Optional[str] = None
 
 class UserLogin(BaseModel):
-    email: str
+    email: str  # Может содержать email или телефон
     password: str
 
 class CategoryBase(BaseModel):
@@ -198,7 +433,7 @@ class ProductBase(BaseModel):
 
 class OrderCreate(BaseModel):
     total_amount: float
-    delivery_address: str
+    delivery_address: Optional[str] = None  # Теперь необязательно (самовывоз)
     phone: str
     items: Optional[str] = None
     delivery_date: Optional[str] = None
@@ -208,6 +443,34 @@ class OrderCreate(BaseModel):
     promo_code_used: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+    name: Optional[str] = None
+    # Доставка и оплата
+    delivery_option: bool = True  # True = доставка, False = самовывоз
+    delivery_price: float = 0.0
+    card_number: Optional[str] = None
+
+
+class CartItem(BaseModel):
+    product_id: int
+    quantity: int = 1
+
+
+class CartAddRequest(BaseModel):
+    product_id: int
+    quantity: int = 1
+
+
+class OrderCreateRequest(BaseModel):
+    name: str
+    phone: str
+    delivery_address: Optional[str] = None  # Теперь необязательно
+    comment: Optional[str] = None
+    delivery_date: Optional[str] = None
+    delivery_time: Optional[str] = None
+    postcard_text: Optional[str] = None
+    # Доставка и оплата
+    delivery_option: bool = True  # True = доставка, False = самовывоз
+    delivery_price: float = 0.0
 
 class SupportMessageCreate(BaseModel):
     user_id: int
@@ -334,6 +597,8 @@ async def lifespan(app: FastAPI):
         db.execute(text("ALTER TABLE users ADD COLUMN phone TEXT"))
     if 'image_url' not in user_cols:
         db.execute(text("ALTER TABLE users ADD COLUMN image_url TEXT"))
+    if 'telegram_id' not in user_cols:
+        db.execute(text("ALTER TABLE users ADD COLUMN telegram_id INTEGER"))
     db.commit()
 
     # Products table
@@ -378,7 +643,54 @@ async def lifespan(app: FastAPI):
         db.execute(text("ALTER TABLE orders ADD COLUMN comment TEXT"))
     if 'promo_code_used' not in order_cols:
         db.execute(text("ALTER TABLE orders ADD COLUMN promo_code_used TEXT"))
+    # Поля для доставки и оплаты
+    if 'delivery_option' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN delivery_option BOOLEAN DEFAULT 1"))
+    if 'delivery_price' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN delivery_price FLOAT DEFAULT 0"))
+    if 'payment_proof_url' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN payment_proof_url TEXT"))
+    if 'payment_proof_file_id' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN payment_proof_file_id TEXT"))
+    if 'card_number' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN card_number TEXT"))
+    # Поле для имени клиента (анонимные заказы из Telegram)
+    if 'customer_name' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN customer_name TEXT"))
+    # Поле для JSON товаров (совместимость)
+    if 'items_json' not in order_cols:
+        db.execute(text("ALTER TABLE orders ADD COLUMN items_json TEXT"))
     db.commit()
+
+    # Order Items table - создаём если не существует
+    try:
+        order_items_cols = [c['name'] for c in inspector.get_columns("order_items")]
+    except NoSuchTableError:
+        logger.info("📦 Создаём таблицу order_items...")
+        db.execute(text("""
+            CREATE TABLE order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER REFERENCES orders(id),
+                product_id INTEGER REFERENCES products(id),
+                product_name TEXT,
+                product_price FLOAT,
+                quantity INTEGER DEFAULT 1
+            )
+        """))
+        db.commit()
+        order_items_cols = ['id', 'order_id', 'product_id', 'product_name', 'product_price', 'quantity']
+
+    # Миграция: добавляем comment если есть (для старых баз) и сразу удаляем
+    if 'comment' in order_items_cols:
+        logger.info("📦 Удаляем колонку comment из order_items...")
+        db.execute(text("ALTER TABLE order_items DROP COLUMN comment"))
+        db.commit()
+
+    # Миграция: удаляем size если есть
+    if 'size' in order_items_cols:
+        logger.info("📦 Удаляем колонку size из order_items...")
+        db.execute(text("ALTER TABLE order_items DROP COLUMN size"))
+        db.commit()
 
     # Banners table
     banner_cols = [c['name'] for c in inspector.get_columns("banners")]
@@ -477,6 +789,44 @@ async def lifespan(app: FastAPI):
     db.commit()
 
     db.close()
+
+    # Создаём индексы для ускорения запросов
+    try:
+        from sqlalchemy import text
+        logger.info("🚀 Создание индексов базы данных...")
+        
+        # Индексы для продуктов
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_products_price ON products(price)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_products_popular ON products(is_popular)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_products_sale ON products(is_sale)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_products_name_search ON products(name)"))
+        
+        # Индексы для заказов
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at)"))
+        
+        # Индексы для отзывов
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_reviews_created ON reviews(created_at)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id)"))
+        
+        # Индексы для пользователей
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)"))
+        db.execute(text("CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_id)"))
+        
+        db.commit()
+        logger.info("✅ Индексы базы данных созданы")
+    except Exception as e:
+        logger.error("⚠️ Ошибка при создании индексов: %s", e)
+        db.rollback()
+
+    # Инициализация кэша
+    FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+
+    logger.info("✅ Кэширование инициализировано")
+
     yield
     # Shutdown logic if needed
 
@@ -486,8 +836,34 @@ app = FastAPI(lifespan=lifespan)
 if not os.path.exists("static/uploads"):
     os.makedirs("static/uploads")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Монтируем статику
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
+
 templates = Jinja2Templates(directory="templates")
+
+# Middleware для кэширования статики
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+app.add_middleware(CacheControlMiddleware)
+
+# Добавляем middleware для сжатия
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# ============================================================
+# CORS Middleware - разрешаем запросы с любых доменов
+# ============================================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # В продакшене лучше указать конкретные домены
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================
 # Cloudinary Configuration
@@ -511,37 +887,58 @@ else:
 
 
 def upload_file_to_storage(file_bytes: bytes, filename: str, folder: str = "uzflower") -> str:
-    """Загружает файл в Cloudinary (если настроен) или сохраняет локально."""
+    """
+    Загружает файл, генерируя для него уникальное имя на основе UUID.
+    Сохраняет в Cloudinary (если настроен) или локально.
+    """
     ext = os.path.splitext(filename)[1].lower()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    unique_name = f"{timestamp}_{filename}"
+    # Генерируем уникальное имя файла на основе UUID, чтобы избежать любых коллизий
+    unique_filename = f"{uuid.uuid4().hex}{ext}"
 
     if USE_CLOUDINARY:
         # Определяем тип ресурса
         video_exts = {".mp4", ".webm", ".ogg", ".mov"}
         resource_type = "video" if ext in video_exts else "image"
-        result = cloudinary.uploader.upload(
-            io.BytesIO(file_bytes),
-            folder=folder,
-            public_id=f"{timestamp}_{os.path.splitext(filename)[0]}",
-            resource_type=resource_type,
-            overwrite=False,
-        )
-        return result["secure_url"]
+
+        # Cloudinary public_id не должен содержать расширение
+        public_id_without_ext = os.path.splitext(unique_filename)[0]
+
+        upload_params = {
+            "folder": folder,
+            "public_id": public_id_without_ext,
+            "resource_type": resource_type,
+            "overwrite": False,
+        }
+
+        if resource_type == "image":
+            upload_params.update({
+                "quality": "auto:best",
+                "fetch_format": "auto",
+            })
+
+        result = cloudinary.uploader.upload(io.BytesIO(file_bytes), **upload_params)
+        url = result["secure_url"]
+
+        if resource_type == "image" and "/upload/" in url:
+            parts = url.split("/upload/", 1)
+            if len(parts) == 2:
+                transform_part = parts[1].split("/", 1)[0]
+                if not transform_part.startswith("q_") and not "q_auto:best" in url:
+                    url = url.replace("/upload/", "/upload/q_auto:best,f_auto/")
+        return url
     else:
         # Локальное сохранение (fallback)
         subfolder = folder.replace("uzflower", "").strip("/")
         relative_folder = f"uploads/{subfolder}".strip("/")
         full_folder_path = os.path.join("static", relative_folder)
-        
+
         os.makedirs(full_folder_path, exist_ok=True)
-        file_path = os.path.join(full_folder_path, unique_name)
-        
+        file_path = os.path.join(full_folder_path, unique_filename)
+
         with open(file_path, "wb") as buf:
             buf.write(file_bytes)
-            
-        # Возвращаем путь для браузера
-        web_path = f"/static/{relative_folder}/{unique_name}".replace("//", "/")
+
+        web_path = f"/static/{relative_folder}/{unique_filename}".replace("//", "/")
         return web_path
 
 # ============================================================
@@ -624,60 +1021,95 @@ async def debug_endpoint(db: Session = Depends(get_db)):
 @app.post("/api/auth/register")
 async def register(user: UserCreate, db: Session = Depends(get_db)):
     try:
-        db_user = db.query(User).filter(User.email == user.email).first()
+        # Проверка email
+        db_user = db.query(User).filter(User.email == user.email.lower()).first()
         if db_user:
-            raise HTTPException(status_code=400, detail="Email already registered")
+            logger.warning("⚠️ Email уже зарегистрирован: %s", user.email)
+            raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
 
-        # Raw bcrypt
+        # Хэширование пароля
         password_bytes = user.password.encode("utf-8")
         hashed_bytes = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
         hashed_password = hashed_bytes.decode("utf-8")
 
+        # Сохранение телефона в чистом формате
+        phone_clean = None
+        if user.phone:
+            phone_clean = user.phone.replace('+', '').replace(' ', '').replace('-', '')
+            if phone_clean.startswith('998'):
+                phone_clean = '+' + phone_clean
+            elif phone_clean.startswith('8') and len(phone_clean) == 11:
+                phone_clean = '+998' + phone_clean[1:]
+            elif len(phone_clean) == 9:
+                phone_clean = '+998' + phone_clean
+
+        logger.info("📝 Регистрация: %s, телефон: %s", user.email, phone_clean)
+
         new_user = User(
-            email=user.email,
+            email=user.email.lower(),
             hashed_password=hashed_password,
             full_name=user.full_name,
-            phone=user.phone
+            phone=phone_clean
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        return {"id": new_user.id, "email": new_user.email, "full_name": new_user.full_name, "phone": new_user.phone}
+        
+        logger.info("✅ Пользователь зарегистрирован: %s (ID: %s)", new_user.email, new_user.id)
+        
+        return {
+            "id": new_user.id,
+            "email": new_user.email,
+            "full_name": new_user.full_name or "",
+            "phone": new_user.phone or ""
+        }
     except HTTPException:
         raise
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
         logger.error(f"REGISTER ERR: {error_msg}")
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)} | Trace: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 @app.post("/api/auth/login")
 async def login(user: UserLogin, db: Session = Depends(get_db)):
     try:
         # Поиск пользователя по email или телефону
         db_user = None
-        
-        # Проверяем, email это или телефон
-        if '@' in user.email:
-            # Это email
-            db_user = db.query(User).filter(User.email == user.email.lower()).first()
-        else:
-            # Это телефон (ищем по номеру)
-            phone_clean = user.email.replace('+', '').replace(' ', '')
-            db_user = db.query(User).filter(User.phone == phone_clean).first()
-        
-        if not db_user:
-            raise HTTPException(status_code=400, detail="Invalid email or password")
+        contact = user.email.strip()
 
+        # Проверяем, email это или телефон
+        if '@' in contact:
+            # Это email - ищем по email
+            db_user = db.query(User).filter(User.email == contact.lower()).first()
+        else:
+            # Это телефон - очищаем и ищем по phone
+            phone_clean = contact.replace('+', '').replace(' ', '').replace('-', '')
+            # Пробуем разные форматы
+            db_user = db.query(User).filter(
+                or_(
+                    User.phone == phone_clean,
+                    User.phone == f"+{phone_clean}",
+                    User.phone == contact
+                )
+            ).first()
+
+        if not db_user:
+            logger.warning("⚠️ Пользователь не найден: %s", contact)
+            raise HTTPException(status_code=400, detail="Неверный email/телефон или пароль")
+
+        # Проверка пароля
         password_bytes = user.password.encode("utf-8")
         hashed_bytes = db_user.hashed_password.encode("utf-8")
 
         if not bcrypt.checkpw(password_bytes, hashed_bytes):
-            raise HTTPException(status_code=400, detail="Invalid email or password")
+            logger.warning("⚠️ Неверный пароль для: %s", contact)
+            raise HTTPException(status_code=400, detail="Неверный email/телефон или пароль")
 
-
+        # Создаём токен
         token = create_access_token({"sub": db_user.email})
-        logger.info("🔐 Вход: %s (admin=%s)", db_user.email, db_user.is_admin)
+        
+        logger.info("✅ Вход: %s (admin=%s)", db_user.email, db_user.is_admin)
 
         return {
             "access_token": token,
@@ -685,10 +1117,11 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
             "user": {
                 "id": db_user.id,
                 "email": db_user.email,
-                "full_name": db_user.full_name,
-                "phone": db_user.phone,
+                "full_name": db_user.full_name or "",
+                "phone": db_user.phone or "",
+                "image_url": db_user.image_url or "",
                 "is_admin": db_user.is_admin,
-                "bonus_points": db_user.bonus_points
+                "bonus_points": db_user.bonus_points or 0
             }
         }
     except HTTPException:
@@ -697,7 +1130,7 @@ async def login(user: UserLogin, db: Session = Depends(get_db)):
         import traceback
         error_msg = traceback.format_exc()
         logger.error(f"LOGIN ERR: {error_msg}")
-        raise HTTPException(status_code=500, detail=f"Server error: {str(e)} | Trace: {error_msg}")
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
 
 # ============================================
 # --- PASSWORD RESET API ---
@@ -899,6 +1332,7 @@ async def update_profile(
             "email": current_user.email,
             "full_name": current_user.full_name,
             "phone": current_user.phone,
+            "image_url": current_user.image_url,
             "bonus_points": current_user.bonus_points
         }
     finally:
@@ -1235,6 +1669,29 @@ async def get_order_detail(
     if order.courier_id:
         courier = db.query(Courier).filter(Courier.id == order.courier_id).first()
 
+    # ✅ Получаем товары из OrderItem
+    order_items = []
+    if hasattr(order, 'items') and order.items:
+        # Пробуем получить из relationship OrderItem
+        try:
+            order_items = [
+                {
+                    "id": item.id,
+                    "product_id": item.product_id,
+                    "name": item.product_name,
+                    "price": item.product_price,
+                    "quantity": item.quantity
+                }
+                for item in order.items
+            ]
+        except (TypeError, AttributeError):
+            # Если items это строка JSON, парсим её
+            import json
+            try:
+                order_items = json.loads(order.items) if isinstance(order.items, str) else order.items
+            except:
+                order_items = []
+
     return {
         "id": order.id,
         "total_amount": order.total_amount,
@@ -1245,7 +1702,7 @@ async def get_order_detail(
         "phone": order.phone,
         "delivery_date": order.delivery_date,
         "delivery_time": order.delivery_time,
-        "items": order.items,
+        "items": order_items,  # ✅ Возвращаем массив товаров
         "comment": order.comment,
         "promo_code_used": order.promo_code_used,
         "created_at": order.created_at.isoformat(),
@@ -1641,6 +2098,7 @@ async def delete_saved_card(
 # ============================================
 # --- Categories API ---
 @app.get("/api/categories")
+@cache(expire=300)  # Кэш на 5 минут
 async def get_categories(db: Session = Depends(get_db)):
     return db.query(Category).all()
 
@@ -1692,6 +2150,7 @@ async def delete_promo_code(promo_id: int, db: Session = Depends(get_db), admin:
 
 # --- Products API ---
 @app.get("/api/products")
+@cache(expire=10)  # Кэш на 10 секунд
 async def get_products(
     category_id: Optional[int] = None,
     min_price: Optional[float] = None,
@@ -1725,7 +2184,34 @@ async def get_products(
         elif sort_by == "popular":
             query = query.order_by(Product.is_popular.desc())
 
-        return query.all()
+        products = query.all()
+        # Добавляем информацию о дополнительных изображениях
+        result = []
+        for p in products:
+            images = db.query(ProductImage).filter(ProductImage.product_id == p.id).all()
+            image_urls = [img.url for img in images]
+            product_data = {
+                "id": p.id,
+                "name": p.name,
+                "price": p.price,
+                "sale_price": p.sale_price,
+                "description": p.description,
+                "composition": p.composition,
+                "image_url": p.image_url,
+                "images": image_urls,
+                "stock": p.stock,
+                "is_sale": p.is_sale,
+                "is_featured": p.is_featured,
+                "is_popular": p.is_popular,
+                "category_id": p.category_id,
+                "price_s": p.price_s,
+                "price_m": p.price_m,
+                "price_l": p.price_l,
+                "width": p.width,
+                "height": p.height
+            }
+            result.append(product_data)
+        return result
     except Exception as e:
         logger.error("Ошибка при загрузке товаров: %s", e)
         raise
@@ -1735,8 +2221,11 @@ async def get_all_products(db: Session = Depends(get_db), admin: User = Depends(
     """Получить все товары для админки"""
     products = db.query(Product).all()
     # Преобразуем SQLAlchemy модели в словари
-    return [
-        {
+    result = []
+    for p in products:
+        images = db.query(ProductImage).filter(ProductImage.product_id == p.id).all()
+        image_urls = [img.url for img in images]
+        result.append({
             "id": p.id,
             "name": p.name,
             "price": p.price,
@@ -1744,6 +2233,7 @@ async def get_all_products(db: Session = Depends(get_db), admin: User = Depends(
             "description": p.description,
             "composition": p.composition,
             "image_url": p.image_url,
+            "images": image_urls,  # Дополнительные изображения
             "stock": p.stock,
             "is_sale": p.is_sale,
             "is_featured": p.is_featured,
@@ -1754,8 +2244,8 @@ async def get_all_products(db: Session = Depends(get_db), admin: User = Depends(
             "price_l": p.price_l,
             "width": p.width,
             "height": p.height
-        } for p in products
-    ]
+        })
+    return result
 
 @app.post("/api/products")
 async def add_product(product: ProductBase, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
@@ -1777,12 +2267,459 @@ async def update_product(product_id: int, product: ProductBase, db: Session = De
 
 @app.delete("/api/products/{product_id}")
 async def delete_product(product_id: int, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    """Удалить товар из веб-админки."""
     db_product = db.query(Product).filter(Product.id == product_id).first()
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Проверяем, есть ли заказы с этим товаром
+    from sqlalchemy import text
+    result = db.execute(
+        text("SELECT COUNT(*) FROM order_items WHERE product_id = :product_id"),
+        {"product_id": product_id}
+    ).fetchone()
+    
+    if result[0] > 0:
+        logger.warning("⚠️ Нельзя удалить товар #%s: есть связанные заказы (%s шт.)",
+                      product_id, result[0])
+        raise HTTPException(
+            status_code=400,
+            detail=f"Невозможно удалить товар: он используется в {result[0]} заказах. "
+                   f"Сначала удалите или измените эти заказы."
+        )
+    
+    # Удаляем связанные изображения товара
+    db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+    
+    # Удаляем товар
     db.delete(db_product)
     db.commit()
+    
+    logger.info("✅ Товар #%s удалён через веб-админку", product_id)
     return {"detail": "Product deleted"}
+
+
+# ============================================
+# --- TELEGRAM BOT API ---
+# ============================================
+# Эндпоинты для интеграции с Telegram ботом
+# ============================================
+
+TELEGRAM_BOT_SECRET = os.getenv("TELEGRAM_API_SECRET", os.getenv("TELEGRAM_BOT_SECRET_KEY", "telegram-bot-secret-key"))
+
+async def verify_telegram_bot(authorization: Optional[str] = Header(None)):
+    """Проверить авторизацию Telegram бота."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    # Поддержка форматов: "Bearer token" или просто "token"
+    token = authorization.replace("Bearer ", "").strip()
+
+    if token != TELEGRAM_BOT_SECRET:
+        logger.warning("⚠️ Неверный токен авторизации: ожидался '%s', получен '%s'", TELEGRAM_BOT_SECRET, token)
+        raise HTTPException(status_code=403, detail="Invalid authorization")
+
+    return True
+
+
+class TelegramProductCreate(BaseModel):
+    """Схема для создания товара из Telegram."""
+    name: str
+    price: float
+    description: str
+    image_url: str
+    category_id: Optional[int] = None
+
+
+class TelegramOrderCreate(BaseModel):
+    """Схема для создания заказа из Telegram."""
+    product_id: int
+    customer_name: str
+    customer_phone: str
+    delivery_address: Optional[str] = None  # Теперь необязательно (самовывоз)
+    comment: Optional[str] = None
+    # Доставка и оплата
+    delivery_option: bool = True  # True = доставка, False = самовывоз
+    delivery_price: float = 0.0
+    card_number: Optional[str] = None
+    customer_telegram_id: Optional[int] = None  # Telegram ID для уведомлений
+
+
+class TelegramOrderNotification(BaseModel):
+    """Схема для уведомления о заказе."""
+    product_name: str
+    product_price: float
+    customer_name: str
+    customer_phone: str
+    delivery_address: str
+    comment: Optional[str] = None
+
+
+class TelegramOrderNotifyAdmin(BaseModel):
+    """Схема для отправки уведомления в админ-бот."""
+    order_id: int
+    product_name: str
+    product_price: float
+    customer_name: str
+    customer_phone: str
+    delivery_address: str
+    delivery_date: str
+    total_amount: float
+    delivery_option: bool  # True = доставка, False = самовывоз
+    payment_proof_url: Optional[str] = None
+    card_number: Optional[str] = None
+
+
+@app.post("/api/telegram/products")
+async def create_product_from_telegram(
+    product_data: TelegramProductCreate,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_telegram_bot)
+):
+    """
+    Создать товар из Telegram-поста.
+    Вызывается ботом при публикации нового поста в канале.
+    """
+    try:
+        # Создаём товар
+        new_product = Product(
+            name=product_data.name,
+            price=product_data.price,
+            description=product_data.description,
+            image_url=product_data.image_url,
+            category_id=product_data.category_id,
+            stock=10,  # Default stock for Telegram products
+            is_featured=False,
+            is_sale=False,
+            is_popular=False
+        )
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+        
+        logger.info("📦 Товар создан из Telegram: %s (ID: %s)", product_data.name, new_product.id)
+        
+        return {
+            "id": new_product.id,
+            "name": new_product.name,
+            "price": new_product.price,
+            "image_url": new_product.image_url
+        }
+    except Exception as e:
+        logger.error("❌ Ошибка при создании товара из Telegram: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/products/{product_id}")
+async def get_product_by_id(
+    product_id: int,
+    db: Session = Depends(get_db)
+):
+    """Получить товар по ID (публичный эндпоинт)."""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Получаем дополнительные изображения с ID
+    images = db.query(ProductImage).filter(ProductImage.product_id == product_id).all()
+    # Возвращаем как массив объектов {id, url} для админки
+    image_data = [{"id": img.id, "url": img.url} for img in images]
+    # Также оставляем простой массив URL для совместимости
+    image_urls = [img.url for img in images]
+
+    return {
+        "id": product.id,
+        "name": product.name,
+        "price": product.price,
+        "sale_price": product.sale_price,
+        "description": product.description,
+        "composition": product.composition,
+        "image_url": product.image_url,
+        "images": image_urls,  # Массив URL для совместимости
+        "images_data": image_data,  # Массив объектов {id, url} для админки
+        "stock": product.stock,
+        "category_id": product.category_id,
+        "price_s": product.price_s,
+        "price_m": product.price_m,
+        "price_l": product.price_l,
+        "width": product.width,
+        "height": product.height
+    }
+
+
+@app.post("/api/telegram/orders/create")
+async def create_order_from_telegram(
+    order_data: TelegramOrderCreate,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_telegram_bot)
+):
+    """
+    Создать заказ из Telegram-бота.
+    """
+    try:
+        # Проверяем товар
+        product = db.query(Product).filter(Product.id == order_data.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        if product.stock <= 0:
+            raise HTTPException(status_code=400, detail="Product out of stock")
+
+        # Рассчитываем общую сумму
+        total_amount = product.price + (order_data.delivery_price or 0.0)
+
+        # Создаём заказ
+        order = Order(
+            user_id=None,  # Анонимный заказ
+            customer_name=order_data.customer_name,  # Сохраняем имя клиента
+            total_amount=total_amount,
+            delivery_address=order_data.delivery_address or "Самовывоз",
+            phone=order_data.customer_phone,
+            status="pending",
+            comment=order_data.comment or "",
+            # Доставка и оплата
+            delivery_option=order_data.delivery_option,
+            delivery_price=order_data.delivery_price or 0.0,
+            card_number=order_data.card_number,
+            payment_status="waiting",
+            # Telegram ID для уведомлений
+            external_id=str(order_data.customer_telegram_id) if order_data.customer_telegram_id else None
+        )
+        db.add(order)
+        db.commit()
+        db.refresh(order)
+
+        # Создаём элемент заказа
+        order_item = OrderItem(
+            order_id=order.id,
+            product_id=product.id,
+            product_name=product.name,
+            product_price=product.price,
+            quantity=1
+        )
+        db.add(order_item)
+
+        # Уменьшаем stock
+        product.stock -= 1
+
+        db.commit()
+
+        logger.info("🛒 Заказ создан из Telegram: ID=%s", order.id)
+
+        return {
+            "id": order.id,
+            "product_name": product.name,
+            "total_amount": total_amount,
+            "status": order.status
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("❌ Ошибка при создании заказа из Telegram: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/telegram/orders")
+async def send_order_notification(
+    notification: TelegramOrderNotification,
+    _: bool = Depends(verify_telegram_bot)
+):
+    """
+    Отправить уведомление о заказе владельцу.
+    Логгирует заказ для последующей обработки.
+    """
+    logger.info(
+        "🔔 НОВЫЙ ЗАКАЗ ИЗ TELEGRAM!\n"
+        f"📦 Товар: {notification.product_name}\n"
+        f"💰 Цена: {notification.product_price:,.0f} сум\n"
+        f"👤 Клиент: {notification.customer_name}\n"
+        f"📞 Телефон: {notification.customer_phone}\n"
+        f"📍 Адрес: {notification.delivery_address}"
+        + (f"\n💬 Комментарий: {notification.comment}" if notification.comment else "")
+    )
+    
+    # Здесь можно добавить отправку уведомления владельцу в Telegram
+    # через бота (отправка сообщения в личный чат)
+    
+    return {"status": "ok", "message": "Notification logged"}
+
+
+# ============================================
+# --- CART & ORDER API ---
+# ============================================
+
+@app.get("/api/products")
+async def get_products_public(
+    db: Session = Depends(get_db)
+):
+    """Получить все активные товары для главной страницы"""
+    products = db.query(Product).filter(Product.stock > 0).all()
+    return products
+
+
+@app.post("/api/cart/add")
+async def add_to_cart(
+    request: CartAddRequest,
+    db: Session = Depends(get_db)
+):
+    """Добавить товар в корзину (возвращает информацию о товаре)"""
+    product = db.query(Product).filter(Product.id == request.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if product.stock < request.quantity:
+        raise HTTPException(status_code=400, detail="Not enough stock")
+
+    return {
+        "product_id": product.id,
+        "name": product.name,
+        "price": product.sale_price if product.sale_price else product.price,
+        "image_url": product.image_url,
+        "quantity": request.quantity,
+        "total": (product.sale_price if product.sale_price else product.price) * request.quantity
+    }
+
+
+@app.post("/api/order")
+async def create_order(
+    request: OrderCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """Создать заказ"""
+    try:
+        user_id = current_user.id if current_user else None
+        
+        # Создаём заказ
+        order = Order(
+            user_id=user_id,
+            total_amount=0,  # Будет рассчитано ниже
+            delivery_address=request.delivery_address,
+            phone=request.phone,
+            delivery_date=request.delivery_date,
+            delivery_time=request.delivery_time,
+            postcard_text=request.postcard_text,
+            comment=request.comment,
+            status="pending"
+        )
+        db.add(order)
+        db.commit()
+        db.refresh(order)
+        
+        return {
+            "success": True,
+            "order_id": order.id,
+            "message": "Заказ создан. Теперь добавьте товары."
+        }
+    except Exception as e:
+        logger.error("Ошибка при создании заказа: %s", e)
+        raise HTTPException(status_code=500, detail=f"Ошибка при создании заказа: {str(e)}")
+
+
+@app.post("/api/order/{order_id}/add-item")
+async def add_order_item(
+    order_id: int,
+    request: CartAddRequest,
+    db: Session = Depends(get_db)
+):
+    """Добавить товар в заказ"""
+    product = db.query(Product).filter(Product.id == request.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Проверяем, есть ли уже такой товар в заказе
+    existing_item = db.query(OrderItem).filter(
+        OrderItem.order_id == order_id,
+        OrderItem.product_id == request.product_id
+    ).first()
+
+    if existing_item:
+        existing_item.quantity += request.quantity
+    else:
+        order_item = OrderItem(
+            order_id=order_id,
+            product_id=request.product_id,
+            product_name=product.name,
+            product_price=product.sale_price if product.sale_price else product.price,
+            quantity=request.quantity
+        )
+        db.add(order_item)
+
+    db.commit()
+
+    # Пересчитываем общую сумму
+    items = db.query(OrderItem).filter(OrderItem.order_id == order_id).all()
+    total = sum(item.product_price * item.quantity for item in items)
+    order.total_amount = total
+    db.commit()
+
+    return {
+        "success": True,
+        "order_id": order.id,
+        "total_amount": total
+    }
+
+
+@app.get("/api/order/{order_id}")
+async def get_order(
+    order_id: int,
+    db: Session = Depends(get_db)
+):
+    """Получить информацию о заказе"""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    items = db.query(OrderItem).filter(OrderItem.order_id == order_id).all()
+
+    return {
+        "id": order.id,
+        "status": order.status,
+        "total_amount": order.total_amount,
+        "delivery_address": order.delivery_address,
+        "phone": order.phone,
+        "comment": order.comment,
+        "delivery_date": order.delivery_date,
+        "delivery_time": order.delivery_time,
+        "postcard_text": order.postcard_text,
+        "items": [
+            {
+                "product_id": item.product_id,
+                "product_name": item.product_name,
+                "product_price": item.product_price,
+                "quantity": item.quantity,
+                "subtotal": item.product_price * item.quantity
+            }
+            for item in items
+        ]
+    }
+
+
+@app.get("/api/orders")
+async def get_all_orders(
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Получить все заказы (для админки)"""
+    orders = db.query(Order).order_by(Order.created_at.desc()).all()
+    return [
+        {
+            "id": o.id,
+            "user_id": o.user_id,
+            "total_amount": o.total_amount,
+            "status": o.status,
+            "phone": o.phone,
+            "delivery_address": o.delivery_address,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+            "items_count": len(o.items) if o.items else 0
+        }
+        for o in orders
+    ]
+
 
 # --- Customers API ---
 @app.get("/api/customers")
@@ -1794,6 +2731,7 @@ async def get_customers(db: Session = Depends(get_db), admin: User = Depends(get
 # ============================================
 
 @app.get("/api/reviews")
+@cache(expire=120)  # Кэш на 2 минуты
 async def get_reviews(
     limit: int = 50,
     approved_only: bool = True,
@@ -2005,18 +2943,36 @@ async def admin_delete_review(
 # --- Orders API ---
 @app.get("/api/orders")
 async def get_orders(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    """Получить все заказы (для админки)"""
     orders = db.query(Order).all()
     result = []
     for o in orders:
         user = db.query(User).filter(User.id == o.user_id).first()
 
-        # Парсим items из JSON строки в массив
+        # ✅ Получаем товары из OrderItem (relationship)
         items_data = []
-        if o.items:
+        if hasattr(o, 'items') and o.items:
             try:
-                items_data = json.loads(o.items)
+                items_data = [
+                    {
+                        "id": item.id,
+                        "product_id": item.product_id,
+                        "name": item.product_name,
+                        "price": item.product_price,
+                        "quantity": item.quantity
+                    }
+                    for item in o.items
+                    if hasattr(item, 'product_name')
+                ]
+            except Exception as e:
+                logger.debug("Не удалось получить товары из OrderItem: %s", e)
+
+        # ✅ Если не получилось, пробуем распарсить JSON строку
+        if not items_data and o.items:
+            try:
+                items_data = json.loads(o.items) if isinstance(o.items, str) else o.items
             except json.JSONDecodeError:
-                items_data = o.items  # Если не JSON, оставляем как строку
+                items_data = []
 
         # Получаем информацию о курьере
         courier_info = None
@@ -2049,7 +3005,7 @@ async def get_orders(db: Session = Depends(get_db), admin: User = Depends(get_cu
             "lat": o.lat,
             "lng": o.lng,
             "created_at": o.created_at.isoformat(),
-            "items": items_data,  # Возвращаем как массив
+            "items": items_data,  # ✅ Возвращаем как массив объектов
             "courier": courier_info
         })
     return result
@@ -2058,10 +3014,25 @@ async def get_orders(db: Session = Depends(get_db), admin: User = Depends(get_cu
 @app.delete("/api/admin/orders/all")
 async def clear_all_orders(db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     """Удалить все заказы (админ)"""
-    deleted_count = db.query(Order).delete()
-    db.commit()
-    logger.info("🗑️ Удалено %s заказов администратором", deleted_count)
-    return {"detail": f"Deleted {deleted_count} orders", "count": deleted_count}
+    try:
+        # Сначала удаляем отзывы о заказах (чтобы избежать конфликтов FK)
+        db.query(Review).filter(Review.order_id.isnot(None)).delete(synchronize_session=False)
+        db.commit()
+        
+        # Удаляем элементы заказов (каскадно должно сработать, но удалим явно для надёжности)
+        db.query(OrderItem).delete()
+        db.commit()
+        
+        # Теперь удаляем все заказы
+        deleted_count = db.query(Order).delete()
+        db.commit()
+        
+        logger.info("🗑️ Удалено %s заказов администратором", deleted_count)
+        return {"detail": f"Deleted {deleted_count} orders", "count": deleted_count}
+    except Exception as e:
+        db.rollback()
+        logger.error("❌ Ошибка при удалении всех заказов: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Ошибка при удалении заказов: {str(e)}")
 
 
 @app.post("/api/orders")
@@ -2076,10 +3047,48 @@ async def create_order(
     try:
         logger.info("📦 Новый заказ от user_id=%s | Телефон: %s | Адрес: %s | Сумма: %s",
                     current_user.id, order.phone, order.delivery_address, order.total_amount)
-        new_order = Order(**order.model_dump(), user_id=current_user.id)
+
+        # Создаём заказ
+        new_order = Order(
+            user_id=current_user.id,
+            customer_name=order.name,  # Сохраняем имя клиента
+            total_amount=order.total_amount,
+            delivery_address=order.delivery_address,
+            phone=order.phone,
+            items_json=order.items,  # Сохраняем JSON строку для совместимости
+            delivery_date=order.delivery_date,
+            delivery_time=order.delivery_time,
+            postcard_text=order.postcard_text,
+            comment=order.comment,
+            promo_code_used=order.promo_code_used,
+            lat=order.lat,
+            lng=order.lng
+        )
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
+
+        # ✅ Создаём OrderItem для каждого товара из корзины
+        if order.items:
+            try:
+                import json
+                cart_items = json.loads(order.items) if isinstance(order.items, str) else order.items
+                if cart_items and isinstance(cart_items, list):
+                    for item in cart_items:
+                        if isinstance(item, dict):
+                            order_item = OrderItem(
+                                order_id=new_order.id,
+                                product_id=item.get('id'),
+                                product_name=item.get('name', 'Товар'),
+                                product_price=item.get('price', 0),
+                                quantity=item.get('quantity', 1)
+                            )
+                            db.add(order_item)
+                    db.commit()
+                    logger.info("✅ Создано %d позиций в заказе #%d", len(cart_items), new_order.id)
+            except Exception as e:
+                logger.error("⚠️ Ошибка при создании OrderItem: %s", e)
+                db.rollback()
 
         # Создаем уведомление о заказе
         create_notification(
@@ -2089,6 +3098,13 @@ async def create_order(
             message=f"Ваш заказ #{new_order.id} на сумму {new_order.total_amount} сум принят в обработку",
             notification_type="order"
         )
+
+        # Отправляем уведомление в админ-бот
+        await send_to_admin_bot(new_order, current_user.telegram_id)
+
+        # Отправляем сообщение покупателю
+        if current_user.telegram_id:
+            await send_message_to_customer(current_user.telegram_id, new_order)
 
         # Начисляем бонусы (10% от суммы заказа)
         bonus_amount = int(new_order.total_amount * 0.1)
@@ -2218,6 +3234,10 @@ async def update_order_status(order_id: int, status_data: dict, db: Session = De
 
     db.commit()
 
+    # Получаем Telegram ID пользователя
+    user = db.query(User).filter(User.id == db_order.user_id).first()
+    customer_telegram_id = user.telegram_id if user else None
+
     # Обновляем или создаем уведомление об изменении статуса
     status_messages = {
         "pending": "Ваш заказ принят в обработку",
@@ -2225,7 +3245,9 @@ async def update_order_status(order_id: int, status_data: dict, db: Session = De
         "processing": "Заказ собирается 📦",
         "shipping": "Заказ доставляется 🚚",
         "completed": "Заказ выполнен. Спасибо за покупку! 🎉",
-        "cancelled": "Заказ отменен ❌"
+        "cancelled": "Заказ отменен ❌",
+        "accepted": "Ваш заказ принят ✅",
+        "delivering": "Курьер уже в пути! 🚚"
     }
 
     new_status = status_data.get("status", old_status)
@@ -2256,7 +3278,984 @@ async def update_order_status(order_id: int, status_data: dict, db: Session = De
             notification_type="order"
         )
 
+    # Отправляем Telegram-уведомление покупателю
+    if customer_telegram_id:
+        await send_message_to_customer(customer_telegram_id, db_order)
+
     return db_order
+
+
+# ============================================================
+# Admin Bot API - Обработка callback от админ-бота
+# ============================================================
+
+@app.patch("/api/admin/orders/{order_id}/status")
+async def admin_update_order_status(
+    order_id: int,
+    status_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Обновить статус заказа из админ-бота.
+
+    Ожидает:
+    {
+        "status": "accepted" | "cancelled" | "delivering" | "completed",
+        "admin_id": int (Telegram ID администратора)
+    }
+    """
+    # Проверяем секретный ключ для админ-бота
+    api_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    provided_secret = status_data.get("api_secret")
+
+    if provided_secret != api_secret:
+        raise HTTPException(status_code=403, detail="Invalid API secret")
+
+    db_order = db.query(Order).filter(Order.id == order_id).first()
+    if not db_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    old_status = db_order.status
+    new_status = status_data.get("status", old_status)
+
+    db_order.status = new_status
+    db.commit()
+
+    # Получаем Telegram ID пользователя
+    user = db.query(User).filter(User.id == db_order.user_id).first()
+    customer_telegram_id = user.telegram_id if user else None
+
+    # Создаем уведомление для покупателя
+    status_messages = {
+        "accepted": "✅ Ваш заказ принят! Наш менеджер скоро свяжется с вами.",
+        "cancelled": "❌ Ваш заказ отменён. Пожалуйста, оформите новый заказ или свяжитесь с нами.",
+        "delivering": "🚚 Ваш заказ передан курьеру и уже в пути!",
+        "completed": "✔️ Ваш заказ завершён! Спасибо за покупку."
+    }
+
+    message = status_messages.get(new_status, f"Статус вашего заказа изменён на {new_status}")
+
+    create_notification(
+        db=db,
+        user_id=db_order.user_id,
+        title=f"📦 Заказ #{order_id}",
+        message=message,
+        notification_type="order"
+    )
+
+    # Отправляем Telegram-уведомление покупателю
+    if customer_telegram_id:
+        await send_message_to_customer(customer_telegram_id, db_order)
+
+    logger.info("✅ Статус заказа #%s обновлён через админ-бота: %s", order_id, new_status)
+
+    return {"status": "ok", "order_id": order_id, "new_status": new_status}
+
+
+# ============================================================
+# Admin Bot Extended API - Эндпоинты с авторизацией по api_secret
+# ============================================================
+
+# Хранилище настроек бота (в памяти для простоты, можно перенести в БД)
+admin_bot_settings = {
+    "card_number": "4000 0000 0000 0000",
+    "customer_message": "Спасибо за заказ! Наш менеджер скоро свяжется с вами.",
+    "sidebar_banner_video_url": "",  # URL видео для бокового баннера
+    "sidebar_banner_text": "🌸 Красота в каждом букете"  # Текст под видео
+}
+
+
+def verify_bot_api_secret(authorization: Optional[str] = Header(None)):
+    """Проверить авторизацию админ-бота по api_secret."""
+    api_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    
+    token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    if token != api_secret:
+        raise HTTPException(status_code=403, detail="Invalid API secret")
+    return True
+
+
+@app.get("/api/admin/bot/stats")
+async def admin_bot_get_stats(
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить статистику магазина для админ-бота."""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    total_products = db.query(Product).count()
+    total_orders = db.query(Order).count()
+    total_users = db.query(User).filter(User.is_admin.is_(False)).count()
+    total_revenue = db.query(func.sum(Order.total_amount)).filter(
+        Order.status == 'completed'
+    ).scalar() or 0
+
+    orders_today = db.query(Order).filter(Order.created_at >= today).count()
+    revenue_today = db.query(func.sum(Order.total_amount)).filter(
+        Order.created_at >= today,
+        Order.status == 'completed'
+    ).scalar() or 0
+
+    return {
+        "total_products": total_products,
+        "orders_today": orders_today,
+        "revenue_today": revenue_today,
+        "total_users": total_users,
+        "total_orders": total_orders,
+        "total_revenue": total_revenue
+    }
+
+
+@app.get("/api/admin/bot/orders")
+async def admin_bot_get_orders(
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить список заказов для админ-бота."""
+    orders = db.query(Order).order_by(Order.id.desc()).limit(limit).all()
+    result = []
+    for o in orders:
+        user = db.query(User).filter(User.id == o.user_id).first()
+        
+        # Собираем названия товаров
+        product_names = []
+        if o.items:
+            try:
+                items = json.loads(o.items) if isinstance(o.items, str) else o.items
+                if isinstance(items, list):
+                    for item in items:
+                        if isinstance(item, dict) and 'name' in item:
+                            product_names.append(item['name'])
+            except Exception:
+                pass
+        
+        # Если в JSON нет, пробуем через OrderItem
+        if not product_names:
+            items_db = db.query(OrderItem).filter(OrderItem.order_id == o.id).all()
+            product_names = [i.product_name for i in items_db]
+
+        result.append({
+            "id": o.id,
+            "customer_name": user.full_name if user else "Аноним"
+            "",
+            "total_amount": o.total_amount,
+            "status": o.status,
+            "delivery_address": o.delivery_address or "",
+            "phone": o.phone or "",
+            "delivery_date": o.delivery_date or "",
+            "delivery_time": o.delivery_time or "",
+            "comment": o.comment or "",
+            "product_name": ", ".join(product_names) if product_names else "Товары не указаны",
+            "created_at": o.created_at.isoformat() if o.created_at else ""
+        })
+    return result
+
+
+@app.get("/api/admin/bot/products")
+async def admin_bot_get_products(
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить список товаров для админ-бота."""
+    products = db.query(Product).limit(limit).all()
+    result = []
+    for p in products:
+        # Получаем дополнительные изображения
+        images = db.query(ProductImage).filter(ProductImage.product_id == p.id).all()
+        image_urls = [img.url for img in images]
+
+        result.append({
+            "id": p.id,
+            "name": p.name,
+            "price": p.price,
+            "description": p.description or "",
+            "image_url": p.image_url or "",
+            "images": image_urls,  # Дополнительные изображения
+            "category_id": p.category_id,
+            "stock": p.stock,
+            "is_sale": p.is_sale,
+            "sale_price": p.sale_price
+        })
+    return result
+
+
+@app.post("/api/admin/bot/products")
+async def admin_bot_create_product(
+    product_data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Создать товар из админ-бота."""
+    # Определяем категорию
+    category_id = None
+    category_slug = product_data.get("category_slug")
+    if category_slug:
+        category = db.query(Category).filter(Category.slug == category_slug).first()
+        if category:
+            category_id = category.id
+
+    new_product = Product(
+        name=product_data.get("name", ""),
+        price=product_data.get("price", 0),
+        description=product_data.get("description", ""),
+        composition=product_data.get("composition", ""),
+        image_url=product_data.get("image_url", ""),
+        category_id=category_id,
+        stock=10
+    )
+    db.add(new_product)
+    db.commit()
+    db.refresh(new_product)
+
+    logger.info("✅ Товар создан через админ-бота: %s", new_product.name)
+    return {
+        "id": new_product.id,
+        "name": new_product.name,
+        "price": new_product.price,
+        "description": new_product.description
+    }
+
+
+@app.put("/api/admin/bot/products/{product_id}")
+async def admin_bot_update_product(
+    product_id: int,
+    product_data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Обновить товар из админ-бота."""
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Обновляем только переданные поля
+    updatable_fields = ["name", "price", "description", "image_url", "stock", "is_sale", "sale_price"]
+    for field in updatable_fields:
+        if field in product_data:
+            setattr(db_product, field, product_data[field])
+
+    db.commit()
+    db.refresh(db_product)
+
+    logger.info("✅ Товар #%s обновлён через админ-бота", product_id)
+    return {
+        "id": db_product.id,
+        "name": db_product.name,
+        "price": db_product.price,
+        "description": db_product.description
+    }
+
+
+@app.post("/api/admin/bot/upload")
+async def admin_bot_upload_file(
+    file: UploadFile = File(...),
+    api_secret: str = Form(...),
+):
+    """
+    Загрузить файл (фото товара) из админ-бота.
+    """
+    expected_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    if api_secret != expected_secret:
+        logger.warning("❌ Invalid API secret attempt: %s", api_secret)
+        raise HTTPException(status_code=403, detail="Invalid API secret")
+
+    # Проверка типа файла
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+    filename = file.filename or "photo.jpg"
+    ext = os.path.splitext(filename)[1].lower()
+    
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        url = upload_file_to_storage(file_bytes, filename, folder="uzflower/products")
+        logger.info("📷 Фото загружено через админ-бота: %s", url)
+        return {"url": url}
+    except Exception as e:
+        logger.error("❌ Ошибка при сохранении фото: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error during upload")
+
+
+@app.delete("/api/admin/bot/products/{product_id}")
+async def admin_bot_delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Удалить товар из админ-бота."""
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Проверяем, есть ли заказы с этим товаром
+    from sqlalchemy import text
+    result = db.execute(
+        text("SELECT COUNT(*) FROM order_items WHERE product_id = :product_id"),
+        {"product_id": product_id}
+    ).fetchone()
+    
+    if result[0] > 0:
+        logger.warning("⚠️ Нельзя удалить товар #%s: есть связанные заказы (%s шт.)", 
+                      product_id, result[0])
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Невозможно удалить товар: он используется в {result[0]} заказах. "
+                   f"Сначала удалите или измените эти заказы."
+        )
+
+    # Удаляем связанные изображения товара
+    db.query(ProductImage).filter(ProductImage.product_id == product_id).delete()
+    
+    # Удаляем товар
+    db.delete(db_product)
+    db.commit()
+
+    logger.info("✅ Товар #%s удалён через админ-бота", product_id)
+    return {"detail": "Product deleted", "id": product_id}
+
+
+@app.post("/api/admin/bot/products/{product_id}/images")
+async def admin_bot_add_product_image(
+    product_id: int,
+    image_data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Добавить изображение к товару."""
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    image_url = image_data.get("image_url")
+    if not image_url:
+        raise HTTPException(status_code=400, detail="image_url is required")
+
+    # Создаём запись изображения
+    product_image = ProductImage(
+        product_id=product_id,
+        url=image_url
+    )
+    db.add(product_image)
+    db.commit()
+    db.refresh(product_image)
+
+    logger.info("✅ Изображение добавлено к товару #%s: %s", product_id, image_url)
+    return {"id": product_image.id, "url": image_url}
+
+
+@app.post("/api/telegram/upload-photo")
+async def telegram_upload_photo(
+    file: UploadFile = File(...),
+    api_secret: str = Form(...),
+):
+    """
+    Загрузить фото из Telegram-бота.
+    Скачивает фото от Telegram и сохраняет на сервере с уникальным именем.
+    """
+    expected_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    if api_secret != expected_secret:
+        logger.warning("❌ Invalid API secret attempt: %s", api_secret)
+        raise HTTPException(status_code=403, detail="Invalid API secret")
+
+    # Проверка типа файла
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+    filename = file.filename or "photo.jpg"
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        # Функция upload_file_to_storage сама сгенерирует уникальное имя
+        url = upload_file_to_storage(file_bytes, filename, folder="uzflower/products")
+        logger.info("📷 Фото загружено из Telegram: %s", url)
+        return {"url": url}
+    except Exception as e:
+        logger.error("❌ Ошибка при сохранении фото из Telegram: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error during upload")
+
+
+@app.post("/api/telegram/orders/{order_id}/payment-proof")
+async def upload_payment_proof(
+    order_id: int,
+    file: UploadFile = File(...),
+    api_secret: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Загрузить скриншот чека для заказа.
+    """
+    expected_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    if api_secret != expected_secret:
+        raise HTTPException(status_code=403, detail="Invalid API secret")
+
+    # Проверка заказа
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Проверка типа файла
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".webp"]
+    filename = file.filename or f"payment_proof_{order_id}.jpg"
+    ext = os.path.splitext(filename)[1].lower()
+
+    if ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+
+    try:
+        file_bytes = await file.read()
+        if not file_bytes:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        # Сохраняем в отдельную папку для чеков
+        url = upload_file_to_storage(file_bytes, filename, folder="uzflower/payment_proofs")
+        
+        # Обновляем заказ
+        order.payment_proof_url = url
+        order.payment_status = "paid"
+        db.commit()
+
+        logger.info("✅ Скриншот чека загружен для заказа #%s: %s", order_id, url)
+        return {"url": url}
+    except Exception as e:
+        logger.error("❌ Ошибка при загрузке скриншота чека: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error during upload")
+
+
+@app.put("/api/telegram/orders/{order_id}/payment")
+async def update_order_payment(
+    order_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_telegram_bot)
+):
+    """
+    Обновить информацию об оплате заказа.
+    """
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    payment_proof_url = data.get("payment_proof_url")
+    if payment_proof_url:
+        order.payment_proof_url = payment_proof_url
+        order.payment_status = "paid"
+        db.commit()
+        logger.info("✅ Оплата заказа #%s обновлена", order_id)
+
+    return {"status": "ok"}
+
+
+@app.post("/api/telegram/orders/notify-admin")
+async def notify_admin_about_order(
+    notification: TelegramOrderNotifyAdmin,
+    _: bool = Depends(verify_telegram_bot)
+):
+    """
+    Отправить уведомление о заказе в админ-бот.
+    """
+    try:
+        # Получаем токены из env
+        admin_bot_token = os.getenv("ADMIN_BOT_TOKEN", "")
+        admin_user_id = os.getenv("ADMIN_USER_ID", "0")
+
+        logger.info("📬 Получено уведомление о заказе #%s (чек: %s)", notification.order_id, "да" if notification.payment_proof_url else "нет")
+        logger.info("   Admin bot token: %s...", admin_bot_token[:10] if admin_bot_token else "НЕ НАСТРОЕН")
+        logger.info("   Admin user ID: %s", admin_user_id)
+
+        if not admin_bot_token or admin_user_id == "0":
+            logger.warning("⚠️ Админ-бот не настроен (ADMIN_BOT_TOKEN или ADMIN_USER_ID)")
+            return {"status": "ok", "message": "Admin bot not configured"}
+
+        # Формируем сообщение
+        delivery_emoji = "🚚" if notification.delivery_option else "🏃"
+        delivery_text = notification.delivery_address if notification.delivery_option else "Самовывоз"
+
+        message = (
+            f"🆕 <b>Новый заказ #{notification.order_id}</b>\n\n"
+            f"👤 <b>Покупатель:</b> {notification.customer_name}\n"
+            f"📞 <b>Телефон:</b> {notification.customer_phone}\n\n"
+            f"🛒 <b>Товар:</b> {notification.product_name}\n"
+            f"💰 <b>Цена товара:</b> {notification.product_price:,.0f} сум\n"
+            f"💳 <b>Общая сумма:</b> {notification.total_amount:,.0f} сум\n\n"
+            f"{delivery_emoji} <b>Доставка:</b> {delivery_text}\n"
+            f"📅 <b>Дата/время:</b> {notification.delivery_date}\n\n"
+            f"💳 <b>Оплата:</b>\n"
+            f"  • Номер карты: <code>{notification.card_number or 'Не указан'}</code>\n"
+        )
+
+        if notification.payment_proof_url:
+            message += f"  • ✅ Чек загружен\n"
+        else:
+            message += f"  • ⏳ Чек ожидается\n"
+
+        message += "\n\nВыберите действие:"
+
+        # Создаём клавиатуру
+        keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ Принять", "callback_data": f"accept_{notification.order_id}"},
+                    {"text": "❌ Отклонить", "callback_data": f"cancel_{notification.order_id}"}
+                ],
+                [
+                    {"text": "📋 Детали", "callback_data": f"details_{notification.order_id}"}
+                ]
+            ]
+        }
+
+        # Отправляем сообщение
+        bot_url = f"https://api.telegram.org/bot{admin_bot_token}/sendMessage"
+        payload = {
+            "chat_id": int(admin_user_id),
+            "text": message,
+            "parse_mode": "HTML",
+            "reply_markup": keyboard
+        }
+        
+        logger.info("📤 Отправка сообщения в Telegram: chat_id=%s", admin_user_id)
+        
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(
+                bot_url,
+                json=payload,
+                timeout=10.0
+            )
+            response.raise_for_status()
+            result = response.json()
+            
+            if result.get("ok"):
+                logger.info("✅ Уведомление о заказе #%s отправлено в админ-бот (message_id=%s)", 
+                           notification.order_id, result.get("result", {}).get("message_id"))
+            else:
+                logger.error("❌ Telegram вернул ошибку: %s", result)
+
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error("❌ Ошибка при отправке уведомления в админ-бот: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/telegram/card-number")
+async def get_card_number_for_telegram():
+    """
+    Получить номер карты для оплаты.
+    """
+    card_number = admin_bot_settings.get("card_number", "")
+    if not card_number:
+        # Пробуем получить из env
+        card_number = os.getenv("ADMIN_CARD_NUMBER", "4000 0000 0000 0000")
+
+    return {"card_number": card_number}
+
+
+@app.get("/api/admin/bot/orders/{order_id}")
+async def admin_bot_get_order(
+    order_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить заказ по ID для админ-бота."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    user = db.query(User).filter(User.id == order.user_id).first()
+
+    # ✅ Собираем названия товаров из OrderItem
+    product_names = []
+    product_price = 0
+    items_db = db.query(OrderItem).filter(OrderItem.order_id == order.id).all()
+    if items_db:
+        product_names = [f"{i.product_name} x{i.quantity}" for i in items_db]
+        product_price = items_db[0].product_price if items_db else 0
+
+    # Если OrderItem нет, пробуем получить из JSON строки
+    if not product_names and order.items:
+        try:
+            items = json.loads(order.items) if isinstance(order.items, str) else order.items
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict) and 'name' in item:
+                        product_names.append(f"{item['name']} x{item.get('quantity', 1)}")
+                        product_price = item.get('price', 0)
+        except Exception:
+            pass
+
+    # Получаем Telegram ID покупателя из external_id
+    customer_telegram_id = None
+    if order.external_id and order.external_id.isdigit():
+        customer_telegram_id = int(order.external_id)
+
+    return {
+        "id": order.id,
+        # Используем customer_name из заказа, а не из пользователя
+        "customer_name": order.customer_name or (user.full_name if user else "Аноним"),
+        "total_amount": order.total_amount,
+        "status": order.status,
+        "delivery_address": order.delivery_address or "",
+        "phone": order.phone or "",
+        "delivery_date": order.delivery_date or "",
+        "delivery_time": order.delivery_time or "",
+        "comment": order.comment or "",
+        "product_name": ", ".join(product_names) if product_names else "Товары не указаны",
+        "product_price": product_price,
+        # Новые поля для доставки и оплаты
+        "delivery_option": order.delivery_option,
+        "delivery_price": order.delivery_price or 0,
+        "payment_status": order.payment_status or "waiting",
+        "payment_proof_url": order.payment_proof_url,
+        "card_number": order.card_number,
+        # Telegram ID для уведомлений
+        "customer_telegram_id": customer_telegram_id
+    }
+
+
+@app.post("/api/admin/broadcast")
+async def admin_bot_broadcast(
+    data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """
+    Отправить рассылку всем пользователям Telegram.
+    """
+    message_text = data.get("message")
+    if not message_text:
+        raise HTTPException(status_code=400, detail="Missing message text")
+
+    # Получаем всех пользователей с telegram_id
+    users = db.query(User).filter(User.telegram_id.isnot(None)).all()
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    
+    if not bot_token:
+        logger.warning("⚠️ TELEGRAM_BOT_TOKEN не настроен для рассылки")
+        return {"sent_count": 0, "error": "Bot token not configured"}
+
+    sent_count = 0
+    async with httpx.AsyncClient() as client:
+        for user in users:
+            try:
+                response = await client.post(
+                    f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                    json={
+                        "chat_id": user.telegram_id,
+                        "text": message_text,
+                        "parse_mode": "HTML"
+                    },
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    sent_count += 1
+            except Exception as e:
+                logger.error("❌ Ошибка при отправке рассылки пользователю #%s: %s", user.id, e)
+
+    logger.info("📢 Рассылка завершена: %s сообщений отправлено", sent_count)
+    return {"sent_count": sent_count}
+
+
+# --- Настройки бота (номер карты и сообщение покупателю) ---
+
+@app.post("/api/admin/bot/settings/card")
+async def admin_bot_set_card(
+    data: dict,
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Сохранить номер карты."""
+    card_number = data.get("card_number", "")
+    admin_bot_settings["card_number"] = card_number
+    logger.info("💳 Номер карты обновлён через админ-бота: %s", card_number)
+    return {"status": "ok", "card_number": card_number}
+
+
+@app.get("/api/admin/bot/settings/card")
+async def admin_bot_get_card(
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить текущий номер карты."""
+    return {"card_number": admin_bot_settings.get("card_number", "")}
+
+
+@app.post("/api/admin/bot/settings/message")
+async def admin_bot_set_message(
+    data: dict,
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Сохранить сообщение покупателю."""
+    message = data.get("message", "")
+    admin_bot_settings["customer_message"] = message
+    logger.info("💬 Сообщение покупателю обновлено через админ-бота")
+    return {"status": "ok", "message": message}
+
+
+@app.get("/api/admin/bot/settings/message")
+async def admin_bot_get_message(
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить текущее сообщение покупателю."""
+    return {"message": admin_bot_settings.get("customer_message", "")}
+
+
+# --- Настройки бокового баннера ---
+
+@app.get("/api/admin/bot/settings/sidebar-banner")
+async def admin_bot_get_sidebar_banner(
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить настройки бокового баннера."""
+    return {
+        "video_url": admin_bot_settings.get("sidebar_banner_video_url", ""),
+        "text": admin_bot_settings.get("sidebar_banner_text", "🌸 Красота в каждом букете")
+    }
+
+
+@app.post("/api/admin/bot/settings/sidebar-banner")
+async def admin_bot_set_sidebar_banner(
+    data: dict,
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Сохранить настройки бокового баннера."""
+    video_url = data.get("video_url", "")
+    text = data.get("text", "🌸 Красота в каждом букете")
+
+    admin_bot_settings["sidebar_banner_video_url"] = video_url
+    admin_bot_settings["sidebar_banner_text"] = text
+
+    logger.info("🎬 Настройки бокового баннера обновлены: video_url=%s, text=%s", video_url, text)
+    return {"status": "ok", "video_url": video_url, "text": text}
+
+
+@app.delete("/api/admin/bot/settings/sidebar-banner")
+async def admin_bot_delete_sidebar_banner(
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Удалить настройки бокового баннера."""
+    admin_bot_settings["sidebar_banner_video_url"] = ""
+    admin_bot_settings["sidebar_banner_text"] = "🌸 Красота в каждом букете"
+
+    logger.info("🗑️ Настройки бокового баннера удалены")
+    return {"status": "ok"}
+
+
+@app.get("/api/users/{user_id}/telegram")
+async def get_user_telegram_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """Получить Telegram ID пользователя по ID в БД."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"telegram_id": user.telegram_id}
+
+
+@app.post("/api/admin/send-message-to-customer")
+async def admin_send_message_to_customer(
+    data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """
+    Отправить сообщение покупателю от имени админа.
+    """
+    try:
+        customer_telegram_id = data.get("customer_telegram_id")
+        message_text = data.get("message")
+        order_id = data.get("order_id")
+
+        if not customer_telegram_id or not message_text:
+            raise HTTPException(status_code=400, detail="Missing customer_telegram_id or message")
+
+        # Получаем токен основного бота
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        if not bot_token:
+            logger.error("❌ TELEGRAM_BOT_TOKEN не настроен")
+            raise HTTPException(status_code=500, detail="Bot token not configured")
+
+        # Формируем сообщение
+        message = (
+            f"💬 <b>Сообщение от администратора</b>\n\n"
+            f"{message_text}\n\n"
+            f"📦 Заказ: #{order_id}"
+        )
+
+        # Отправляем сообщение покупателю
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"https://api.telegram.org/bot{bot_token}/sendMessage",
+                json={
+                    "chat_id": customer_telegram_id,
+                    "text": message,
+                    "parse_mode": "HTML"
+                },
+                timeout=10.0
+            )
+            result = response.json()
+
+            if not result.get("ok"):
+                logger.error("❌ Telegram вернул ошибку: %s", result)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Telegram error: {result.get('description', 'Unknown error')}"
+                )
+
+        logger.info("✅ Сообщение отправлено покупателю #%s (заказ #%s)", 
+                   customer_telegram_id, order_id)
+        return {"status": "ok", "message_id": result.get("result", {}).get("message_id")}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("❌ Ошибка при отправке сообщения покупателю: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/admin/support-message")
+async def admin_save_support_message(
+    data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """
+    Сохранить сообщение поддержки в базу.
+    """
+    user_id = data.get("user_id")
+    message_text = data.get("message")
+    is_admin = data.get("is_admin", True)
+
+    if not user_id or not message_text:
+        raise HTTPException(status_code=400, detail="Missing user_id or message")
+
+    support_msg = SupportMessage(
+        user_id=user_id,
+        message=message_text,
+        is_admin=is_admin
+    )
+    db.add(support_msg)
+    db.commit()
+
+    return {"status": "ok", "id": support_msg.id}
+
+
+@app.post("/api/admin/notify-customer-order-status")
+async def admin_notify_customer_order_status(
+    data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_bot_api_secret)
+):
+    """
+    Отправить уведомление покупателю об изменении статуса заказа.
+    """
+    try:
+        order_id = data.get("order_id")
+        status = data.get("status")
+        customer_telegram_id = data.get("customer_telegram_id")
+        customer_name = data.get("customer_name", "Покупатель")
+
+        logger.info("📬 Получен запрос на уведомление покупателя: order_id=%s, status=%s, telegram_id=%s", 
+                   order_id, status, customer_telegram_id)
+
+        if not customer_telegram_id or not status:
+            logger.error("❌ Отсутствуют параметры: customer_telegram_id=%s, status=%s", 
+                        customer_telegram_id, status)
+            raise HTTPException(status_code=400, detail="Missing customer_telegram_id or status")
+
+        # Получаем токен основного бота
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        if not bot_token:
+            logger.error("❌ TELEGRAM_BOT_TOKEN не настроен")
+            raise HTTPException(status_code=500, detail="Bot token not configured")
+
+        # Формируем сообщение в зависимости от статуса
+        if status == "accepted":
+            emoji = "✅"
+            message_text = (
+                f"{emoji} <b>Ваш заказ принят!</b>\n\n"
+                f"Уважаемый(ая) {customer_name},\n\n"
+                f"Ваш заказ #{order_id} был <b>принят</b> нашим менеджером.\n\n"
+                f"📦 Мы уже начали подготовку вашего заказа.\n"
+                f"🚚 В ближайшее время с вами свяжутся для уточнения деталей доставки.\n\n"
+                f"Спасибо за ваш заказ! 💐"
+            )
+        elif status == "cancelled":
+            emoji = "❌"
+            message_text = (
+                f"{emoji} <b>Ваш заказ отменён</b>\n\n"
+                f"Уважаемый(ая) {customer_name},\n\n"
+                f"К сожалению, ваш заказ #{order_id} был <b>отменён</b>.\n\n"
+                f"По вопросам обращайтесь в службу поддержки.\n\n"
+                f"Приносим извинения за неудобства."
+            )
+        else:
+            logger.error("❌ Неверный статус: %s", status)
+            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+
+        logger.info("📤 Отправка сообщения в Telegram: chat_id=%s", customer_telegram_id)
+
+        # Отправляем сообщение покупателю
+        async with httpx.AsyncClient() as client:
+            bot_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                "chat_id": customer_telegram_id,
+                "text": message_text,
+                "parse_mode": "HTML"
+            }
+            
+            logger.info("   URL: %s", bot_url.replace(bot_token, 'TOKEN_HIDDEN'))
+            logger.info("   Payload: %s", payload)
+            
+            response = await client.post(
+                bot_url,
+                json=payload,
+                timeout=10.0
+            )
+            result = response.json()
+
+            logger.info("   Ответ Telegram: %s", result)
+
+            if not result.get("ok"):
+                logger.error("❌ Telegram вернул ошибку: %s", result)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Telegram error: {result.get('description', 'Unknown error')}"
+                )
+
+        # Сохраняем уведомление в базу
+        support_msg = SupportMessage(
+            user_id=data.get("user_id"),
+            message=f"Статус заказа #{order_id} изменён на: {status}",
+            is_admin=True
+        )
+        db.add(support_msg)
+        db.commit()
+
+        logger.info("✅ Покупатель #%s уведомлён о статусе заказа #%s: %s", 
+                   customer_telegram_id, order_id, status)
+        return {"status": "ok", "message_id": result.get("result", {}).get("message_id")}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("❌ Ошибка при уведомлении покупателя: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # --- Support Chat API ---
 @app.post("/api/support/send")
@@ -2484,6 +4483,102 @@ async def upload_file(file: UploadFile = File(...), admin: User = Depends(get_cu
     url = upload_file_to_storage(file_bytes, file.filename, folder="uzflower/products")
     return {"url": url}
 
+@app.post("/api/admin/upload-multiple")
+async def upload_multiple_files(files: list[UploadFile] = File(...), admin: User = Depends(get_current_admin)):
+    """Загрузить несколько файлов изображений."""
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
+    uploaded_urls = []
+
+    for file in files:
+        filename = file.filename or "photo.jpg"
+        ext = os.path.splitext(filename)[1].lower()
+
+        if ext not in allowed_extensions:
+            continue
+
+        try:
+            file_bytes = await file.read()
+            if not file_bytes:
+                continue
+
+            url = upload_file_to_storage(file_bytes, filename, folder="uzflower/products")
+            uploaded_urls.append(url)
+            logger.info("📷 Фото загружено: %s", url)
+        except Exception as e:
+            logger.error("❌ Ошибка при загрузке фото %s: %s", filename, e)
+
+    return {"urls": uploaded_urls}
+
+@app.post("/api/telegram/products/{product_id}/images")
+async def telegram_add_product_image(
+    product_id: int,
+    image_data: dict,
+    db: Session = Depends(get_db),
+    _: bool = Depends(verify_telegram_bot)
+):
+    """Добавить изображение к товару из Telegram-бота."""
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    image_url = image_data.get("image_url")
+    if not image_url:
+        raise HTTPException(status_code=400, detail="image_url is required")
+
+    product_image = ProductImage(product_id=product_id, url=image_url)
+    db.add(product_image)
+    db.commit()
+    db.refresh(product_image)
+
+    logger.info("✅ Изображение добавлено к товару #%s (из Telegram): %s", product_id, image_url)
+    return {"id": product_image.id, "url": image_url}
+
+@app.post("/api/products/{product_id}/images")
+async def add_product_image(
+    product_id: int,
+    image_data: dict,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Добавить изображение к товару."""
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    image_url = image_data.get("image_url")
+    if not image_url:
+        raise HTTPException(status_code=400, detail="image_url is required")
+
+    product_image = ProductImage(product_id=product_id, url=image_url)
+    db.add(product_image)
+    db.commit()
+    db.refresh(product_image)
+
+    logger.info("✅ Изображение добавлено к товару #%s: %s", product_id, image_url)
+    return {"id": product_image.id, "url": image_url}
+
+@app.delete("/api/products/{product_id}/images/{image_id}")
+async def delete_product_image(
+    product_id: int,
+    image_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin)
+):
+    """Удалить изображение товара."""
+    db_image = db.query(ProductImage).filter(
+        ProductImage.id == image_id,
+        ProductImage.product_id == product_id
+    ).first()
+
+    if not db_image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    db.delete(db_image)
+    db.commit()
+
+    logger.info("🗑️ Изображение #%s удалено из товара #%s", image_id, product_id)
+    return {"detail": "Image deleted"}
+
 class BannerBase(BaseModel):
     image_url: Optional[str] = None
     video_url: Optional[str] = None
@@ -2494,6 +4589,7 @@ class BannerBase(BaseModel):
     is_active: bool = True
 
 @app.get("/api/banners")
+@cache(expire=300)  # Кэш на 5 минут
 async def get_banners(db: Session = Depends(get_db)):
     return db.query(Banner).filter(Banner.is_active.is_(True)).all()
 
@@ -2558,7 +4654,8 @@ async def favicon():
 
 @app.get("/", response_class=HTMLResponse)
 async def read_item(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    telegram_api_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+    return templates.TemplateResponse("index.html", {"request": request, "TELEGRAM_API_SECRET": telegram_api_secret})
 
 @app.get("/admin", response_class=HTMLResponse)
 async def read_admin(request: Request):

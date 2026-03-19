@@ -120,14 +120,14 @@ async function loadProfile() {
 
 async function updateProfile(event) {
     event.preventDefault();
-    
+
     const token = localStorage.getItem('token');
     const data = {
         full_name: document.getElementById('profile-fullname').value,
         email: document.getElementById('profile-email-input').value,
         phone: document.getElementById('profile-phone').value
     };
-    
+
     try {
         const res = await fetch('/api/profile/me', {
             method: 'PUT',
@@ -137,17 +137,24 @@ async function updateProfile(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (!res.ok) throw new Error('Failed to update profile');
-        
+
         const result = await res.json();
+
+        // Сохраняем существующие данные (включая image_url) и обновляем только изменённые поля
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const updatedUser = {
+            ...currentUser,
+            ...result,
+            image_url: currentUser.image_url || result.image_url // Сохраняем аватарку
+        };
         
-        // Update localStorage
-        localStorage.setItem('user', JSON.stringify(result));
-        
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
         alert('Профиль успешно обновлен!');
         loadProfile();
-        
+
     } catch (error) {
         console.error('Error updating profile:', error);
         alert('Ошибка при обновлении профиля');

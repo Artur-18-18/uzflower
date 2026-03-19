@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 
 <head>
@@ -7,14 +7,151 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>UzFlower - Свежие цветы</title>
+    
+    <!-- Preconnect to CDN -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/output.css">
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/responsive.css">
     <link rel="stylesheet" href="/static/css/mobile-menu.css">
-    <script src="/static/js/i18n.js"></script>
+    <link rel="stylesheet" href="/static/css/mobile-adaptation.css">
+    <link rel="stylesheet" href="/static/css/loader.css">
+    <!-- Swiper JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="/static/js/optimization.js?v=1.0"></script>
+    <script src="/static/js/i18n.js?v=2.2"></script>
+    <script src="/static/js/app.js?v=2.2"></script>
+    <script src="/static/js/loader.js?v=1.0"></script>
     <style>
+        /* 3D Scroll Effects */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* 3D Scroll Container */
+        .scroll-container {
+            perspective: 1000px;
+        }
+
+        /* 3D Card Effect on Scroll */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(50px) rotateX(10deg);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .scroll-reveal.revealed {
+            opacity: 1;
+            transform: translateY(0) rotateX(0);
+        }
+
+        /* 3D Parallax Effect */
+        .parallax-section {
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* Smooth Scroll Progress Bar */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: linear-gradient(90deg, #e11d48, #ec4899, #f43f5e);
+            z-index: 100;
+            transition: width 0.1s ease-out;
+            box-shadow: 0 0 10px rgba(225, 29, 72, 0.5);
+        }
+
+        /* 3D Floating Elements */
+        .floating-element {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0%, 100% {
+                transform: translateY(0) rotateZ(0deg);
+            }
+            25% {
+                transform: translateY(-10px) rotateZ(2deg);
+            }
+            50% {
+                transform: translateY(-5px) rotateZ(-2deg);
+            }
+            75% {
+                transform: translateY(-15px) rotateZ(1deg);
+            }
+        }
+
+        /* 3D Card Hover Effect */
+        .card-3d {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+
+        .card-3d:hover {
+            transform: translateY(-10px) scale(1.02) rotateY(5deg);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Scroll Down Indicator */
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e11d48, #ec4899);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 40;
+            box-shadow: 0 4px 15px rgba(225, 29, 72, 0.4);
+        }
+
+        .scroll-indicator.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .scroll-indicator:hover {
+            transform: translateX(-50%) translateY(-5px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(225, 29, 72, 0.6);
+        }
+
+        .scroll-indicator i {
+            color: white;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-8px);
+            }
+            60% {
+                transform: translateY(-4px);
+            }
+        }
+
         /* Fixed Header Styles */
         #main-header {
             position: fixed;
@@ -401,12 +538,107 @@
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
             transition: all 0.3s ease;
         }
+
+        /* Mobile Bottom Navigation */
+        .safe-area-pb {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+
+        /* Mobile Search Modal Styles */
+        #mobile-search-modal {
+            display: none;
+        }
+
+        #mobile-search-modal:not(.hidden) {
+            display: flex !important;
+        }
+
+        #mobile-search-modal .search-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            flex-shrink: 0;
+        }
+
+        #mobile-search-modal .search-input {
+            padding: 10px 12px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 12px;
+            outline: none;
+            font-size: 16px;
+            min-width: 0;
+            flex: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #mobile-search-modal .search-input:focus {
+            background: #e5e7eb;
+        }
+
+        #mobile-search-modal .close-search {
+            padding: 8px;
+            border-radius: 8px;
+            background: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #mobile-search-modal .close-search:hover {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        #mobile-search-modal .search-results {
+            background: #f9fafb;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .search-result-item {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .search-result-item:active {
+            transform: scale(0.98);
+        }
+
+        /* Highlight styles for search results */
+        #mobile-search-modal mark {
+            background-color: #fef08a;
+            color: #111827;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+
+        /* Line clamp utilities */
+        .line-clamp-1 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono&display=swap" rel="stylesheet">
     <script>
         function toggleCustomBouquet() {
-            const modal = document.getElementById('custom-bouquet-modal');
-            modal.classList.toggle('hidden');
+            window.open('https://t.me/uzflower', '_blank');
         }
     </script>
 </head>
@@ -442,6 +674,9 @@
                     <a href="#catalog"
                         class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
                         data-i18n="header.catalog">Каталог</a>
+                    <a href="#about-section"
+                        class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
+                        data-i18n="header.about">О нас</a>
                     <a href="#footer"
                         class="nav-link text-gray-600 font-medium hover:text-rose-600 transition-colors relative py-1"
                         data-i18n="header.contacts">Контакты</a>
@@ -474,7 +709,7 @@
                             class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
                     </button>
                     <button onclick="toggleCart()"
-                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden md:flex">
+                        class="relative p-2 text-gray-600 hover:text-rose-600 transition-all hidden xl:flex">
                         <i data-lucide="shopping-cart" class="w-6 h-6"></i>
                         <span id="cart-count"
                             class="absolute top-0 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
@@ -510,131 +745,53 @@
                             class="px-10 py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-lg shadow-xl"
                             data-i18n="hero.cta_primary">Выбрать
                             букет</button>
-                        <button onclick="toggleCustomBouquet()"
-                            class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg"
-                            data-i18n="hero.cta_secondary">Собрать
-                            свой</button>
+                        <a href="https://t.me/uzflower" target="_blank"
+                            class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg shadow-xl flex items-center gap-2"
+                            data-i18n="hero.cta_secondary">
+                            Собрать свой
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle">
+                                <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"></path>
+                            </svg>
+                        </a>
                     </div>
                 </div>
             </section>
-
-            <!-- Categories Section -->
-            <section class="py-20 bg-white">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="text-center mb-16">
-                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="categories.title">Наши
-                            Категории</h2>
-                        <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
-                    </div>
-                    <div id="categories-grid" class="grid grid-cols-2 lg:grid-cols-6 gap-6">
-                        <!-- Loaded via JS -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Popular Products Section -->
-            <section class="py-20 bg-emerald-50 overflow-hidden">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between items-end mb-12">
-                        <div>
-                            <h2 class="text-4xl font-serif font-bold text-gray-900 mb-2" data-i18n="products.popular">
-                                Популярные букеты</h2>
-                            <p class="text-gray-500" data-i18n="products.popular_subtitle">То, что чаще всего выбирают
-                                наши клиенты</p>
-                        </div>
-                        <button onclick="scrollToCatalog()"
-                            class="text-rose-600 font-bold flex items-center gap-2 hover:gap-3 transition-all">
-                            <span data-i18n="products.view_all">Весь каталог</span> <i data-lucide="arrow-right"
-                                class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                    <div id="popular-products" class="flex gap-6 overflow-x-auto pb-8 scrollbar-hide">
-                        <!-- Loaded via JS -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Advantages Section -->
-            <section class="py-20 bg-white">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-12 text-center">
-                        <div class="flex flex-col items-center">
-                            <div
-                                class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
-                                <i data-lucide="truck" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fast_delivery.title">Быстрая
-                                доставка</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.fast_delivery.description">Привезем
-                                букет за 60 минут в любую точку города</p>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div
-                                class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
-                                <i data-lucide="flower-2" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.fresh_flowers.title">Свежие цветы
-                            </h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.fresh_flowers.description">Прямые
-                                поставки каждое утро — гарантия свежести</p>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div
-                                class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
-                                <i data-lucide="camera" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.photo_before_send.title">Фото перед
-                                отправкой</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.photo_before_send.description">
-                                Пришлем фото готового букета в Telegram/WhatsApp</p>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <div
-                                class="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-6">
-                                <i data-lucide="credit-card" class="w-8 h-8"></i>
-                            </div>
-                            <h3 class="font-bold text-xl mb-2" data-i18n="advantages.convenient_payment.title">Удобная
-                                оплата</h3>
-                            <p class="text-gray-500 text-sm" data-i18n="advantages.convenient_payment.description">
-                                Оплата картой на сайте или наличными курьеру</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <h1 class="text-left px-20 text-4xl font-bold my-12">Покупочные товары</h1>
 
             <!-- Main Catalog Section -->
-            <section id="catalog" class="py-20 border-t">
+            <section id="catalog" class="scroll-reveal py-20 bg-emerald-50">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-12">
+                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="products.title">Наши букеты</h2>
+                        <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
+                    </div>
                     <div class="flex flex-col md:flex-row gap-8">
                         <!-- Filters Sidebar -->
-                        <aside class="w-full md:w-64 flex-shrink-0">
+                        <aside class="w-full md:w-80 flex-shrink-0">
                             <div class="sticky top-24 space-y-8">
                                 <div>
-                                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2" data-i18n="filters.title">
                                         <i data-lucide="filter" class="w-5 h-5"></i> Фильтры
                                     </h3>
                                     <div class="space-y-4">
                                         <div>
                                             <label
-                                                class="text-sm font-medium text-gray-700 block mb-2">Сортировка</label>
+                                                class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.sort_label">Сортировка</label>
                                             <select id="sort-filter" onchange="loadProducts()"
                                                 class="w-full p-2 border rounded-lg outline-none focus:ring-1 focus:ring-rose-500">
-                                                <option value="popular">Популярные</option>
-                                                <option value="price_asc">Сначала дешевле</option>
-                                                <option value="price_desc">Сначала дороже</option>
+                                                <option value="popular" data-i18n="filters.sort_popular">Популярные</option>
+                                                <option value="price_asc" data-i18n="filters.sort_price_asc">Сначала дешевле</option>
+                                                <option value="price_desc" data-i18n="filters.sort_price_desc">Сначала дороже</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label
-                                                class="text-sm font-medium text-gray-700 block mb-2">Категория</label>
+                                                class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.category_label">Категория</label>
                                             <div id="category-filters" class="space-y-2">
                                                 <!-- Loaded via JS -->
                                             </div>
                                         </div>
                                         <div>
-                                            <label class="text-sm font-medium text-gray-700 block mb-2">Цена
+                                            <label class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.price_label">Цена
                                                 (до)</label>
                                             <input type="range" id="price-range" min="0" max="2000000" step="50000"
                                                 onchange="loadProducts()" class="w-full accent-rose-600">
@@ -643,6 +800,15 @@
                                                 <span id="price-label">2 000 000</span>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- Видео баннер -->
+                                <div class="bg-rose-50 rounded-xl p-4 shadow-sm sticky bottom-8" id="sidebar-banner-container">
+                                    <!-- Загружается из API -->
+                                    <div class="text-center py-8 text-gray-400">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mx-auto mb-2"></div>
+                                        <p class="text-sm" data-i18n="filters.loading">Загрузка...</p>
                                     </div>
                                 </div>
                             </div>
@@ -662,7 +828,118 @@
                 </div>
             </section>
 
-            <section id="reviews-section" class="py-16 bg-emerald-50 border-t">
+            <!-- About Us Section -->
+            <section id="about-section" class="scroll-reveal py-20 bg-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="about.title">О нас 🌸</h2>
+                        <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
+                        <p class="text-lg text-gray-600 mt-4 max-w-3xl mx-auto" data-i18n="about.subtitle">
+                            Мы создаём незабываемые моменты с помощью наших авторских букетов
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+                        <!-- Feature 1 -->
+                        <div class="card-3d bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-8 text-center shadow-lg">
+                            <div class="w-20 h-20 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i data-lucide="flower-2" class="w-10 h-10 text-rose-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="about.feature_fresh_title">Свежие цветы</h3>
+                            <p class="text-gray-600" data-i18n="about.feature_fresh_desc">
+                                Только свежие цветы от лучших поставщиков. Каждый букет собирается вручную.
+                            </p>
+                        </div>
+
+                        <!-- Feature 2 -->
+                        <div class="card-3d bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8 text-center shadow-lg">
+                            <div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i data-lucide="truck" class="w-10 h-10 text-emerald-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="about.feature_delivery_title">Быстрая доставка</h3>
+                            <p class="text-gray-600" data-i18n="about.feature_delivery_desc">
+                                Доставим ваш заказ в кратчайшие сроки по всему городу. Бережно и вовремя.
+                            </p>
+                        </div>
+
+                        <!-- Feature 3 -->
+                        <div class="card-3d bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 text-center shadow-lg">
+                            <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i data-lucide="heart" class="w-10 h-10 text-amber-600"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-3" data-i18n="about.feature_love_title">Сделано с любовью</h3>
+                            <p class="text-gray-600" data-i18n="about.feature_love_desc">
+                                Каждый букет создаётся с заботой и вниманием к деталям.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- About Content -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div class="space-y-6">
+                            <h3 class="text-3xl font-serif font-bold text-gray-900" data-i18n="about.main_title">
+                                UzFlower — ваши эмоции в каждом букете
+                            </h3>
+                            <p class="text-gray-600 leading-relaxed" data-i18n="about.main_desc_1">
+                                Мы — команда профессиональных флористов, которые любят своё дело.
+                                Уже более 5 лет мы создаём уникальные букеты и дарим радость нашим клиентам.
+                            </p>
+                            <p class="text-gray-600 leading-relaxed" data-i18n="about.main_desc_2">
+                                В нашем каталоге вы найдёте букеты на любой вкус: от классических роз до
+                                эксклюзивных авторских композиций. Мы тщательно отбираем каждый цветок
+                                и создаём букеты, которые долго радуют своей красотой.
+                            </p>
+                            <div class="flex flex-wrap gap-4 pt-4">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-rose-600"></i>
+                                    <span class="text-gray-700" data-i18n="about.guarantee_fresh">Гарантия свежести</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-rose-600"></i>
+                                    <span class="text-gray-700" data-i18n="about.guarantee_individual">Индивидуальный подход</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-rose-600"></i>
+                                    <span class="text-gray-700" data-i18n="about.guarantee_experienced">Опытные флористы</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="circle-check" class="w-5 h-5 text-rose-600"></i>
+                                    <span class="text-gray-700" data-i18n="about.guarantee_clients">Более 1000 довольных клиентов</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <div class="grid grid-cols-2 gap-4">
+                                <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=400&h=600&fit=crop"
+                                    alt="Букет цветов"
+                                    class="rounded-2xl shadow-lg w-full h-64 object-cover transform translate-y-8">
+                                <img src="https://images.unsplash.com/photo-1562690868-60bbe7293e94?w=400&h=600&fit=crop"
+                                    alt="Свежие цветы"
+                                    class="rounded-2xl shadow-lg w-full h-64 object-cover">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-8 mt-20 pt-12 border-t border-gray-200">
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-rose-600 mb-2">5+</div>
+                            <div class="text-gray-600" data-i18n="about.stats_years">Лет на рынке</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-rose-600 mb-2">1000+</div>
+                            <div class="text-gray-600" data-i18n="about.stats_clients">Довольных клиентов</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl font-bold text-rose-600 mb-2">50+</div>
+                            <div class="text-gray-600" data-i18n="about.stats_bouquets">Видов букетов</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reviews-section" class="scroll-reveal py-16 bg-emerald-50 border-t">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-12">
                         <h2 class="text-3xl font-bold text-gray-900 mb-2" data-i18n="reviews.title">Отзывы клиентов 💛
@@ -686,18 +963,18 @@
                     <div
                         class="bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-8 text-white flex justify-between items-center">
                         <div>
-                            <h1 class="text-2xl font-bold" id="profile-name">Загрузка...</h1>
+                            <h1 class="text-2xl font-bold" id="profile-name" data-i18n="profile.loading">Загрузка...</h1>
                             <p class="text-white/90" id="profile-email">...</p>
                         </div>
                         <div id="admin-link-container"></div>
                     </div>
                     <div class="p-6">
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">Мои заказы</h2>
+                        <h2 class="text-xl font-bold text-gray-900 mb-4" data-i18n="profile.orders_title">Мои заказы</h2>
                         <div id="orders-list" class="space-y-4">
-                            <p class="text-gray-500">Загрузка заказов...</p>
+                            <p class="text-gray-500" data-i18n="profile.orders_loading">Загрузка заказов...</p>
                         </div>
                         <button onclick="handleSignOut()"
-                            class="mt-8 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50">Выйти</button>
+                            class="mt-8 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50" data-i18n="profile.sign_out">Выйти</button>
                     </div>
                 </div>
             </div>
@@ -709,112 +986,112 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8 text-left">
                 <div>
-                    <h3 class="text-white font-bold text-lg mb-4">uzflower</h3>
-                    <p class="text-sm">Свежие цветы с доставкой за 60 минут в Ташкенте.</p>
+                    <h3 class="text-white font-bold text-lg mb-4" data-i18n="footer.brand">uzflower</h3>
+                    <p class="text-sm" data-i18n="footer.description">Свежие цветы с доставкой за 60 минут в Ташкенте.</p>
                 </div>
                 <div>
-                    <h3 class="text-white font-bold text-lg mb-4">Каталог</h3>
+                    <h3 class="text-white font-bold text-lg mb-4" data-i18n="footer.catalog_title">Каталог</h3>
                     <ul class="text-sm space-y-2">
-                        <li><a href="#" class="hover:text-rose-500 transition-colors">Все букеты</a></li>
-                        <li><a href="#" class="hover:text-rose-500 transition-colors">Розы</a></li>
-                        <li><a href="#" class="hover:text-rose-500 transition-colors">Подарки</a></li>
+                        <li><a href="#" class="hover:text-rose-500 transition-colors" data-i18n="footer.all_bouquets">Все букеты</a></li>
+                        <li><a href="#" class="hover:text-rose-500 transition-colors" data-i18n="footer.roses">Розы</a></li>
+                        <li><a href="#" class="hover:text-rose-500 transition-colors" data-i18n="footer.gifts">Подарки</a></li>
                     </ul>
                 </div>
 
                 <div>
-                    <h3 class="text-white font-bold text-lg mb-4">Адрес</h3>
-                    <p class="text-sm"> 📍г. Ташкент, МИРЗО-УЛУГБЕК р-н ул. Сайрам(Sayram) Дом 2, Буз-Базар</p>
+                    <h3 class="text-white font-bold text-lg mb-4" data-i18n="footer.address_title">Адрес</h3>
+                    <p class="text-sm" data-i18n="footer.address"> 📍г. Ташкент, МИРЗО-УЛУГБЕК р-н ул. Сайрам(Sayram) Дом 2, Буз-Базар</p>
 
                 </div>
                 <div>
-                    <h3 class="text-white font-bold text-lg mb-4">Контакты</h3>
-                    <p class="text-sm">Телефон: +998 (93) 597-56-99</p>
-                    <p class="text-sm">Телефон: +998 (99) 609-69-23</p>
+                    <h3 class="text-white font-bold text-lg mb-4" data-i18n="footer.contacts_title">Контакты</h3>
+                    <p class="text-sm" data-i18n="footer.phone_1">Телефон: +998 (93) 597-56-99</p>
+                    <p class="text-sm" data-i18n="footer.phone_2">Телефон: +998 (99) 609-69-23</p>
                 </div>
                 <div>
-                    <h3 class="text-white font-bold text-lg mb-4">Поддержка</h3>
+                    <h3 class="text-white font-bold text-lg mb-4" data-i18n="footer.channels_title">Каналы</h3>
                     <a href="https://t.me/uzflowerr" target="_blank"
                         class="flex items-center gap-2 text-sm hover:text-rose-500 transition-colors">
-                        <i data-lucide="message-circle" class="w-5 h-5"></i> Перейти в Telegram канал
+                        <i data-lucide="message-circle" class="w-5 h-5"></i> <span data-i18n="footer.telegram_link">Перейти в Telegram канал</span>
                     </a>
                 </div>
             </div>
             <div class="border-t border-gray-800 pt-8 text-center text-xs">
-                <p>&copy; 2026 uzflower. Все права защищены.</p>
+                <p data-i18n="footer.copyright">&copy; 2026 uzflower. Все права защищены.</p>
             </div>
         </div>
     </footer>
 
     <!-- Modals -->
-    <!-- Product Detail Modal -->
+    <!-- Product Detail Modal (card-style) -->
     <div id="product-detail-modal" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeProductDetail()"></div>
-        <!-- Mobile: full screen scrollable | Desktop: centered modal -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeProductDetail()"></div>
         <div
-            class="absolute inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-5xl bg-white rounded-t-[20px] md:rounded-3xl shadow-2xl flex flex-col md:flex-row h-full md:h-auto md:max-h-[90vh] md:overflow-hidden relative">
-            <!-- Close button -->
+            class="absolute inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-4xl bg-white rounded-t-2xl md:rounded-2xl shadow-2xl border border-gray-100 flex flex-col md:flex-row h-full md:h-auto md:max-h-[88vh] md:overflow-hidden relative">
             <button onclick="closeProductDetail()"
-                class="absolute top-4 right-4 z-20 p-2 bg-white/90 backdrop-blur-md rounded-full text-gray-700 hover:text-rose-600 hover:bg-white transition-all shadow-lg hidden md:block">
-                <i data-lucide="x" class="w-6 h-6"></i>
+                class="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/95 hover:bg-rose-50 text-gray-600 hover:text-rose-600 transition-all shadow-md hidden md:flex items-center justify-center">
+                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <button onclick="closeProductDetail()"
-                class="fixed top-4 right-4 z-[70] p-2 bg-white/90 backdrop-blur-md rounded-full text-gray-700 hover:text-rose-600 shadow-xl md:hidden">
+                class="fixed top-3 right-3 z-[70] p-2 rounded-full bg-white shadow-lg text-gray-600 hover:text-rose-600 md:hidden">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
 
-            <!-- Image section - Desktop: fixed height, Mobile: flexible minimum height -->
-            <div
-                class="w-full md:w-1/2 bg-gray-100 flex-shrink-0 flex items-center justify-center p-4 min-h-[40vh] md:min-h-[500px]">
-                <img id="detail-image" src="" alt="Product"
-                    class="w-full md:w-auto max-w-full h-auto max-h-[50vh] md:max-h-[70vh] object-contain drop-shadow-lg mix-blend-multiply">
+            <!-- Image block -->
+            <div class="w-full md:w-[48%] bg-gray-50 flex-shrink-0 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden">
+                <style>
+                    #product-detail-modal .swiper-container { width: 100%; height: 48vh; }
+                    @media (min-width: 768px) {
+                        #product-detail-modal .swiper-container { height: 100%; min-height: 420px; }
+                    }
+                    #product-detail-modal .swiper-slide { display: flex; justify-content: center; align-items: center; background: #fafafa; }
+                    #product-detail-modal .swiper-slide img { width: 100%; height: 100%; object-fit: contain; }
+                    #product-detail-modal .swiper-button-next, #product-detail-modal .swiper-button-prev {
+                        color: #e11d48; background: #fff; width: 40px; height: 40px; border-radius: 50%;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    }
+                    #product-detail-modal .swiper-button-next:after, #product-detail-modal .swiper-button-prev:after { font-size: 18px; font-weight: bold; }
+                    #product-detail-modal .swiper-pagination-bullet-active { background: #e11d48; }
+                </style>
+                <div class="swiper swiper-container">
+                    <div class="swiper-wrapper" id="detail-swiper-wrapper"></div>
+                    <div class="swiper-button-next hidden md:flex"></div>
+                    <div class="swiper-button-prev hidden md:flex"></div>
+                    <div class="swiper-pagination pb-2"></div>
+                </div>
             </div>
 
-            <!-- Content section - Desktop: inner scroll, Mobile: flows naturally taking full space -->
-            <div
-                class="flex-1 w-full md:w-1/2 p-6 md:p-8 flex flex-col md:overflow-y-auto bg-white z-10 w-full md:w-[512px] md:max-w-1/2">
-                <div class="mb-6">
-                    <h2 id="detail-name" class="text-3xl font-serif font-bold text-gray-900 mb-2 leading-tight">
-                    </h2>
-                    <div id="detail-price" class="text-2xl font-bold text-rose-600"></div>
+            <!-- Content block -->
+            <div class="flex-1 w-full md:w-[52%] p-5 md:p-6 pb-28 md:pb-6 flex flex-col md:overflow-y-auto overflow-y-auto bg-white z-10">
+                <div class="mb-4">
+                    <h2 id="detail-name" class="text-2xl md:text-3xl font-serif font-bold text-gray-900 mb-1 leading-tight"></h2>
+                    <div id="detail-price" class="text-xl md:text-2xl font-bold text-rose-600"></div>
                 </div>
-                <div class="space-y-8 flex-1">
+                <div class="space-y-6 flex-1">
                     <div>
-                        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">Выберите
-                            размер</h4>
-                        <div class="grid grid-cols-3 gap-2 sm:gap-4">
-                            <button onclick="selectSize('S')" data-size="S"
-                                class="size-btn p-3 sm:p-4 border rounded-xl text-center hover:border-rose-300 transition-all">
-                                <span class="block font-bold">Small</span>
-                                <span class="text-xs text-gray-400">15-20 см</span>
-                            </button>
-                            <button onclick="selectSize('M')" data-size="M"
-                                class="size-btn p-3 sm:p-4 border rounded-xl text-center hover:border-rose-300 transition-all">
-                                <span class="block font-bold">Medium</span>
-                                <span class="text-xs text-gray-400">25-30 см</span>
-                            </button>
-                            <button onclick="selectSize('L')" data-size="L"
-                                class="size-btn p-3 sm:p-4 border rounded-xl text-center hover:border-rose-300 transition-all">
-                                <span class="block font-bold">Large</span>
-                                <span class="text-xs text-gray-400">40+ см</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">Состав букета
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-2">
+                            <span class="w-1 h-4 bg-rose-500 rounded-full"></span> Состав
                         </h4>
-                        <p id="detail-composition" class="text-gray-600 leading-relaxed"></p>
+                        <p id="detail-composition" class="text-gray-600 text-sm leading-relaxed"></p>
                     </div>
-                    <div class="pb-[100px] md:pb-0">
-                        <h4 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-3">О букете</h4>
-                        <p id="detail-desc" class="text-gray-600 leading-relaxed text-sm"></p>
+                    <div class="pb-2">
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-2">
+                            <span class="w-1 h-4 bg-rose-500 rounded-full"></span> О букете
+                        </h4>
+                        <p id="detail-desc" class="text-gray-600 text-sm leading-relaxed"></p>
                     </div>
                 </div>
-                <div
-                    class="fixed md:sticky bottom-0 left-0 right-0 w-full p-4 md:p-0 md:pt-6 bg-white border-t md:border-none md:mt-auto z-20 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] md:shadow-none">
-                    <button onclick="addToCart(activeProduct)"
-                        class="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 flex items-center justify-center gap-3">
-                        <i data-lucide="shopping-cart" class="w-5 h-5"></i> В корзину
-                    </button>
+                <div class="fixed md:sticky bottom-0 left-0 right-0 w-full p-4 md:p-0 md:pt-4 bg-white border-t border-gray-100 md:mt-auto z-20">
+                    <div class="space-y-2">
+                        <button onclick="openTelegramOrderModalFromProduct()"
+                            class="w-full py-3.5 bg-[#24A1DE] text-white rounded-xl font-semibold hover:bg-[#1a8abf] transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="send" class="w-5 h-5"></i> <span data-i18n="modal.product.telegram_order">Заказать в Telegram</span>
+                        </button>
+                        <button onclick="addToCart(activeProduct)"
+                            class="w-full py-3.5 bg-rose-600 text-white rounded-xl font-semibold hover:bg-rose-700 transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="shopping-cart" class="w-5 h-5"></i> <span data-i18n="modal.product.add_to_cart">В корзину</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -828,11 +1105,11 @@
             <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i data-lucide="sparkles" class="w-10 h-10"></i>
             </div>
-            <h2 class="text-2xl font-serif font-bold text-gray-900 mb-4">Соберем ваш идеальный букет!</h2>
-            <p class="text-gray-500 mb-8">Наши флористы готовы создать композицию по вашим пожеланиям. Просто напишите
+            <h2 class="text-2xl font-serif font-bold text-gray-900 mb-4" data-i18n="modal.custom_bouquet.title">Соберем ваш идеальный букет!</h2>
+            <p class="text-gray-500 mb-8" data-i18n="modal.custom_bouquet.desc">Наши флористы готовы создать композицию по вашим пожеланиям. Просто напишите
                 их в чате поддержки!</p>
             <button onclick="toggleCustomBouquet(); toggleChat();"
-                class="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all">Написать
+                class="w-full py-4 bg-rose-600 text-white rounded-2xl font-bold hover:bg-rose-700 transition-all" data-i18n="modal.custom_bouquet.cta">Написать
                 флористу</button>
         </div>
     </div>
@@ -842,7 +1119,7 @@
         <div class="absolute inset-0 bg-black/50" onclick="toggleFavorites()"></div>
         <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
             <div class="p-4 border-b flex items-center justify-between bg-rose-50 text-rose-900">
-                <h2 class="text-xl font-bold flex items-center gap-2">
+                <h2 class="text-xl font-bold flex items-center gap-2" data-i18n="modal.favorites.title">
                     <i data-lucide="heart" class="w-6 h-6 fill-rose-500 text-rose-500"></i> Избранное
                 </h2>
                 <button onclick="toggleFavorites()" class="p-2 hover:bg-rose-100 rounded-full transition-all">
@@ -850,11 +1127,11 @@
                 </button>
             </div>
             <div id="fav-items" class="flex-1 overflow-y-auto p-4 space-y-4">
-                <p class="text-center text-gray-500 mt-10">Список избранного пуст</p>
+                <p class="text-center text-gray-500 mt-10" data-i18n="modal.favorites.empty">Список избранного пуст</p>
             </div>
             <div class="p-4 border-t bg-emerald-50">
                 <button onclick="toggleFavorites()"
-                    class="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-100 font-medium transition-all">Продолжить
+                    class="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-100 font-medium transition-all" data-i18n="modal.favorites.continue_shopping">Продолжить
                     покупки</button>
             </div>
         </div>
@@ -865,22 +1142,109 @@
         <div class="absolute inset-0 bg-black bg-opacity-50" onclick="toggleCart()"></div>
         <div class="absolute right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl flex flex-col">
             <div class="p-4 border-b flex justify-between items-center">
-                <h2 class="text-xl font-bold">Корзина</h2>
+                <h2 class="text-xl font-bold" data-i18n="cart.title">Корзина</h2>
                 <button onclick="toggleCart()" class="p-2 hover:bg-gray-100 rounded-lg">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
             <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-4">
-                <p class="text-center text-gray-500 mt-10">Корзина пуста</p>
+                <p class="text-center text-gray-500 mt-10" data-i18n="cart.empty">Корзина пуста</p>
             </div>
-            <div class="p-4 border-t">
-                <div class="flex justify-between text-xl font-bold mb-4">
-                    <span>Итого:</span>
+            <div class="p-4 border-t space-y-3">
+                <div class="flex justify-between text-xl font-bold mb-2">
+                    <span data-i18n="cart.total">Итого:</span>
                     <span id="cart-total">0 сум</span>
                 </div>
+                <button onclick="openTelegramOrderModal()"
+                    class="w-full bg-[#24A1DE] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a8abf] transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="send" class="w-5 h-5"></i>
+                    <span data-i18n="cart.telegram_order">Заказать в Telegram</span>
+                </button>
+                <!-- Кнопка "Оформить заказ" скрыта, но функция showCheckout() сохранена для будущего использования -->
+                <!-- 
                 <button onclick="showCheckout()"
-                    class="w-full bg-rose-600 text-white py-4 rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Оформить
-                    заказ</button>
+                    class="w-full bg-rose-600 text-white py-4 rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">
+                    Оформить заказ
+                </button>
+                -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Order Modal -->
+    <div id="telegram-order-modal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTelegramOrderModal()"></div>
+        <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl">
+            <div class="p-6">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2" data-i18n="modal.telegram_order.title">
+                        <i data-lucide="send" class="w-6 h-6 text-[#24A1DE]"></i>
+                        Заказ через Telegram
+                    </h3>
+                    <button onclick="closeTelegramOrderModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.phone_label">
+                            <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон *
+                        </label>
+                        <input type="tel" id="tg-order-phone" data-i18n-placeholder="modal.telegram_order.phone_placeholder" placeholder="+998 __ ___-__-__"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.name_label">
+                            <i data-lucide="user" class="w-4 h-4 inline mr-1"></i> Имя *
+                        </label>
+                        <input type="text" id="tg-order-name" data-i18n-placeholder="modal.telegram_order.name_placeholder" placeholder="Как к вам обращаться?"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.postcard_label">
+                            <i data-lucide="message-heart" class="w-4 h-4 inline mr-1"></i> Текст на открытке
+                        </label>
+                        <textarea id="tg-order-postcard" data-i18n-placeholder="modal.telegram_order.postcard_placeholder" placeholder="Дорогая, с любовью..." rows="2"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.comment_label">
+                            <i data-lucide="message-circle" class="w-4 h-4 inline mr-1"></i> Комментарий
+                        </label>
+                        <textarea id="tg-order-comment" data-i18n-placeholder="modal.telegram_order.comment_placeholder" placeholder="Дополнительная информация..." rows="2"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div class="bg-gray-50 rounded-xl p-4 mt-4">
+                        <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2" data-i18n="modal.telegram_order.order_summary">
+                            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                            Ваш заказ:
+                        </h4>
+                        <div id="tg-order-items" class="space-y-3 max-h-48 overflow-y-auto pr-2"></div>
+                        <div class="border-t border-gray-200 mt-3 pt-3 flex justify-between items-center">
+                            <span class="font-bold text-gray-900" data-i18n="modal.telegram_order.total">Итого:</span>
+                            <span id="tg-order-total" class="font-bold text-rose-600">0 сум</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button onclick="submitTelegramOrder()"
+                        class="w-full bg-[#24A1DE] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a8abf] transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        <span data-i18n="modal.telegram_order.submit">Отправить заказ</span>
+                    </button>
+
+                    <p class="text-xs text-gray-500 text-center mt-2" data-i18n="modal.telegram_order.info">
+                        После нажатия откроется Telegram с готовым сообщением
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -923,48 +1287,26 @@
                         <div class="bg-white rounded-3xl shadow-xl p-6 border border-gray-100">
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center">
-                                    <i data-lucide="map-pin" class="w-5 h-5 text-rose-600"></i>
+                                    <i data-lucide="user" class="w-5 h-5 text-rose-600"></i>
                                 </div>
-                                <h3 class="text-lg font-bold text-gray-900">Информация о доставке</h3>
+                                <h3 class="text-lg font-bold text-gray-900">Информация о клиенте</h3>
                             </div>
 
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i data-lucide="home" class="w-4 h-4 inline mr-1"></i> Адрес доставки
-                                    </label>
-                                    <input type="text" id="order-address" placeholder="г. Ташкент, ул. ..."
-                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон
+                                        <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон *
                                     </label>
                                     <input type="tel" id="order-phone" placeholder="+998 __ ___-__-__"
                                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            <i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i> Дата
-                                        </label>
-                                        <input type="date" id="order-date"
-                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i> Время
-                                        </label>
-                                        <select id="order-time"
-                                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all bg-white">
-                                            <option value="09:00-12:00">🌅 09:00-12:00</option>
-                                            <option value="12:00-15:00">☀️ 12:00-15:00</option>
-                                            <option value="15:00-18:00">🌤️ 15:00-18:00</option>
-                                            <option value="18:00-21:00">🌙 18:00-21:00</option>
-                                        </select>
-                                    </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="user" class="w-4 h-4 inline mr-1"></i> Имя *
+                                    </label>
+                                    <input type="text" id="order-name" placeholder="Как к вам обращаться?"
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all">
                                 </div>
 
                                 <div>
@@ -974,6 +1316,15 @@
                                     </label>
                                     <textarea id="order-postcard" placeholder="Дорогая, с любовью..."
                                         class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all h-24 resize-none"></textarea>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i data-lucide="message-circle" class="w-4 h-4 inline mr-1"></i> Комментарий к
+                                        заказу
+                                    </label>
+                                    <textarea id="order-comment" placeholder="Дополнительная информация..."
+                                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-100 transition-all h-20 resize-none"></textarea>
                                     <input type="hidden" id="order-lat">
                                     <input type="hidden" id="order-lng">
                                 </div>
@@ -1142,12 +1493,14 @@
                                 </div>
                             </div>
 
-                            <!-- Кнопка подтверждения заказа -->
-                            <button onclick="processFinalPayment()"
-                                class="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-rose-600 hover:to-pink-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95">
-                                <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
-                                Подтвердить заказ
-                            </button>
+                            <!-- Кнопки оформления заказа -->
+                            <div class="space-y-3">
+                                <button onclick="processFinalPayment()"
+                                    class="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-xl font-bold text-lg hover:from-rose-600 hover:to-pink-700 transition-all shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95">
+                                    <i data-lucide="check-circle" class="w-5 h-5 inline mr-2"></i>
+                                    Подтвердить заказ
+                                </button>
+                            </div>
 
                             <!-- Trust Badges -->
                             <div class="mt-4 pt-4 border-t text-center">
@@ -1203,63 +1556,290 @@
         <button onclick="toggleChat()"
             class="p-4 bg-gray-900 text-white rounded-full shadow-xl hover:bg-gray-800 transition-all group flex items-center gap-2">
             <span
-                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap">Связаться
+                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.contact_button">Связаться
                 с нами</span>
             <i data-lucide="message-square" class="w-6 h-6"></i>
         </button>
         <a href="https://t.me/uzflower" target="_blank"
             class="p-4 bg-[#24A1DE] text-white rounded-full shadow-xl hover:opacity-90 transition-all flex items-center gap-2 group">
             <span
-                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap">Telegram-чат</span>
+                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.telegram_button">Telegram-чат</span>
             <i data-lucide="message-circle" class="w-6 h-6"></i>
         </a>
     </div>
 
-    <script
-        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places&callback=initAutocomplete"
-        async defer></script>
-    <script src="/static/js/app.js"></script>
-
-    <!-- Mobile Search Modal -->
-    <div id="mobile-search-modal" class="mobile-search-modal" onclick="closeMobileSearch(event)">
-        <div class="search-content" onclick="event.stopPropagation()">
-            <div class="search-header">
-                <i data-lucide="search" class="w-5 h-5 text-gray-400"></i>
-                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input"
-                    oninput="handleMobileSearch()" onkeypress="if(event.key === 'Enter') this.blur()"
-                    autocomplete="off" onclick="event.stopPropagation()">
-                <button onclick="closeMobileSearch()" class="close-search">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+    <!-- Mobile Bottom Navigation -->
+    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 xl:hidden safe-area-pb">
+        <div class="max-w-sm sm:max-w-md bg-white border border-gray-200 rounded-full shadow-xl mx-4 sm:mx-6">
+            <div class="flex items-center justify-around py-3 px-4 sm:px-8">
+                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                    <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.home">Главная</span>
                 </button>
-            </div>
-            <div id="mobile-search-results" class="search-results">
-                <!-- Results will be inserted here -->
+                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                    <i data-lucide="search" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.search">Поиск</span>
+                </button>
+                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[70px]">
+                    <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    <span id="mobile-cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.cart">Корзина</span>
+                </button>
+                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                    <i data-lucide="user" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.profile">Профиль</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- мобильное нижнее меню -->
-    <nav class="mobile-bottom-menu xl:hidden !flex">
-        <input type="radio" id="mobile-home" name="mobile-menu" checked onclick="navigateToMobile('/')">
-        <label for="mobile-home" class="menu-icon home"><i data-lucide="home" class="w-6 h-6"></i></label>
-        <input type="radio" id="mobile-search" name="mobile-menu">
-        <label for="mobile-search" class="menu-icon search" onclick="openMobileSearch()"><i data-lucide="search"
-                class="w-6 h-6"></i></label>
-        <input type="radio" id="mobile-favorites" name="mobile-menu" onclick="toggleMobileFavorites()">
-        <label for="mobile-favorites" class="menu-icon heart">
-            <i data-lucide="heart" class="w-6 h-6"></i>
-            <span id="mobile-fav-count" class="fav-badge">0</span>
-        </label>
-        <input type="radio" id="mobile-cart" name="mobile-menu" onclick="toggleMobileCart()">
-        <label for="mobile-cart" class="menu-icon cart">
-            <i data-lucide="shopping-cart" class="w-6 h-6"></i>
-            <span id="mobile-cart-count" class="fav-badge">0</span>
-        </label>
-        <input type="radio" id="mobile-profile" name="mobile-menu" onclick="navigateToMobile('/profile')">
-        <label for="mobile-profile" class="menu-icon bell"><i data-lucide="user" class="w-6 h-6"></i></label>
-        <div id="mobile-box"></div>
-        <div class="menu-effect"></div>
-    </nav>
+    <!-- Mobile Search Modal -->
+    <div id="mobile-search-modal" class="fixed inset-0 bg-white z-[60] hidden flex-col">
+        <div class="flex flex-col h-full">
+            <div class="search-header flex-shrink-0">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>
+                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input flex-1 min-w-0"
+                    oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
+                    autocomplete="off">
+                <button onclick="closeMobileSearch()" class="close-search flex-shrink-0" aria-label="Закрыть поиск">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto p-4 bg-gray-50"></div>
+        </div>
+    </div>
+
+    <!-- Telegram Bot Configuration -->
+    <script>
+        // Настройки Telegram бота
+        window.TELEGRAM_BOT_USERNAME = 'uzflowershop_bot'; // Username вашего бота
+        window.TELEGRAM_API_SECRET = '{{ TELEGRAM_API_SECRET }}'; // API secret для авторизации
+
+        // Загрузка бокового баннера
+        async function loadSidebarBanner() {
+            try {
+                const response = await fetch('/api/admin/bot/settings/sidebar-banner', {
+                    headers: {
+                        'Authorization': `Bearer ${window.TELEGRAM_API_SECRET || ''}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                const container = document.getElementById('sidebar-banner-container');
+                if (!container) return;
+
+                const videoUrl = data.video_url;
+                const text = data.text || '🌸 Красота в каждом букете';
+
+                if (videoUrl && videoUrl.trim()) {
+                    // Видео загружено - отображаем его
+                    container.innerHTML = `
+                        <video
+                            class="w-full aspect-[9/16] md:aspect-[9/14] object-cover rounded-lg shadow-md"
+                            autoplay
+                            loop
+                            muted
+                            playsinline
+                        >
+                            <source src="${videoUrl}" type="video/mp4">
+                            Ваш браузер не поддерживает видео.
+                        </video>
+                        <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
+                    `;
+                } else {
+                    // Видео нет - отображаем заглушку
+                    container.innerHTML = `
+                        <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+                            <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
+                            <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>
+                            <div class="text-center z-10 p-4">
+                                <div class="text-5xl mb-3">🌸</div>
+                                <p class="text-sm font-medium text-rose-700" data-i18n="banner.no_video">Нет видео</p>
+                                <p class="text-xs text-rose-500 mt-1" data-i18n="banner.configure_admin">Настройте в админ-панели</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
+                    `;
+                }
+
+                // Пересоздаём иконки Lucide
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки бокового баннера:', error);
+            }
+        }
+
+        // Загружаем баннер при загрузке страницы
+        document.addEventListener('DOMContentLoaded', loadSidebarBanner);
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+
+        // === 3D Scroll Effects ===
+        
+        // Scroll Progress Bar
+        function createScrollProgressBar() {
+            const progressBar = document.createElement('div');
+            progressBar.className = 'scroll-progress';
+            progressBar.id = 'scroll-progress';
+            document.body.appendChild(progressBar);
+        }
+
+        // Scroll to Top Button
+        function createScrollToTopButton() {
+            const scrollBtn = document.createElement('div');
+            scrollBtn.className = 'scroll-indicator';
+            scrollBtn.id = 'scroll-to-top';
+            scrollBtn.innerHTML = '<i data-lucide="arrow-down" class="w-6 h-6 transform rotate-180"></i>';
+            scrollBtn.onclick = scrollToTop;
+            document.body.appendChild(scrollBtn);
+            
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        // Update Scroll Progress
+        function updateScrollProgress() {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            
+            const progressBar = document.getElementById('scroll-progress');
+            if (progressBar) {
+                progressBar.style.width = scrolled + '%';
+            }
+
+            // Show/Hide Scroll to Top Button
+            const scrollBtn = document.getElementById('scroll-to-top');
+            if (scrollBtn) {
+                if (winScroll > 300) {
+                    scrollBtn.classList.add('visible');
+                } else {
+                    scrollBtn.classList.remove('visible');
+                }
+            }
+        }
+
+        // Scroll to Top Function
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // 3D Scroll Reveal Effect
+        function initScrollReveal() {
+            const reveals = document.querySelectorAll('.scroll-reveal');
+            
+            const revealOnScroll = () => {
+                const windowHeight = window.innerHeight;
+                const elementVisible = 100;
+
+                reveals.forEach((reveal) => {
+                    const elementTop = reveal.getBoundingClientRect().top;
+                    if (elementTop < windowHeight - elementVisible) {
+                        reveal.classList.add('revealed');
+                    }
+                });
+            };
+
+            window.addEventListener('scroll', revealOnScroll);
+            revealOnScroll(); // Trigger once on load
+        }
+
+        // Parallax Effect for Sections
+        function initParallax() {
+            const parallaxSections = document.querySelectorAll('.parallax-section');
+            
+            window.addEventListener('scroll', () => {
+                const scrolled = window.pageYOffset;
+                
+                parallaxSections.forEach((section) => {
+                    const speed = 0.5;
+                    const yPos = -(scrolled * speed);
+                    section.style.transform = `translateY(${yPos}px)`;
+                });
+            });
+        }
+
+        // Initialize 3D Scroll Effects on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            createScrollProgressBar();
+            createScrollToTopButton();
+            initScrollReveal();
+            window.addEventListener('scroll', updateScrollProgress);
+            updateScrollProgress(); // Trigger once on load
+            
+            // Reveal elements that are already in viewport
+            setTimeout(() => {
+                const reveals = document.querySelectorAll('.scroll-reveal');
+                reveals.forEach((reveal) => {
+                    const elementTop = reveal.getBoundingClientRect().top;
+                    if (elementTop < window.innerHeight - 100) {
+                        reveal.classList.add('revealed');
+                    }
+                });
+            }, 100);
+        });
+    </script>
+    
+    <!-- Flower Loader -->
+    <div id="flower-loader" class="flower-loader">
+        <div class="flower-loader-content">
+            <div class="flower-container">
+                <!-- Main petals -->
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                <div class="flower-petal"></div>
+                
+                <!-- Sparkles -->
+                <div class="flower-sparkle"></div>
+                <div class="flower-sparkle"></div>
+                <div class="flower-sparkle"></div>
+                <div class="flower-sparkle"></div>
+                
+                <!-- Center -->
+                <div class="flower-center"></div>
+            </div>
+            
+            <div class="loader-text-wrapper" style="text-align: center;">
+                <div class="loader-text" data-i18n="loader.text">Загрузка</div>
+                <div class="loader-dots">
+                    <div class="loader-dot"></div>
+                    <div class="loader-dot"></div>
+                    <div class="loader-dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

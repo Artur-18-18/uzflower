@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "python main.py",
+    "dev:bot": "python run_bot.py",
     "build": "vite build",
     "build:css": "tailwindcss -i ./static/css/style.css -o ./static/css/output.css --minify",
     "watch:css": "tailwindcss -i ./static/css/style.css -o ./static/css/output.css --watch",

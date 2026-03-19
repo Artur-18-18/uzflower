@@ -26,6 +26,7 @@
   "header": {
     "home": "Bosh sahifa",
     "catalog": "Katalog",
+    "about": "Biz haqimizda",
     "contacts": "Aloqa",
     "search_placeholder": "Gullarni qidirish...",
     "admin_back": "Admin panelga qaytish",
@@ -52,7 +53,7 @@
     "box_flowers": "Qutidagi gullar"
   },
   "products": {
-    "title": "Xarid qilinadigan mahsulotlar",
+    "title": "Bizning guldastalar",
     "popular": "Ommabop guldastalar",
     "popular_subtitle": "Mijozlarimiz ko'p tanlaydigan guldastalar",
     "view_all": "Barcha katalog",
@@ -97,12 +98,37 @@
   "filters": {
     "title": "Filtrlar",
     "sort": "Saralash",
+    "sort_label": "Saralash",
     "sort_popular": "Ommabop",
     "sort_price_asc": "Avval arzonroq",
     "sort_price_desc": "Avval qimmatroq",
     "category": "Kategoriya",
+    "category_label": "Kategoriya",
     "price_max": "Narx (gacha)",
-    "all_categories": "Barcha kategoriyalar"
+    "price_label": "Narx (gacha)",
+    "all_categories": "Barcha kategoriyalar",
+    "loading": "Yuklanmoqda...",
+    "back_to_admin": "Admin panelga qaytish"
+  },
+  "about": {
+    "title": "Biz haqimizda 🌸",
+    "subtitle": "Mualliflik guldastalarimiz bilan unutilmas lahzalarni yarating",
+    "feature_fresh_title": "Yangi gullar",
+    "feature_fresh_desc": "Har kuni ertalab to'g'ridan-to'g'ri yetkazib berish — yangilik kafolati",
+    "feature_delivery_title": "Tezkor yetkazib berish",
+    "feature_delivery_desc": "Shaharning istalgan nuqtasiga 60 daqiqada yetkazamiz",
+    "feature_love_title": "Sevgi bilan yaratilgan",
+    "feature_love_desc": "Har bir guldasta ehtiyotkorlik va tafsilotlarga e'tibor bilan tayyorlanadi",
+    "main_title": "UzFlower — har bir guldastadagi his-tuyg'ularingiz",
+    "main_desc_1": "Biz o'z ishini sevadigan professional floristlar jamoasimiz. 5 yildan ortiq vaqtdan beri noyob guldastalar yaratib, mijozlarimizga quvonch ulashib kelamiz.",
+    "main_desc_2": "Katalogimizda har bir didga mos guldastalarni topasiz: klassik atirgullardan tortib, mualliflik kompozitsiyalarigacha. Har bir gulni diqqat bilan tanlaymiz va uzoq vaqt go'zalligi bilan quvontiradigan guldastalar yaratamiz.",
+    "guarantee_fresh": "Yangilik kafolati",
+    "guarantee_individual": "Individual yondashuv",
+    "guarantee_experienced": "Tajribali floristlar",
+    "guarantee_clients": "1000 dan ortiq mamnun mijozlar",
+    "stats_years": "Bozorda",
+    "stats_clients": "Mamnun mijozlar",
+    "stats_bouquets": "Guldasta turlari"
   },
   "reviews": {
     "title": "Mijozlar sharhlari 💛",
@@ -127,10 +153,48 @@
     "clear": "Savatchani tozalash",
     "remove": "Olib tashlash",
     "increase": "Ko'paytirish",
-    "decrease": "Kamaytirish"
+    "decrease": "Kamaytirish",
+    "telegram_order": "Telegram orqali buyurtma",
+    "continue_shopping": "Xaridni davom ettirish"
   },
   "checkout": {
-    "title": "Buyurtma berish",
+    "title": "🌸 Buyurtma berish",
+    "subtitle": "Guldasta yetkazib berish ma'lumotlarini to'ldiring",
+    "back": "Ortga",
+    "client_info": "Mijoz ma'lumotlari",
+    "phone_label": "Telefon *",
+    "phone_placeholder": "+998 __ ___-__-__",
+    "name_label": "Ism *",
+    "name_placeholder": "Sizga qanday murojaat qilish kerak?",
+    "postcard_label": "Ochiqcha uchun matn",
+    "postcard_placeholder": "Azizim, sevgi bilan...",
+    "comment_label": "Buyurtma bo'yicha izoh",
+    "comment_placeholder": "Qo'shimcha ma'lumot...",
+    "payment_method": "To'lov usuli",
+    "payment_click": "Click",
+    "payment_payme": "Payme",
+    "payment_cash": "Naqd pul",
+    "card_data": "Karta ma'lumotlari",
+    "secure_payment": "Xavfsiz to'lov",
+    "card_number_label": "Karta raqami",
+    "card_number_placeholder": "0000 0000 0000 0000",
+    "card_expiry_label": "Amal qilish muddati",
+    "card_expiry_placeholder": "OO/YY",
+    "card_cvv_label": "CVV",
+    "card_cvv_placeholder": "123",
+    "ssl_protection": "To'lov SSL shifrlash bilan himoyalangan",
+    "safe": "Xavfsiz",
+    "ssl_encryption": "SSL shifrlash",
+    "promo_title": "Promokod",
+    "promo_placeholder": "SALE20",
+    "promo_apply": "Qo'llash",
+    "your_order": "Sizning buyurtmangiz",
+    "subtotal": "Oraliq jami",
+    "discount": "Chegirma",
+    "total": "Jami",
+    "confirm_order": "Buyurtmani tasdiqlash",
+    "footer_safe": "Xavfsiz",
+    "footer_fast_delivery": "Tezkor yetkazib berish",
     "delivery_info": "Yetkazib berish ma'lumotlari",
     "delivery_address": "Yetkazib berish manzili",
     "delivery_date": "Yetkazib berish sanasi",
@@ -150,6 +214,10 @@
   },
   "profile": {
     "title": "Profil",
+    "loading": "Yuklanmoqda...",
+    "orders_title": "Mening buyurtmalarim",
+    "orders_loading": "Buyurtmalar yuklanmoqda...",
+    "sign_out": "Chiqish",
     "personal_info": "Shaxsiy ma'lumotlar",
     "name": "F.I.O",
     "email": "Email",
@@ -230,6 +298,20 @@
     "email_registered": "Bu email allaqachon ro'yxatdan o'tgan"
   },
   "footer": {
+    "brand": "uzflower",
+    "description": "Toshkentda 60 daqiqada yetkazib berish bilan yangi gullar.",
+    "catalog_title": "Katalog",
+    "all_bouquets": "Barcha guldastalar",
+    "roses": "Atirgullar",
+    "gifts": "Sovg'alar",
+    "address_title": "Manzil",
+    "address": "📍Toshkent sh., MIRZO-ULUG'BEK tumani Sayram ko'chasi 2-uy, Buz-Baz",
+    "contacts_title": "Aloqa",
+    "phone_1": "Telefon: +998 (93) 597-56-99",
+    "phone_2": "Telefon: +998 (99) 609-69-23",
+    "channels_title": "Kanallar",
+    "telegram_link": "Telegram kanalga o'tish",
+    "copyright": "© 2026 uzflower. Barcha huquqlar himoyalangan.",
     "contacts": "Aloqa",
     "about": "Biz haqimizda",
     "delivery": "Yetkazib berish va to'lov",
@@ -283,6 +365,58 @@
     "free_delivery": "Dan boshlab bepul yetkazib berish",
     "delivery_time": "Yetkazib berish vaqti",
     "payment_methods": "To'lov usullari"
+  },
+  "modal": {
+    "product": {
+      "telegram_order": "Telegram orqali buyurtma",
+      "add_to_cart": "Savatchaga"
+    },
+    "custom_bouquet": {
+      "title": "Ideal guldastangizni yarating!",
+      "desc": "Bizning floristlarimiz xohishingizga ko'ra kompozitsiya yaratishga tayyor. Shunchaki qo'llab-quvvatlash chatiga yozing!",
+      "cta": "Floristga yozish"
+    },
+    "favorites": {
+      "title": "Tanlanganlar",
+      "empty": "Tanlanganlar ro'yxati bo'sh",
+      "continue_shopping": "Xaridni davom ettirish"
+    },
+    "telegram_order": {
+      "title": "Telegram orqali buyurtma",
+      "phone_label": "Telefon *",
+      "phone_placeholder": "+998 __ ___-__-__",
+      "name_label": "Ism *",
+      "name_placeholder": "Sizga qanday murojaat qilish kerak?",
+      "postcard_label": "Ochiqcha uchun matn",
+      "postcard_placeholder": "Azizim, sevgi bilan...",
+      "comment_label": "Izoh",
+      "comment_placeholder": "Qo'shimcha ma'lumot...",
+      "order_summary": "Sizning buyurtmangiz:",
+      "total": "Jami:",
+      "submit": "Buyurtmani yuborish",
+      "info": "Tugmani bosgandan so'ng tayyor xabar bilan Telegram ochiladi"
+    }
+  },
+  "mobile": {
+    "home": "Bosh sahifa",
+    "search": "Qidiruv",
+    "cart": "Savatcha",
+    "profile": "Profil"
+  },
+  "chat": {
+    "title": "UzFlower qo'llab-quvvatlash",
+    "welcome_message": "Assalomu alaykum! Bugun qanday yordam bera olaman? Guldasta maslahat berish yoki narxni aniqlashtirishmi?",
+    "input_placeholder": "Gullar haqida so'rang...",
+    "contact_button": "Biz bilan bog'lanish",
+    "telegram_button": "Telegram-chat"
+  },
+  "loader": {
+    "text": "Yuklanmoqda"
+  },
+  "banner": {
+    "default_text": "🌸 Har bir guldastada go'zallik",
+    "no_video": "Video yo'q",
+    "configure_admin": "Admin panelda sozlang"
   },
   "admin": {
     "title": "Admin panel",

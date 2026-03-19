@@ -7,6 +7,11 @@ let appliedDiscount = 0;
 let appliedPromoCode = null;
 let allProductsList = [];
 let selectedPaymentMethod = 'cash';
+let isLoadingProducts = false;
+
+// Telegram Bot Configuration
+// Username берётся из window.TELEGRAM_BOT_USERNAME (задаётся в HTML) или используется по умолчанию
+const TELEGRAM_BOT_USERNAME = window.TELEGRAM_BOT_USERNAME || 'uzflowershop_bot';
 
 function formatPrice(price) {
     return Number(price).toLocaleString('ru-RU');
@@ -14,23 +19,21 @@ function formatPrice(price) {
 
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
-    
+
     // Инициализация системы переводов
     if (window.i18n) {
         i18n.init();
     }
-    
+
     loadUserFromStorage();
     loadCategories();
     loadBanners();
-    loadPopularProducts();
     loadProducts();
     loadReviews();  // Загружаем отзывы
     setupNavigation();
     setupHeaderScroll();
-    // Инициализируем счётчики
-    const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    updateMobileFavCount(localFavorites.length);
+    // Инициализируем счётчики и кнопки избранного
+    updateFavoriteButtons();
     const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
     const totalCartItems = localCart.reduce((sum, item) => sum + item.quantity, 0);
     updateMobileCartCount(totalCartItems);
@@ -59,9 +62,14 @@ function setupHeaderScroll() {
 
 function loadUserFromStorage() {
     const savedUser = localStorage.getItem('user');
-    if (savedUser) {
+    const token = localStorage.getItem('token');
+    
+    if (savedUser && token) {
         currentUser = JSON.parse(savedUser);
         currentProfile = currentUser; // В нашей схеме они объединены
+        console.log('✅ Пользователь загружен из хранилища:', currentUser.email);
+    } else {
+        console.log('ℹ️ Нет сохранённого пользователя или токена');
     }
     updateAuthUI();
 }
@@ -103,16 +111,19 @@ function renderProducts(products, animate = false) {
     const container = document.getElementById('products-grid');
     if (!container) return;
 
+    // Очищаем контейнер перед рендерингом
+    container.innerHTML = '';
+
     container.innerHTML = products.map((product, index) => {
         const isFav = favorites.includes(product.id);
         const animationStyle = animate ? `opacity: 0; animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 50}ms;` : '';
         const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
         return `
-            <div class="bg-gray-100 rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer" style="${animationStyle}" onclick="openProductDetail(${productJson})">
-                <div class="relative aspect-square overflow-hidden bg-gray-200">
-                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-cover">
+            <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
+                <div class="relative aspect-square overflow-hidden bg-white">
+                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
-                    <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
+                    <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
                         <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
                     </button>
                     ${product.is_sale ? '<div class="absolute top-3 left-3 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">АКЦИЯ</div>' : ''}
@@ -140,64 +151,200 @@ function renderProducts(products, animate = false) {
         `;
     }).join('');
     lucide.createIcons();
+    
+    // Trigger scroll reveal after products are rendered
+    setTimeout(() => {
+        const reveals = document.querySelectorAll('.scroll-reveal');
+        reveals.forEach((reveal) => {
+            const elementTop = reveal.getBoundingClientRect().top;
+            if (elementTop < window.innerHeight - 100) {
+                reveal.classList.add('revealed');
+            }
+        });
+    }, 100);
 }
 
 let activeProduct = null;
-let selectedSize = 'M';
+let currentImageIndex = 0;
+let productImages = [];
+let touchStartX = 0;
+let touchEndX = 0;
+
+/**
+ * Преобразует URL Cloudinary для отдачи изображения в оригинальном качестве.
+ * Добавляет параметры q_auto:best,f_auto если это Cloudinary URL.
+ */
+function getHighQualityImageUrl(url) {
+    if (!url) return url;
+
+    // Работа с Cloudinary
+    if (url.includes('cloudinary.com') || url.includes('res.cloudinary.com')) {
+        if (!url.includes('/upload/')) return url;
+        
+        // Просто заменяем /upload/ на /upload/q_auto:best,f_auto/ 
+        // Но сначала удаляем любые существующие q_auto или f_auto для чистоты
+        let cleanUrl = url.replace(/\/q_[^/]+/g, '').replace(/\/f_[^/]+/g, '');
+        
+        // Также удаляем любые другие трансформации типа w_500, h_500, c_fill и т.д.
+        // Трансформации обычно идут сразу после /upload/ и не начинаются с 'v'
+        const parts = cleanUrl.split('/upload/');
+        const baseUrl = parts[0] + '/upload/';
+        const secondPart = parts[1];
+        
+        const segments = secondPart.split('/');
+        let dataStartIndex = 0;
+        for (let i = 0; i < segments.length; i++) {
+            // Если это не трансформация (обычно трансформации содержат '_', ',', или очень короткие)
+            if (segments[i].startsWith('v') || segments[i].length > 10 || (!segments[i].includes('_') && !segments[i].includes(',') && segments[i].length > 4)) {
+                dataStartIndex = i;
+                break;
+            }
+        }
+        
+        const dataPath = segments.slice(dataStartIndex).join('/');
+        return baseUrl + 'q_auto:best,f_auto/' + dataPath;
+    }
+
+    return url;
+}
 
 function openProductDetail(product) {
     activeProduct = product;
-    selectedSize = 'M';
-    const modal = document.getElementById('product-detail-modal');
-    if (!modal) return;
+    currentImageIndex = 0;
 
-    // Устанавливаем изображение с cache-busting
-    const img = document.getElementById('detail-image');
-    img.src = product.image_url || 'https://placehold.co/600';
-    
+    // Собираем все изображения товара в правильном порядке
+    // Сначала главное изображение, затем дополнительные
+    productImages = [];
+    const seenUrls = new Set();
+
+    console.log('🔍 Открытие товара:', product.name);
+    console.log('📷 Главное изображение (image_url):', product.image_url);
+    console.log('📷 Дополнительные изображения (images):', product.images);
+
+    // Добавляем главное изображение первым
+    if (product.image_url) {
+        const highQualityUrl = getHighQualityImageUrl(product.image_url);
+        productImages.push(highQualityUrl);
+        seenUrls.add(product.image_url.split('?')[0]);
+        console.log('✅ Добавлено главное изображение:', highQualityUrl);
+    }
+
+    // Добавляем дополнительные изображения (проверяем что это массив)
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+        product.images.forEach((url, idx) => {
+            if (!url) return;
+
+            // Проверяем на дубликаты (сравниваем без параметров)
+            const urlBase = url.split('?')[0];
+            if (!seenUrls.has(urlBase)) {
+                seenUrls.add(urlBase);
+                const highQualityUrl = getHighQualityImageUrl(url);
+                productImages.push(highQualityUrl);
+                console.log(`✅ Добавлено дополнительное изображение #${idx + 1}:`, highQualityUrl);
+            } else {
+                console.log(`⚠️ Пропущен дубликат:`, url);
+            }
+        });
+    }
+
+    console.log('📸 ВСЕГО изображений в галерее:', productImages.length);
+    console.log('📸 Список URL:', productImages);
+
+    const modal = document.getElementById('product-detail-modal');
+    if (!modal) {
+        console.error('❌ Модальное окно не найдено!');
+        return;
+    }
+
+    // Блокируем прокрутку фона
+    document.body.style.overflow = 'hidden';
+
     // Сбрасываем скролл в начало
     const scrollContainer = modal.querySelector('.overflow-y-auto');
     if (scrollContainer) {
         scrollContainer.scrollTop = 0;
     }
-    
+
     document.getElementById('detail-name').innerText = product.name;
     document.getElementById('detail-desc').innerText = product.description || 'Описание отсутствует';
     document.getElementById('detail-composition').innerText = product.composition || 'Состав уточняйте у флориста';
 
+    // Заполняем Swiper
+    const swiperWrapper = document.getElementById('detail-swiper-wrapper');
+    if (swiperWrapper) {
+        // Если изображений нет, ставим placeholder
+        const imagesToRender = productImages.length > 0 ? productImages : ['https://placehold.co/600'];
+        swiperWrapper.innerHTML = imagesToRender.map((url, idx) => `
+            <div class="swiper-slide" data-slide-index="${idx}">
+                <img src="${url}" alt="Product image ${idx + 1}" style="width: 100%; height: auto;">
+            </div>
+        `).join('');
+
+        console.log('🖼️ HTML для Swiper создан, слайдов:', imagesToRender.length);
+    }
+
+    // Удаляем старый инстанс Swiper если он был
+    if (window.productSwiper && typeof window.productSwiper.destroy === 'function') {
+        window.productSwiper.destroy(true, true);
+        window.productSwiper = null;
+        console.log('🔄 Старый Swiper уничтожен');
+    }
+
     updateDetailPrice();
     modal.classList.remove('hidden');
-    
-    // Блокируем прокрутку body только на десктопе
-    if (window.innerWidth > 768) {
-        document.body.style.overflow = 'hidden';
-    }
+
+    // Инициализируем Swiper после того, как модальное окно станет отображаться (remove 'hidden')
+    setTimeout(() => {
+        const swiperContainer = modal.querySelector('.swiper-container');
+        if (!swiperContainer) {
+            console.error('❌ Swiper container не найден!');
+            return;
+        }
+
+        // Показываем/скрываем кнопки навигации в зависимости от количества фото
+        const hasMultipleImages = productImages.length > 1;
+        const nextBtn = modal.querySelector('.swiper-button-next');
+        const prevBtn = modal.querySelector('.swiper-button-prev');
+        const pagination = modal.querySelector('.swiper-pagination');
+        
+        if (nextBtn) nextBtn.style.display = hasMultipleImages ? 'flex' : 'none';
+        if (prevBtn) prevBtn.style.display = hasMultipleImages ? 'flex' : 'none';
+        if (pagination) pagination.style.display = hasMultipleImages ? 'block' : 'none';
+
+        window.productSwiper = new Swiper(swiperContainer, {
+            loop: hasMultipleImages,
+            allowSlidePrev: hasMultipleImages,
+            allowSlideNext: hasMultipleImages,
+            observer: true,
+            observeParents: true,
+            preloadImages: true,
+            lazy: false,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+                dynamicBullets: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            on: {
+                slideChange: function() {
+                    currentImageIndex = this.activeIndex;
+                }
+            }
+        });
+        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages);
+        console.log('✅ Текущий слайд:', window.productSwiper.activeIndex);
+    }, 50);
 }
 
 function updateDetailPrice() {
     if (!activeProduct) return;
     // Use sale_price as base if it exists, otherwise use standard price
-    let basePrice = activeProduct.sale_price || activeProduct.price;
-    let price = basePrice;
-
-    if (selectedSize === 'S' && activeProduct.price_s) price = activeProduct.price_s;
-    if (selectedSize === 'L' && activeProduct.price_l) price = activeProduct.price_l;
-    if (selectedSize === 'M' && activeProduct.price_m) price = activeProduct.price_m;
+    let price = activeProduct.sale_price || activeProduct.price;
 
     document.getElementById('detail-price').innerText = formatPrice(price) + ' сум';
-
-    // Update active state of buttons
-    document.querySelectorAll('.size-btn').forEach(btn => {
-        const isSelected = btn.dataset.size === selectedSize;
-        btn.classList.toggle('border-rose-600', isSelected);
-        btn.classList.toggle('bg-rose-50', isSelected);
-        btn.classList.toggle('text-rose-600', isSelected);
-    });
-}
-
-function selectSize(size) {
-    selectedSize = size;
-    updateDetailPrice();
 }
 
 function addToCart(product) {
@@ -207,26 +354,14 @@ function addToCart(product) {
     //     window.location.href = '/login';
     //     return;
     // }
-    
+
     // Clone product to avoid reference issues
     const cartItem = { ...product };
 
-    // If it's the active product from modal, apply size selection
-    if (activeProduct && activeProduct.id === product.id) {
-        cartItem.size = selectedSize;
-        let basePrice = product.sale_price || product.price;
-        let finalPrice = basePrice;
+    // Use sale_price or base price
+    cartItem.price = product.sale_price || product.price;
 
-        if (selectedSize === 'S' && product.price_s) finalPrice = product.price_s;
-        if (selectedSize === 'L' && product.price_l) finalPrice = product.price_l;
-        if (selectedSize === 'M' && product.price_m) finalPrice = product.price_m;
-
-        cartItem.price = finalPrice;
-        // Clear sale_price for cart items with specific sizes to avoid confusion
-        delete cartItem.sale_price;
-    }
-
-    const existing = cart.find(item => item.id === cartItem.id && item.size === cartItem.size);
+    const existing = cart.find(item => item.id === cartItem.id);
     if (existing) {
         existing.quantity += 1;
     } else {
@@ -242,6 +377,9 @@ function closeProductDetail() {
     modal.classList.add('hidden');
     // Восстанавливаем прокрутку body
     document.body.style.overflow = '';
+    // Сбрасываем переменные
+    currentImageIndex = 0;
+    productImages = [];
 }
 
 async function loadCategories() {
@@ -285,28 +423,29 @@ function filterByCategory(id) {
     loadProducts(true); // true = с анимацией
 }
 
-function handleSearch() {
+// Debounced search function (оптимизация поиска)
+const handleSearch = debounce(function() {
     const query = document.getElementById('search-input')?.value?.toLowerCase().trim() || '';
-    
+
     if (!query) {
         // Если поиск пустой, показываем все товары
         loadProducts(false);
         return;
     }
-    
+
     // Фильтруем товары
-    const filtered = allProductsList.filter(p => 
+    const filtered = allProductsList.filter(p =>
         p.name.toLowerCase().includes(query) ||
         (p.description && p.description.toLowerCase().includes(query))
     );
-    
+
     // Прокрутка к каталогу
     scrollToCatalog();
-    
+
     // Рендерим найденные товары
     const container = document.getElementById('products-grid');
     if (!container) return;
-    
+
     if (filtered.length === 0) {
         container.innerHTML = `
             <div class="col-span-full text-center py-20">
@@ -329,7 +468,7 @@ function handleSearch() {
             }
         }, 300);
     }
-}
+}, 300); // Debounce 300ms
 
 function scrollToTop(event) {
     if (event) event.preventDefault();
@@ -367,103 +506,206 @@ function navigateToMobile(path) {
 }
 
 // Mobile search functions
+let mobileSearchTimeout = null;
+
 function openMobileSearch() {
-    let modal = document.getElementById('mobile-search-modal');
+    const modal = document.getElementById('mobile-search-modal');
     if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'mobile-search-modal';
-        modal.className = 'fixed inset-0 bg-white z-[60] hidden flex-col';
-        modal.innerHTML = `
-            <div class="p-4 border-b flex items-center gap-3 bg-white shadow-sm">
-                <div class="flex-1 relative">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
-                    <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." 
-                        class="w-full pl-10 pr-10 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-base"
-                        oninput="handleMobileSearch()">
-                    <button onclick="document.getElementById('mobile-search-input').value = ''; handleMobileSearch();" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <button onclick="closeMobileSearch()" class="text-gray-500 font-medium px-2">Отмена</button>
-            </div>
-            <div id="mobile-search-results" class="flex-1 overflow-y-auto p-4 bg-gray-50"></div>
-        `;
-        document.body.appendChild(modal);
-        lucide.createIcons();
+        console.error('Mobile search modal not found');
+        return;
     }
 
     modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    
+
     setTimeout(() => {
         const input = document.getElementById('mobile-search-input');
-        if (input) input.focus();
+        if (input) {
+            input.focus();
+            // Показываем популярные товары или подсказку при пустом поиске
+            if (!input.value.trim()) {
+                showEmptySearchState();
+            }
+        }
     }, 100);
-    
+
     document.body.style.overflow = 'hidden';
-    
-    // Если товары ещё не загружены, показываем сообщение
-    if (allProductsList.length === 0) {
-        document.getElementById('mobile-search-results').innerHTML = '<p class="text-center text-gray-500 py-8">Загрузка товаров...</p>';
-    }
 }
 
-function closeMobileSearch(event) {
-    if (event) event.stopPropagation();
+function closeMobileSearch() {
     const modal = document.getElementById('mobile-search-modal');
     if (modal) {
         modal.classList.add('hidden');
-        modal.classList.remove('flex');
         const input = document.getElementById('mobile-search-input');
         if (input) input.value = '';
         const results = document.getElementById('mobile-search-results');
         if (results) results.innerHTML = '';
     }
+    // Очищаем таймер при закрытии
+    if (mobileSearchTimeout) {
+        clearTimeout(mobileSearchTimeout);
+        mobileSearchTimeout = null;
+    }
     document.body.style.overflow = '';
 }
 
+// Функция для показа начального состояния поиска (пустой запрос)
+function showEmptySearchState() {
+    const resultsContainer = document.getElementById('mobile-search-results');
+    if (!resultsContainer) return;
+
+    // Если товары ещё не загружены
+    if (!allProductsList || allProductsList.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-10">
+                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
+                <p class="text-gray-500">Загрузка товаров...</p>
+            </div>
+        `;
+        lucide.createIcons();
+        return;
+    }
+
+    // Показываем популярные товары (первые 8)
+    const popularProducts = allProductsList.slice(0, 8);
+    resultsContainer.innerHTML = `
+        <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-500 mb-3">Популярные букеты</h3>
+            <div class="grid grid-cols-2 gap-3">
+                ${popularProducts.map(product => `
+                    <div class="bg-white p-2 rounded-xl shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="selectProductFromSearch(${product.id})">
+                        <img src="${product.image_url || 'https://placehold.co/150'}" alt="${product.name}" class="w-full aspect-square object-cover rounded-lg mb-2">
+                        <p class="text-xs font-medium text-gray-900 line-clamp-2">${product.name}</p>
+                        <p class="text-xs text-rose-600 font-bold mt-1">${formatPrice(product.price)} сум</p>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+// Debounced mobile search function
 function handleMobileSearch() {
+    if (mobileSearchTimeout) {
+        clearTimeout(mobileSearchTimeout);
+    }
+
+    mobileSearchTimeout = setTimeout(() => {
+        performMobileSearch();
+    }, 300); // Debounce 300ms
+}
+
+function performMobileSearch() {
     const query = document.getElementById('mobile-search-input').value.toLowerCase().trim();
     const resultsContainer = document.getElementById('mobile-search-results');
 
+    if (!resultsContainer) return;
+
     // Если товары ещё не загружены
-    if (allProductsList.length === 0) {
-        resultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8">Товары загружаются...</p>';
+    if (!allProductsList || allProductsList.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-10">
+                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
+                <p class="text-gray-500">Товары загружаются...</p>
+            </div>
+        `;
+        lucide.createIcons();
         return;
     }
 
     if (!query) {
-        resultsContainer.innerHTML = '';
+        showEmptySearchState();
         return;
     }
 
-    // Фильтруем товары
+    // Фильтруем товары с улучшенным поиском
     const filtered = allProductsList.filter(p =>
         p.name.toLowerCase().includes(query) ||
-        (p.description && p.description.toLowerCase().includes(query))
+        (p.description && p.description.toLowerCase().includes(query)) ||
+        (p.composition && p.composition.toLowerCase().includes(query))
     );
 
     if (filtered.length === 0) {
         resultsContainer.innerHTML = `
             <div class="text-center py-10">
                 <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
-                <p class="text-gray-500">Ничего не найдено</p>
+                <p class="text-gray-500 font-medium">Ничего не найдено</p>
+                <p class="text-gray-400 text-sm mt-1">Попробуйте изменить запрос</p>
             </div>
         `;
     } else {
-        resultsContainer.innerHTML = filtered.map(product => `
-            <div class="search-result-item bg-white p-3 rounded-xl mb-3 shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform" onclick="openProductDetail(allProductsList.find(p => p.id === ${product.id})); closeMobileSearch();">
-                <img src="${product.image_url || 'https://placehold.co/60'}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg">
-                <div class="flex-1">
-                    <p class="font-semibold text-gray-900">${product.name}</p>
-                    <p class="text-rose-600 font-bold">${formatPrice(product.price)} сум</p>
-                </div>
-                <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300"></i>
+        resultsContainer.innerHTML = `
+            <div class="mb-3">
+                <p class="text-xs text-gray-500">Найдено: ${filtered.length} товар(ов)</p>
             </div>
-        `).join('');
+            ${filtered.map(product => renderSearchResultItem(product, query)).join('')}
+        `;
     }
 
     lucide.createIcons();
+}
+
+// Рендеринг элемента результата поиска с подсветкой совпадений
+function renderSearchResultItem(product, query) {
+    const highlightedName = highlightText(product.name, query);
+    const highlightedDesc = product.description ? highlightText(product.description, query) : '';
+    
+    return `
+        <div class="search-result-item bg-white p-3 rounded-xl mb-3 shadow-sm flex gap-3 items-center active:scale-[0.98] transition-transform cursor-pointer" 
+             onclick="selectProductFromSearch(${product.id})">
+            <img src="${product.image_url || 'https://placehold.co/60'}" alt="${product.name}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0">
+            <div class="flex-1 min-w-0">
+                <p class="font-semibold text-gray-900 text-sm line-clamp-2">${highlightedName}</p>
+                ${highlightedDesc ? `<p class="text-xs text-gray-500 mt-1 line-clamp-1">${highlightedDesc}</p>` : ''}
+                <p class="text-rose-600 font-bold text-sm mt-1">${formatPrice(product.price)} сум</p>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 flex-shrink-0"></i>
+        </div>
+    `;
+}
+
+// Подсветка найденного текста
+function highlightText(text, query) {
+    if (!text || !query) return text;
+    
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+    return text.replace(regex, '<mark class="bg-yellow-200 text-gray-900 px-0.5 rounded">$1</mark>');
+}
+
+// Экранирование специальных символов для RegExp
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Выбор товара из поиска
+function selectProductFromSearch(productId) {
+    const product = allProductsList.find(p => p.id === productId);
+    
+    if (!product) {
+        console.error('Товар не найден по ID:', productId);
+        return;
+    }
+    
+    if (typeof openProductDetail !== 'function') {
+        console.error('Функция openProductDetail не найдена');
+        return;
+    }
+    
+    closeMobileSearch();
+    setTimeout(() => {
+        openProductDetail(product);
+    }, 300); // Небольшая задержка для плавного закрытия модалки
+}
+
+// Обработка нажатий клавиш в поиске
+function handleMobileSearchKeydown(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        // Снимаем фокус с инпута, чтобы скрыть клавиатуру на мобильных
+        event.target.blur();
+    } else if (event.key === 'Escape') {
+        closeMobileSearch();
+    }
 }
 
 // Mobile favorites functions
@@ -640,9 +882,8 @@ function renderMobileCart() {
             <img src="${item.image_url || 'https://placehold.co/80'}" class="w-20 h-20 object-cover rounded-lg">
             <div class="flex-1 min-w-0">
                 <h4 class="font-bold text-sm text-gray-900 truncate">${item.name}</h4>
-                <p class="text-xs text-gray-500 mb-1">${item.size ? `Размер: ${item.size}` : ''}</p>
                 <p class="text-rose-600 font-bold text-sm">${formatPrice(item.sale_price || item.price)} сум</p>
-                
+
                 <div class="flex items-center gap-3 mt-2">
                     <button onclick="updateQuantity(${item.id}, -1)" class="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">-</button>
                     <span class="text-sm font-bold">${item.quantity}</span>
@@ -756,7 +997,7 @@ async function loadBanners() {
 
             if (banner.media_type === 'video' && banner.video_url) {
                 bannerContainer.innerHTML = `
-                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted playsinline>
+                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline>
                         <source src="${banner.video_url}" type="video/mp4">
                         Ваш браузер не поддерживает видео.
                     </video>
@@ -770,12 +1011,16 @@ async function loadBanners() {
                     </div>
                 `;
 
-                // Переключение после окончания видео
+                // Обработка ошибок загрузки видео
                 const video = document.getElementById('hero-video');
-                video.onended = () => {
+                video.addEventListener('error', () => {
+                    console.error('Ошибка загрузки видео:', banner.video_url);
+                    // Переключаем на следующий баннер если видео не загрузилось
                     currentBannerIndex = (currentBannerIndex + 1) % banners.length;
                     renderBanner(banners[currentBannerIndex]);
-                };
+                });
+
+                // Для видео с зацикливанием — не переключаем баннер
 
             } else if (banner.image_url) {
                 bannerContainer.innerHTML = `
@@ -853,31 +1098,6 @@ function renderSingleBanner(container, banner) {
     }
 }
 
-async function loadPopularProducts() {
-    try {
-        const res = await fetch('/api/products?sort_by=popular');
-        const products = await res.json();
-        const container = document.getElementById('popular-products');
-        if (container) {
-            container.innerHTML = products.slice(0, 6).map(product => `
-                <div class="w-72 flex-shrink-0 bg-gray-100 rounded-2xl shadow-sm border border-gray-200 overflow-hidden group">
-                    <div class="relative h-64 overflow-hidden bg-gray-200">
-                        <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                        <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="Избранное">
-                            <i data-lucide="heart" class="w-5 h-5 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
-                        </button>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold text-gray-900 mb-1 truncate">${product.name}</h3>
-                        <p class="text-rose-600 font-bold">${formatPrice(product.price)} сум</p>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-        }
-    } catch (e) { console.error("Error loading popular products:", e); }
-}
-
 async function loadReviews() {
     try {
         const res = await fetch('/api/reviews?limit=6&approved_only=true');
@@ -937,17 +1157,27 @@ function renderStars(rating) {
 }
 
 async function loadProducts(animate = false) {
+    // Защита от повторных вызовов
+    if (isLoadingProducts) return;
+
     try {
+        isLoadingProducts = true;
         const sort = document.getElementById('sort-filter')?.value || 'popular';
         const priceMax = document.getElementById('price-range')?.value || 2000000;
 
         const priceLabel = document.getElementById('price-label');
         if (priceLabel) priceLabel.innerText = formatPrice(priceMax);
 
-        let url = `/api/products?sort_by=${sort}&max_price=${priceMax}`;
+        // Добавляем timestamp для обхода кэша
+        let url = `/api/products?sort_by=${sort}&max_price=${priceMax}&_t=${Date.now()}`;
         if (selectedCategory) url += `&category_id=${selectedCategory}`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         const products = await res.json();
         allProductsList = products; // Keep for favorites side-filtering
 
@@ -965,11 +1195,13 @@ async function loadProducts(animate = false) {
         } else {
             renderProducts(products, animate);
         }
-        
-        // Обновляем избранное после загрузки товаров
-        renderFavorites();
+
+        // Обновляем кнопки избранного после загрузки товаров
+        updateFavoriteButtons();
     } catch (error) {
         console.error("Ошибка загрузки:", error);
+    } finally {
+        isLoadingProducts = false;
     }
 }
 
@@ -978,7 +1210,7 @@ async function loadProducts(animate = false) {
 function toggleFavorite(productId) {
     const index = favorites.indexOf(productId);
     const isAdding = index === -1;
-    
+
     if (isAdding) {
         favorites.push(productId);
     } else {
@@ -986,10 +1218,28 @@ function toggleFavorite(productId) {
     }
     localStorage.setItem('favorites', JSON.stringify(favorites));
 
+    // Сразу обновляем визуальное состояние кнопки (без ожидания перерисовки)
+    updateFavoriteButtonVisual(productId, isAdding);
+
+    // Обновляем счетчики
+    const countBadge = document.getElementById('fav-count');
+    const mobileCountBadge = document.getElementById('mobile-fav-count');
+    if (countBadge) {
+        countBadge.innerText = favorites.length;
+        countBadge.classList.toggle('hidden', favorites.length === 0);
+    }
+    if (mobileCountBadge) {
+        mobileCountBadge.innerText = favorites.length;
+        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
+    }
+
     // Синхронизация с сервером если пользователь авторизован
     const token = localStorage.getItem('token');
-    if (token && currentUser) {
+    console.log('🔑 Токен для синхронизации:', token ? 'найден' : 'не найден');
+    
+    if (token) {
         if (isAdding) {
+            console.log('📥 Добавление в избранное на сервере, product_id:', productId);
             // Добавляем в избранное на сервере
             fetch('/api/profile/favorites', {
                 method: 'POST',
@@ -998,37 +1248,86 @@ function toggleFavorite(productId) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ product_id: productId })
-            }).catch(err => console.error('Error adding to favorites:', err));
+            })
+            .then(response => {
+                console.log('📊 Ответ сервера (POST):', response.status);
+                if (response.status === 401) {
+                    // Токен недействителен, очищаем его
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
+                }
+            })
+            .catch(err => console.error('❌ Ошибка добавления в избранное:', err));
         } else {
+            console.log('📤 Удаление из избранного на сервере, product_id:', productId);
             // Удаляем из избранного на сервере
             fetch(`/api/profile/favorites/${productId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
-            }).catch(err => console.error('Error removing from favorites:', err));
+            })
+            .then(response => {
+                console.log('📊 Ответ сервера (DELETE):', response.status);
+                if (response.status === 401) {
+                    // Токен недействителен, очищаем его
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
+                }
+            })
+            .catch(err => console.error('❌ Ошибка удаления из избранного:', err));
         }
+    } else {
+        console.log('ℹ️ Пользователь не авторизован, синхронизация пропускается');
     }
 
-    // Перерисовываем товары и избранное
-    const container = document.getElementById('products-grid');
-    if (container && container.innerHTML !== '') {
-        renderProducts(allProductsList, false);
-    }
+    // Перерисовываем список избранного если он открыт
     renderFavorites();
 }
 
-function toggleFavorites() {
-    const sidebar = document.getElementById('fav-sidebar');
-    sidebar.classList.toggle('hidden');
+function updateFavoriteButtonVisual(productId, isFav) {
+    // Находим все кнопки с этим product-id и обновляем их состояние СРАЗУ
+    const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
+    
+    buttons.forEach(btn => {
+        const icon = btn.querySelector('i');
+        if (!icon) return;
+
+        // Пропускаем кнопки с иконкой корзины (в списке избранного)
+        if (icon.getAttribute('data-lucide') === 'trash-2') return;
+
+        // Обновляем классы и стили СРАЗУ
+        if (isFav) {
+            // Добавляем в избранное - делаем красным с заливкой
+            btn.classList.remove('text-gray-400');
+            btn.classList.add('text-rose-500');
+            icon.classList.remove('text-gray-400');
+            icon.classList.add('text-rose-500', 'fill-rose-500');
+            // Принудительно устанавливаем цвет через style
+            icon.style.color = '#e11d48';
+            icon.style.fill = '#e11d48';
+        } else {
+            // Удаляем из избранного - делаем серым
+            btn.classList.remove('text-rose-500');
+            btn.classList.add('text-gray-400');
+            icon.classList.remove('text-rose-500', 'fill-rose-500');
+            icon.classList.add('text-gray-400');
+            // Сбрасываем style
+            icon.style.color = '';
+            icon.style.fill = '';
+        }
+    });
+    
+    // НЕ вызываем lucide.createIcons() чтобы не сбрасывать классы
 }
 
-function renderFavorites() {
-    const container = document.getElementById('fav-items');
+function updateFavoriteButtons() {
+    // Обновляем счетчик в хедере
     const countBadge = document.getElementById('fav-count');
     const mobileCountBadge = document.getElementById('mobile-fav-count');
-
-    // Обновляем оба бейджа (десктоп + мобильный)
+    
     if (countBadge) {
         countBadge.innerText = favorites.length;
         countBadge.classList.toggle('hidden', favorites.length === 0);
@@ -1038,7 +1337,44 @@ function renderFavorites() {
         mobileCountBadge.innerText = favorites.length;
         mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
     }
+    
+    // Обновляем состояние кнопок в каталоге (с иконкой сердца)
+    document.querySelectorAll('.fav-heart-btn').forEach(btn => {
+        const productId = btn.getAttribute('data-product-id');
+        if (!productId) return;
+        
+        // Пропускаем кнопки с иконкой корзины (в списке избранного)
+        const icon = btn.querySelector('i');
+        if (!icon) return;
+        if (icon.getAttribute('data-lucide') === 'trash-2') return;
+        
+        const isFav = favorites.includes(parseInt(productId));
+        
+        // Меняем иконку и цвет
+        if (isFav) {
+            btn.classList.add('text-rose-500');
+            btn.classList.remove('text-gray-400');
+            icon.classList.add('fill-rose-500');
+        } else {
+            btn.classList.remove('text-rose-500');
+            btn.classList.add('text-gray-400');
+            icon.classList.remove('fill-rose-500');
+        }
+    });
+    
+    // Перерисовываем иконки
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
 
+function toggleFavorites() {
+    const sidebar = document.getElementById('fav-sidebar');
+    sidebar.classList.toggle('hidden');
+}
+
+function renderFavorites() {
+    const container = document.getElementById('fav-items');
     if (!container) return;
 
     if (favorites.length === 0) {
@@ -1076,7 +1412,7 @@ function renderFavoritesAfterLoad(container) {
                 <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" class="p-2 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-all">
                     <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="toggleFavorite(${product.id})" class="fav-heart-btn min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-rose-500 active:scale-95 transition-all rounded-lg" aria-label="Удалить из избранного">
+                <button type="button" onclick="toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-rose-500 active:scale-95 transition-all rounded-lg" aria-label="Удалить из избранного">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -1143,9 +1479,9 @@ function renderCart() {
                 <img src="${item.image_url || 'https://placehold.co/100'}" class="w-full h-full object-cover">
             </div>
             <div class="flex-1 min-w-0">
-                <h4 class="font-bold text-sm text-gray-900 truncate pr-6">${item.name} ${item.size ? `(${item.size})` : ''}</h4>
+                <h4 class="font-bold text-sm text-gray-900 truncate pr-6">${item.name}</h4>
                 <p class="text-rose-600 font-bold text-sm mt-1">${formatPrice(item.sale_price || item.price)} сум</p>
-                
+
                 <div class="flex items-center gap-3 mt-3">
                     <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:border-rose-300 hover:text-rose-600 transition-all">-</button>
                     <span class="text-sm font-bold">${item.quantity}</span>
@@ -1165,17 +1501,6 @@ function renderCart() {
 
     // Обновляем мобильную корзину
     renderMobileCart();
-}
-
-function updateQuantity(productId, delta) {
-    const item = cart.find(i => i.id === productId);
-    if (item) {
-        item.quantity += delta;
-        if (item.quantity <= 0) {
-            cart = cart.filter(i => i.id !== productId);
-        }
-        saveCart();
-    }
 }
 
 function removeFromCart(productId) {
@@ -1199,12 +1524,12 @@ async function handleCheckout() {
         return;
     }
 
-    const address = document.getElementById('order-address').value;
     const phone = document.getElementById('order-phone').value;
+    const name = document.getElementById('order-name').value;
     const total = parseFloat(document.getElementById('cart-total').innerText.replace(' сум', '').replace(/\s/g, ''));
 
-    if (!address || !phone) {
-        alert("Пожалуйста, заполните адрес и номер телефона");
+    if (!phone || !name) {
+        alert("Пожалуйста, заполните номер телефона и имя");
         return;
     }
 
@@ -1218,8 +1543,10 @@ async function handleCheckout() {
             },
             body: JSON.stringify({
                 total_amount: total,
-                delivery_address: address,
-                phone: phone
+                delivery_address: '',
+                phone: phone,
+                name: name,
+                items: JSON.stringify(cart)  // ✅ Передаём товары в заказе
             })
         });
 
@@ -1375,15 +1702,13 @@ async function processFinalPayment() {
         return;
     }
 
-    const address = document.getElementById('order-address')?.value.trim();
     const phone = document.getElementById('order-phone')?.value.trim();
-    const date = document.getElementById('order-date')?.value;
-    const time = document.getElementById('order-time')?.value;
+    const name = document.getElementById('order-name')?.value.trim();
     const postcard = document.getElementById('order-postcard')?.value.trim();
-    const cardNumber = document.getElementById('card-number')?.value.trim();
+    const comment = document.getElementById('order-comment')?.value.trim();
 
-    if (!address || !phone || !date || !time || (selectedPaymentMethod !== 'cash' && cardNumber.length < 19)) {
-        alert("Заполните все обязательные поля (адрес, телефон, дата, время и номер карты)!");
+    if (!phone || !name) {
+        alert("Заполните все обязательные поля (телефон, имя)!");
         return;
     }
 
@@ -1393,66 +1718,78 @@ async function processFinalPayment() {
     const lat = document.getElementById('order-lat')?.value;
     const lng = document.getElementById('order-lng')?.value;
 
-    const orderData = {
-        delivery_address: address,
-        phone: phone,
-        delivery_date: date,
-        delivery_time: time,
-        postcard_text: postcard,
-        comment: document.getElementById('order-comment')?.value || "",
-        promo_code_used: appliedPromoCode,
-        items: JSON.stringify(cart),
-        total_amount: total,
-        lat: lat ? parseFloat(lat) : null,
-        lng: lng ? parseFloat(lng) : null
-    };
-
     const token = localStorage.getItem('token');
     try {
-        const response = await fetch('/api/orders', {
+        // Сначала создаём заказ
+        const orderRes = await fetch('/api/order', {
             method: 'POST',
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify(orderData)
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                delivery_address: '',
+                comment: comment,
+                delivery_date: '',
+                delivery_time: '',
+                postcard_text: postcard
+            })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            const orderId = data.id;
-
-            if (selectedPaymentMethod === 'cash') {
-                alert("Заказ успешно оформлен! Мы свяжемся с вами в ближайшее время.");
-                cart = [];
-                appliedPromoCode = null;
-                appliedDiscount = 0;
-                saveCart();
-                window.location.href = "/";
-            } else {
-                // Fetch payment link for Click/Payme
-                try {
-                    const payRes = await fetch(`/api/payment/create-link/${orderId}?method=${selectedPaymentMethod}`);
-                    const payData = await payRes.json();
-                    if (payData.url) {
-                        alert(`Заказ #${orderId} создан. Перенаправляем на оплату через ${selectedPaymentMethod}...`);
-                        cart = [];
-                        saveCart();
-                        window.location.href = payData.url;
-                    } else {
-                        throw new Error("Не удалось получить ссылку на оплату");
-                    }
-                } catch (payErr) {
-                    alert("Ошибка при создании ссылки на оплату, но заказ сохранен. Мы свяжемся с вами.");
-                    window.location.href = "/";
-                }
-            }
-        } else {
-            const error = await response.json();
-            alert("Ошибка: " + (error.detail || "Не удалось оформить заказ"));
+        const orderData = await orderRes.json();
+        if (!orderRes.ok || !orderData.success) {
+            throw new Error(orderData.detail || 'Ошибка при создании заказа');
         }
-    } catch (err) {
-        console.error("Ошибка при отправке:", err);
+
+        const orderId = orderData.order_id;
+
+        // Добавляем товары в заказ
+        for (const item of cart) {
+            await fetch(`/api/order/${orderId}/add-item`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    comment: item.comment || null
+                })
+            });
+        }
+
+        if (selectedPaymentMethod === 'cash') {
+            alert(`Заказ #${orderId} успешно оформлен! Мы свяжемся с вами в ближайшее время.`);
+            cart = [];
+            appliedPromoCode = null;
+            appliedDiscount = 0;
+            saveCart();
+            hideCheckout();
+            window.location.href = "/";
+        } else {
+            // Fetch payment link for Click/Payme
+            try {
+                const payRes = await fetch(`/api/payment/create-link/${orderId}?method=${selectedPaymentMethod}`);
+                const payData = await payRes.json();
+                if (payData.url) {
+                    alert(`Заказ #${orderId} создан. Перенаправляем на оплату через ${selectedPaymentMethod}...`);
+                    cart = [];
+                    saveCart();
+                    hideCheckout();
+                    window.location.href = payData.url;
+                } else {
+                    throw new Error("Не удалось получить ссылку на оплату");
+                }
+            } catch (payErr) {
+                alert(`Ошибка при создании ссылки на оплату, но заказ #${orderId} сохранен. Мы свяжемся с вами.`);
+                window.location.href = "/";
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при оформлении заказа:', error);
+        alert('Ошибка: ' + (error.message || 'Не удалось оформить заказ'));
     }
 }
 
@@ -1474,7 +1811,7 @@ function openCheckout() {
     const sidebar = document.getElementById('cart-sidebar');
     if (sidebar) sidebar.classList.add('hidden');
 
-    // 2. Показываем страницу оформления
+    // 2. Показываем с����раницу оформления
     const checkoutPage = document.getElementById('page-checkout');
     if (checkoutPage) checkoutPage.classList.remove('hidden');
 
@@ -1500,12 +1837,11 @@ function renderCheckoutItems() {
 
     container.innerHTML = cart.map(item => `
         <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-            <img src="${item.image_url || 'https://placehold.co/60'}" 
+            <img src="${item.image_url || 'https://placehold.co/60'}"
                  class="w-14 h-14 object-cover rounded-lg flex-shrink-0">
             <div class="flex-1 min-w-0">
                 <p class="font-medium text-gray-900 truncate text-sm">${item.name}</p>
                 <p class="text-xs text-gray-500">
-                    ${item.size ? `Размер: ${item.size} • ` : ''}
                     ${item.quantity} шт
                 </p>
             </div>
@@ -1827,24 +2163,208 @@ function goBackToAdmin() {
     window.close();
 }
 
-function initAutocomplete() {
-    const input = document.getElementById('order-address');
-    if (!input) return;
+// Заказ через Telegram - модальное окно
+function openTelegramOrderModal() {
+    if (cart.length === 0) {
+        alert('Корзина пуста');
+        return;
+    }
 
-    const autocomplete = new google.maps.places.Autocomplete(input, {
-        componentRestrictions: { country: "uz" },
-        fields: ["address_components", "geometry"],
-        types: ["address"],
-    });
+    // Заполняем список товаров с фото
+    const itemsContainer = document.getElementById('tg-order-items');
+    if (itemsContainer) {
+        itemsContainer.innerHTML = cart.map(item => `
+            <div class="flex gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                <img src="${item.image_url || 'https://placehold.co/80'}"
+                    alt="${item.name}"
+                    class="w-16 h-16 object-cover rounded-lg flex-shrink-0">
+                <div class="flex-1 min-w-0">
+                    <h5 class="font-semibold text-sm text-gray-900 truncate">${item.name}</h5>
+                    <p class="text-xs text-gray-500 mt-1">
+                        ${item.quantity} шт.
+                    </p>
+                    <p class="text-rose-600 font-bold text-sm mt-1">
+                        ${formatPrice(item.price * item.quantity)} сум
+                    </p>
+                </div>
+            </div>
+        `).join('');
+    }
 
-    autocomplete.addListener("place_changed", () => {
-        const place = autocomplete.getPlace();
-        if (!place.geometry || !place.geometry.location) {
-            console.log("No location data for this place");
-            return;
+    // Обновляем итоговую сумму
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalElem = document.getElementById('tg-order-total');
+    if (totalElem) {
+        totalElem.innerText = formatPrice(total) + ' сум';
+    }
+
+    // Заполняем данные пользователя если авторизован
+    if (currentUser) {
+        const phoneElem = document.getElementById('tg-order-phone');
+        if (phoneElem && currentUser.phone) {
+            phoneElem.value = currentUser.phone;
+        }
+    }
+
+    // Показываем модальное окно
+    const modal = document.getElementById('telegram-order-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+    
+    lucide.createIcons();
+}
+
+function closeTelegramOrderModal() {
+    const modal = document.getElementById('telegram-order-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+async function submitTelegramOrder() {
+    const phone = document.getElementById('tg-order-phone')?.value.trim();
+    const name = document.getElementById('tg-order-name')?.value.trim();
+    const postcard = document.getElementById('tg-order-postcard')?.value.trim();
+    const comment = document.getElementById('tg-order-comment')?.value.trim();
+
+    if (!phone || !name) {
+        alert('Пожалуйста, заполните телефон и имя');
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    try {
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Создаём заказ в базе
+        const res = await fetch('/api/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                delivery_address: '',
+                comment: comment || '',
+                delivery_date: '',
+                delivery_time: '',
+                postcard_text: postcard || ''
+            })
+        });
+
+        const orderData = await res.json();
+
+        if (!res.ok || !orderData.success) {
+            throw new Error(orderData.detail || 'Ошибка при создании заказа');
         }
 
-        document.getElementById('order-lat').value = place.geometry.location.lat();
-        document.getElementById('order-lng').value = place.geometry.location.lng();
-    });
+        const orderId = orderData.order_id;
+
+        // Добавляем товары в заказ
+        for (const item of cart) {
+            await fetch(`/api/order/${orderId}/add-item`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    comment: null
+                })
+            });
+        }
+
+        // Формируем сообщение для Telegram
+        let message = '🌸 Новый заказ\n\n';
+        message += '📦 Товары:\n';
+
+        cart.forEach((item, index) => {
+            message += `${index + 1}. ${item.name} — ${item.quantity} шт. × ${formatPrice(item.price)} сум\n`;
+        });
+
+        message += `\n💰 Итого: ${formatPrice(total)} сум`;
+
+        if (address) message += `\n📍 Адрес: ${address}`;
+        if (phone) message += `\n📞 Телефон: ${phone}`;
+        if (date) message += `\n📅 Дата: ${date}`;
+        if (time) {
+            const timeLabels = {
+                '09:00-12:00': '09:00-12:00 (Утро)',
+                '12:00-15:00': '12:00-15:00 (День)',
+                '15:00-18:00': '15:00-18:00 (Вечер)',
+                '18:00-21:00': '18:00-21:00 (Поздний вечер)'
+            };
+            message += `\n⏰ Время: ${timeLabels[time] || time}`;
+        }
+
+        if (postcard) message += `\n💌 Открытка: ${postcard}`;
+        if (comment) message += `\n💬 Комментарий: ${comment}`;
+
+        message += `\n\n🔢 Номер заказа: #${orderId}`;
+
+        // Копируем сообщение в буфер обмена
+        navigator.clipboard.writeText(message).then(() => {
+            alert('✅ Заказ создан! Детали скопированы в буфер обмена.\n\nСейчас откроется Telegram — просто вставьте сообщение в чат.');
+
+            // Очищаем корзину
+            cart = [];
+            saveCart();
+            closeTelegramOrderModal();
+            toggleCart();
+
+            // Открываем Telegram
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                window.location.href = 'https://t.me/uzflower';
+            } else {
+                window.open('https://t.me/uzflower', '_blank');
+            }
+        }).catch(() => {
+            alert('✅ Заказ создан! Сейчас откроется Telegram.');
+
+            cart = [];
+            saveCart();
+            closeTelegramOrderModal();
+            toggleCart();
+
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                window.location.href = 'https://t.me/uzflower';
+            } else {
+                window.open('https://t.me/uzflower', '_blank');
+            }
+        });
+
+    } catch (error) {
+        console.error('Ошибка при создании заказа:', error);
+        alert('Ошибка: ' + (error.message || 'Не удалось создать заказ'));
+    }
+}
+
+// Старая функция orderViaTelegram (для совместимости)
+async function orderViaTelegram() {
+    openTelegramOrderModal();
+}
+
+// Открыть модальное окно Telegram заказа из карточки товара
+function openTelegramOrderModalFromProduct() {
+    if (!activeProduct) {
+        alert('Товар не выбран');
+        return;
+    }
+
+    // Генерируем ссылку на Telegram бота с deep-link
+    // Формат: https://t.me/your_bot?start=product_ID
+    const productId = activeProduct.id;
+    const telegramLink = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=product_${productId}`;
+
+    // Открываем Telegram
+    window.open(telegramLink, '_blank');
+
+    // Закрываем модальное окно товара
+    closeProductDetail();
 }

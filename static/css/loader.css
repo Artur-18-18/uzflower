@@ -1,0 +1,246 @@
+/* Beautiful Mini Flower Loader */
+.flower-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.98);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.flower-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.flower-loader-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Flower Container - Mini */
+.flower-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    animation: flowerFloat 2s ease-in-out infinite;
+}
+
+@keyframes flowerFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+/* Center of Flower */
+.flower-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+    z-index: 10;
+    animation: centerPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes centerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.7);
+    }
+}
+
+/* Petals - Mini */
+.flower-petal {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #f43f5e 0%, #ec4899 50%, #e11d48 100%);
+    border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+    transform-origin: center center;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.3);
+    animation: petalBloom 1.5s ease-in-out infinite;
+}
+
+.flower-petal:nth-child(1) {
+    top: 5%;
+    left: 50%;
+    margin-left: -14px;
+    animation-delay: 0s;
+}
+
+.flower-petal:nth-child(2) {
+    top: 18%;
+    right: 5%;
+    animation-delay: 0.1s;
+}
+
+.flower-petal:nth-child(3) {
+    top: 50%;
+    right: 5%;
+    margin-top: -14px;
+    animation-delay: 0.2s;
+}
+
+.flower-petal:nth-child(4) {
+    bottom: 18%;
+    right: 5%;
+    animation-delay: 0.3s;
+}
+
+.flower-petal:nth-child(5) {
+    bottom: 5%;
+    left: 50%;
+    margin-left: -14px;
+    animation-delay: 0.4s;
+}
+
+.flower-petal:nth-child(6) {
+    bottom: 18%;
+    left: 5%;
+    animation-delay: 0.5s;
+}
+
+.flower-petal:nth-child(7) {
+    top: 50%;
+    left: 5%;
+    margin-top: -14px;
+    animation-delay: 0.6s;
+}
+
+.flower-petal:nth-child(8) {
+    top: 18%;
+    left: 5%;
+    animation-delay: 0.7s;
+}
+
+@keyframes petalBloom {
+    0%, 100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    50% {
+        transform: scale(1.1);
+        filter: brightness(1.15);
+    }
+}
+
+/* Sparkles */
+.flower-sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fbbf24;
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+    animation: sparkle 1.2s ease-in-out infinite;
+}
+
+.flower-sparkle:nth-child(9) {
+    top: 10%;
+    left: 20%;
+    animation-delay: 0s;
+}
+
+.flower-sparkle:nth-child(10) {
+    top: 20%;
+    right: 15%;
+    animation-delay: 0.3s;
+}
+
+.flower-sparkle:nth-child(11) {
+    bottom: 20%;
+    left: 15%;
+    animation-delay: 0.6s;
+}
+
+.flower-sparkle:nth-child(12) {
+    bottom: 10%;
+    right: 20%;
+    animation-delay: 0.9s;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Loading Text */
+.loader-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e11d48;
+    letter-spacing: 2px;
+    animation: textFade 1.5s ease-in-out infinite;
+}
+
+@keyframes textFade {
+    0%, 100% {
+        opacity: 0.5;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Loading Dots */
+.loader-dots {
+    display: flex;
+    gap: 5px;
+}
+
+.loader-dot {
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #f43f5e, #ec4899);
+    border-radius: 50%;
+    animation: dotBounce 1.4s ease-in-out infinite;
+}
+
+.loader-dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loader-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loader-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dotBounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

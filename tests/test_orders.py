@@ -32,12 +32,12 @@ class TestOrderModel:
             phone=test_order_data["phone"],
             delivery_date=test_order_data["delivery_date"],
             delivery_time=test_order_data["delivery_time"],
-            items='[{"product_id": 1, "quantity": 1, "price": 100000}]'
+            items_json='[{"product_id": 1, "quantity": 1, "price": 100000}]'
         )
         db_session.add(order)
         db_session.commit()
         db_session.refresh(order)
-        
+
         assert order.id is not None
         assert order.user_id == created_user.id
         assert order.total_amount == test_order_data["total_amount"]
@@ -56,13 +56,13 @@ class TestOrderModel:
         )
         db_session.add(order)
         db_session.commit()
-        
+
         assert order.status == "pending"
         assert order.is_paid is False
         assert order.payment_method == "card"
         assert order.payment_status == "waiting"
         assert order.courier_id is None
-        assert order.items is None
+        assert order.items_json is None
         assert order.comment is None
         assert order.promo_code_used is None
 
@@ -314,18 +314,18 @@ class TestOrderItems:
     def test_order_items_json_format(self, db_session: Session, created_user: User):
         """Тест: сохранение элементов заказа в JSON формате."""
         items_json = '[{"product_id": 1, "quantity": 2, "price": 50000}, {"product_id": 3, "quantity": 1, "price": 75000}]'
-        
+
         order = Order(
             user_id=created_user.id,
             total_amount=175000,
             delivery_address="Test Address",
             phone="+998901234567",
-            items=items_json
+            items_json=items_json
         )
         db_session.add(order)
         db_session.commit()
-        
-        assert order.items == items_json
+
+        assert order.items_json == items_json
 
     def test_order_items_empty(self, db_session: Session, created_user: User):
         """Тест: заказ с пустыми элементами (nullable)."""
@@ -334,12 +334,12 @@ class TestOrderItems:
             total_amount=0,
             delivery_address="Test Address",
             phone="+998901234567",
-            items=None
+            items_json=None
         )
         db_session.add(order)
         db_session.commit()
-        
-        assert order.items is None
+
+        assert order.items_json is None
 
 
 # ============================================================

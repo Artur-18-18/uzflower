@@ -295,7 +295,7 @@ def created_order(
         phone=test_order_data["phone"],
         delivery_date=test_order_data["delivery_date"],
         delivery_time=test_order_data["delivery_time"],
-        items='[{"product_id": 1, "quantity": 1}]'
+        items_json='[{"product_id": 1, "quantity": 1}]'
     )
     db_session.add(order)
     db_session.commit()

@@ -140,6 +140,7 @@ class User(Base):
     hashed_password = Column(String)
     full_name = Column(String)
     phone = Column(String, nullable=True)
+    telegram_id = Column(Integer, nullable=True)  # Telegram ID для уведомлений
     is_admin = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False)
     bonus_points = Column(Integer, default=0)
@@ -185,19 +186,34 @@ class Product(Base):
     favorites = relationship("Favorite", back_populates="product", cascade="all, delete-orphan")
 
 
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product_name = Column(String)  # Копия названия на момент заказа
+    product_price = Column(Float)  # Цена на момент заказа
+    quantity = Column(Integer, default=1)
+
+    order = relationship("Order", back_populates="items")
+    product = relationship("Product")
+
+
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    customer_name = Column(String, nullable=True)  # Имя клиента для анонимных заказов (из Telegram)
     total_amount = Column(Float)
     status = Column(String, default="pending")  # pending, processing, shipping, completed, cancelled
     is_paid = Column(Boolean, default=False)
     payment_method = Column(String, default="card")
     courier_id = Column(Integer, nullable=True)
-    delivery_address = Column(String)
+    delivery_address = Column(String, nullable=True)  # Теперь необязательно (самовывоз)
     phone = Column(String)
-    items = Column(Text, nullable=True)
+    items_json = Column(Text, nullable=True)  # JSON для совместимости (старое поле)
 
     delivery_date = Column(String, nullable=True)
     delivery_time = Column(String, nullable=True)
@@ -205,7 +221,16 @@ class Order(Base):
     comment = Column(Text, nullable=True)
     promo_code_used = Column(String, nullable=True)
 
-    payment_status = Column(String, default="waiting")  # waiting, payed, error
+    # Доставка: True - нужна доставка, False - самовывоз
+    delivery_option = Column(Boolean, default=True)  # True = доставка, False = самовывоз
+    delivery_price = Column(Float, default=0.0)  # Стоимость доставки
+
+    # Оплата
+    payment_status = Column(String, default="waiting")  # waiting, paid, error
+    payment_proof_url = Column(String, nullable=True)  # URL скриншота чека
+    payment_proof_file_id = Column(String, nullable=True)  # Telegram file_id скриншота
+    card_number = Column(String, nullable=True)  # Номер карты для оплаты (копия на момент заказа)
+
     external_id = Column(String, nullable=True)  # ID транзакции в Click/Payme
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
@@ -213,6 +238,7 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     owner = relationship("User", back_populates="orders")
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     reviews = relationship("Review", back_populates="order", cascade="all, delete-orphan")
 
 

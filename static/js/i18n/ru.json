@@ -26,6 +26,7 @@
   "header": {
     "home": "Главная",
     "catalog": "Каталог",
+    "about": "О нас",
     "contacts": "Контакты",
     "search_placeholder": "Поиск цветов...",
     "admin_back": "Назад в админку",
@@ -52,7 +53,7 @@
     "box_flowers": "Цветы в коробке"
   },
   "products": {
-    "title": "Покупочные товары",
+    "title": "Наши букеты",
     "popular": "Популярные букеты",
     "popular_subtitle": "То, что чаще всего выбирают наши клиенты",
     "view_all": "Весь каталог",
@@ -97,12 +98,37 @@
   "filters": {
     "title": "Фильтры",
     "sort": "Сортировка",
+    "sort_label": "Сортировка",
     "sort_popular": "Популярные",
     "sort_price_asc": "Сначала дешевле",
     "sort_price_desc": "Сначала дороже",
     "category": "Категория",
+    "category_label": "Категория",
     "price_max": "Цена (до)",
-    "all_categories": "Все категории"
+    "price_label": "Цена (до)",
+    "all_categories": "Все категории",
+    "loading": "Загрузка...",
+    "back_to_admin": "Назад в админку"
+  },
+  "about": {
+    "title": "О нас 🌸",
+    "subtitle": "Мы создаём незабываемые моменты с помощью наших авторских букетов",
+    "feature_fresh_title": "Свежие цветы",
+    "feature_fresh_desc": "Только свежие цветы от лучших поставщиков. Каждый букет собирается вручную.",
+    "feature_delivery_title": "Быстрая доставка",
+    "feature_delivery_desc": "Доставим ваш заказ в кратчайшие сроки по всему городу. Бережно и вовремя.",
+    "feature_love_title": "Сделано с любовью",
+    "feature_love_desc": "Каждый букет создаётся с заботой и вниманием к деталям.",
+    "main_title": "UzFlower — ваши эмоции в каждом букете",
+    "main_desc_1": "Мы — команда профессиональных флористов, которые любят своё дело. Уже более 5 лет мы создаём уникальные букеты и дарим радость нашим клиентам.",
+    "main_desc_2": "В нашем каталоге вы найдёте букеты на любой вкус: от классических роз до эксклюзивных авторских композиций. Мы тщательно отбираем каждый цветок и создаём букеты, которые долго радуют своей красотой.",
+    "guarantee_fresh": "Гарантия свежести",
+    "guarantee_individual": "Индивидуальный подход",
+    "guarantee_experienced": "Опытные флористы",
+    "guarantee_clients": "Более 1000 довольных клиентов",
+    "stats_years": "Лет на рынке",
+    "stats_clients": "Довольных клиентов",
+    "stats_bouquets": "Видов букетов"
   },
   "reviews": {
     "title": "Отзывы клиентов 💛",
@@ -127,10 +153,48 @@
     "clear": "Очистить корзину",
     "remove": "Удалить",
     "increase": "Увеличить",
-    "decrease": "Уменьшить"
+    "decrease": "Уменьшить",
+    "telegram_order": "Заказать в Telegram",
+    "continue_shopping": "Продолжить покупки"
   },
   "checkout": {
-    "title": "Оформление заказа",
+    "title": "🌸 Оформление заказа",
+    "subtitle": "Заполните данные для доставки букета",
+    "back": "Назад",
+    "client_info": "Информация о клиенте",
+    "phone_label": "Телефон *",
+    "phone_placeholder": "+998 __ ___-__-__",
+    "name_label": "Имя *",
+    "name_placeholder": "Как к вам обращаться?",
+    "postcard_label": "Текст на открытке",
+    "postcard_placeholder": "Дорогая, с любовью...",
+    "comment_label": "Комментарий к заказу",
+    "comment_placeholder": "Дополнительная информация...",
+    "payment_method": "Способ оплаты",
+    "payment_click": "Click",
+    "payment_payme": "Payme",
+    "payment_cash": "Наличные",
+    "card_data": "Данные карты",
+    "secure_payment": "Безопасная оплата",
+    "card_number_label": "Номер карты",
+    "card_number_placeholder": "0000 0000 0000 0000",
+    "card_expiry_label": "Срок действия",
+    "card_expiry_placeholder": "ММ/ГГ",
+    "card_cvv_label": "CVV",
+    "card_cvv_placeholder": "123",
+    "ssl_protection": "Платёж защищён SSL шифрованием",
+    "safe": "Безопасно",
+    "ssl_encryption": "SSL шифрование",
+    "promo_title": "Промокод",
+    "promo_placeholder": "SALE20",
+    "promo_apply": "Применить",
+    "your_order": "Ваш заказ",
+    "subtotal": "Подытог",
+    "discount": "Скидка",
+    "total": "Итого",
+    "confirm_order": "Подтвердить заказ",
+    "footer_safe": "Безопасно",
+    "footer_fast_delivery": "Быстрая доставка",
     "delivery_info": "Информация о доставке",
     "delivery_address": "Адрес доставки",
     "delivery_date": "Дата доставки",
@@ -150,6 +214,10 @@
   },
   "profile": {
     "title": "Профиль",
+    "loading": "Загрузка...",
+    "orders_title": "Мои заказы",
+    "orders_loading": "Загрузка заказов...",
+    "sign_out": "Выйти",
     "personal_info": "Личная информация",
     "name": "ФИО",
     "email": "Email",
@@ -229,6 +297,20 @@
     "email_registered": "Этот email уже зарегистрирован"
   },
   "footer": {
+    "brand": "uzflower",
+    "description": "Свежие цветы с доставкой за 60 минут в Ташкенте.",
+    "catalog_title": "Каталог",
+    "all_bouquets": "Все букеты",
+    "roses": "Розы",
+    "gifts": "Подарки",
+    "address_title": "Адрес",
+    "address": "📍г. Ташкент, МИРЗО-УЛУГБЕК р-н ул. Сайрам(Sayram) Дом 2, Буз-Базар",
+    "contacts_title": "Контакты",
+    "phone_1": "Телефон: +998 (93) 597-56-99",
+    "phone_2": "Телефон: +998 (99) 609-69-23",
+    "channels_title": "Каналы",
+    "telegram_link": "Перейти в Telegram канал",
+    "copyright": "© 2026 uzflower. Все права защищены.",
     "contacts": "Контакты",
     "about": "О нас",
     "delivery": "Доставка и оплата",
@@ -282,6 +364,58 @@
     "free_delivery": "Бесплатная доставка от",
     "delivery_time": "Время доставки",
     "payment_methods": "Способы оплаты"
+  },
+  "modal": {
+    "product": {
+      "telegram_order": "Заказать в Telegram",
+      "add_to_cart": "В корзину"
+    },
+    "custom_bouquet": {
+      "title": "Соберем ваш идеальный букет!",
+      "desc": "Наши флористы готовы создать композицию по вашим пожеланиям. Просто напишите их в чате поддержки!",
+      "cta": "Написать флористу"
+    },
+    "favorites": {
+      "title": "Избранное",
+      "empty": "Список избранного пуст",
+      "continue_shopping": "Продолжить покупки"
+    },
+    "telegram_order": {
+      "title": "Заказ через Telegram",
+      "phone_label": "Телефон *",
+      "phone_placeholder": "+998 __ ___-__-__",
+      "name_label": "Имя *",
+      "name_placeholder": "Как к вам обращаться?",
+      "postcard_label": "Текст на открытке",
+      "postcard_placeholder": "Дорогая, с любовью...",
+      "comment_label": "Комментарий",
+      "comment_placeholder": "Дополнительная информация...",
+      "order_summary": "Ваш заказ:",
+      "total": "Итого:",
+      "submit": "Отправить заказ",
+      "info": "После нажатия откроется Telegram с готовым сообщением"
+    }
+  },
+  "mobile": {
+    "home": "Главная",
+    "search": "Поиск",
+    "cart": "Корзина",
+    "profile": "Профиль"
+  },
+  "chat": {
+    "title": "Поддержка UzFlower",
+    "welcome_message": "Здравствуйте! Чем могу помочь сегодня? Посоветовать букет или уточнить цену?",
+    "input_placeholder": "Спросите о цветах...",
+    "contact_button": "Связаться с нами",
+    "telegram_button": "Telegram-чат"
+  },
+  "loader": {
+    "text": "Загрузка"
+  },
+  "banner": {
+    "default_text": "🌸 Красота в каждом букете",
+    "no_video": "Нет видео",
+    "configure_admin": "Настройте в админ-панели"
   },
   "admin": {
     "title": "Панель администратора",
