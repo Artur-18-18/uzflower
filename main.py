@@ -592,7 +592,11 @@ async def lifespan(app: FastAPI):
     if 'bonus_points' not in user_cols:
         db.execute(text("ALTER TABLE users ADD COLUMN bonus_points INTEGER DEFAULT 0"))
     if 'is_blocked' not in user_cols:
-        db.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT 0"))
+        # Для PostgreSQL нужно использовать TRUE/FALSE
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT false"))
+        else:
+            db.execute(text("ALTER TABLE users ADD COLUMN is_blocked BOOLEAN DEFAULT 0"))
     if 'phone' not in user_cols:
         db.execute(text("ALTER TABLE users ADD COLUMN phone TEXT"))
     if 'image_url' not in user_cols:
@@ -604,7 +608,11 @@ async def lifespan(app: FastAPI):
     # Products table
     prod_cols = [c['name'] for c in inspector.get_columns("products")]
     if 'is_popular' not in prod_cols:
-        db.execute(text("ALTER TABLE products ADD COLUMN is_popular BOOLEAN DEFAULT 0"))
+        # Для PostgreSQL нужно использовать TRUE/FALSE
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("ALTER TABLE products ADD COLUMN is_popular BOOLEAN DEFAULT false"))
+        else:
+            db.execute(text("ALTER TABLE products ADD COLUMN is_popular BOOLEAN DEFAULT 0"))
     if 'category_id' not in prod_cols:
         db.execute(text("ALTER TABLE products ADD COLUMN category_id INTEGER REFERENCES categories(id)"))
     if 'price_s' not in prod_cols:
@@ -624,7 +632,11 @@ async def lifespan(app: FastAPI):
     if 'postcard_text' not in order_cols:
         db.execute(text("ALTER TABLE orders ADD COLUMN postcard_text TEXT"))
     if 'is_paid' not in order_cols:
-        db.execute(text("ALTER TABLE orders ADD COLUMN is_paid BOOLEAN DEFAULT 0"))
+        # Для PostgreSQL нужно использовать TRUE/FALSE
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("ALTER TABLE orders ADD COLUMN is_paid BOOLEAN DEFAULT false"))
+        else:
+            db.execute(text("ALTER TABLE orders ADD COLUMN is_paid BOOLEAN DEFAULT 0"))
     if 'payment_method' not in order_cols:
         db.execute(text("ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT 'card'"))
     if 'courier_id' not in order_cols:
@@ -645,7 +657,20 @@ async def lifespan(app: FastAPI):
         db.execute(text("ALTER TABLE orders ADD COLUMN promo_code_used TEXT"))
     # Поля для доставки и оплаты
     if 'delivery_option' not in order_cols:
-        db.execute(text("ALTER TABLE orders ADD COLUMN delivery_option BOOLEAN DEFAULT 1"))
+        # Добавляем поле delivery_option если его нет
+        try:
+            # Для PostgreSQL нужно использовать TRUE/FALSE или true/false
+            if 'postgresql' in DATABASE_URL:
+                db.execute(text("ALTER TABLE orders ADD COLUMN delivery_option BOOLEAN DEFAULT true"))
+            else:
+                db.execute(text("ALTER TABLE orders ADD COLUMN delivery_option BOOLEAN DEFAULT 1"))
+            db.commit()
+            logger.info("✅ Добавлено поле delivery_option в таблицу orders")
+        except Exception as e:
+            # Поле уже может существовать
+            if 'duplicate column' not in str(e).lower():
+                logger.warning(f"⚠️ Не удалось добавить delivery_option: {e}")
+            db.rollback()
     if 'delivery_price' not in order_cols:
         db.execute(text("ALTER TABLE orders ADD COLUMN delivery_price FLOAT DEFAULT 0"))
     if 'payment_proof_url' not in order_cols:
@@ -783,9 +808,17 @@ async def lifespan(app: FastAPI):
     if 'order_id' not in review_cols:
         db.execute(text("ALTER TABLE reviews ADD COLUMN order_id INTEGER REFERENCES orders(id)"))
     if 'is_approved' not in review_cols:
-        db.execute(text("ALTER TABLE reviews ADD COLUMN is_approved BOOLEAN DEFAULT 1"))
+        # Для PostgreSQL нужно использовать TRUE/FALSE
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("ALTER TABLE reviews ADD COLUMN is_approved BOOLEAN DEFAULT true"))
+        else:
+            db.execute(text("ALTER TABLE reviews ADD COLUMN is_approved BOOLEAN DEFAULT 1"))
     if 'is_verified_purchase' not in review_cols:
-        db.execute(text("ALTER TABLE reviews ADD COLUMN is_verified_purchase BOOLEAN DEFAULT 0"))
+        # Для PostgreSQL нужно использовать TRUE/FALSE
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("ALTER TABLE reviews ADD COLUMN is_verified_purchase BOOLEAN DEFAULT false"))
+        else:
+            db.execute(text("ALTER TABLE reviews ADD COLUMN is_verified_purchase BOOLEAN DEFAULT 0"))
     db.commit()
 
     db.close()
