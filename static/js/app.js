@@ -301,12 +301,16 @@ function openProductDetail(product) {
             return;
         }
 
-        // Показываем/скрываем кнопки навигации в зависимости от количества фото
+        // Определяем количество изображений
         const hasMultipleImages = productImages.length > 1;
+        const isMobile = window.innerWidth < 768;
+
+        // Показываем/скрываем кнопки навигации в зависимости от количества фото
         const nextBtn = modal.querySelector('.swiper-button-next');
         const prevBtn = modal.querySelector('.swiper-button-prev');
         const pagination = modal.querySelector('.swiper-pagination');
-        
+
+        // На мобильных кнопки всегда видны если есть несколько изображений
         if (nextBtn) nextBtn.style.display = hasMultipleImages ? 'flex' : 'none';
         if (prevBtn) prevBtn.style.display = hasMultipleImages ? 'flex' : 'none';
         if (pagination) pagination.style.display = hasMultipleImages ? 'block' : 'none';
@@ -318,25 +322,69 @@ function openProductDetail(product) {
             observer: true,
             observeParents: true,
             preloadImages: true,
+            updateOnImagesReady: true,
             lazy: false,
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-                dynamicBullets: true,
-            },
+            
+            // Улучшенная навигация
             navigation: {
                 nextEl: '.swiper-button-next',
                 prevEl: '.swiper-button-prev',
             },
+            
+            // Пагинация
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+                dynamicBullets: true,
+                dynamicMainBullets: 5,
+            },
+            
+            // Настройки для мобильных
+            grabCursor: true,
+            slidesPerView: 1,
+            spaceBetween: 0,
+            
+            // Предотвращение случайных свайпов
+            threshold: 10,
+            touchRatio: 1,
+            touchAngle: 45,
+            
+            // Автопрокрутка отключена
+            autoplay: false,
+            
+            // Бесконечная прокрутка с эффектом
+            rewind: false,
+            
+            // Эффект при переключении
+            speed: 300,
+            
+            // Accessibility
+            a11y: {
+                prevSlideMessage: 'Предыдущее изображение',
+                nextSlideMessage: 'Следующее изображение',
+            },
+            
+            // События
             on: {
+                init: function() {
+                    console.log('✅ Swiper инициализирован');
+                },
                 slideChange: function() {
                     currentImageIndex = this.activeIndex;
+                    console.log('📸 Слайд изменён:', currentImageIndex);
+                },
+                reachEnd: function() {
+                    console.log('📸 Достигнут конец слайдера');
+                },
+                fromEdge: function() {
+                    console.log('📸 Возврат от края');
                 }
             }
         });
-        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages);
+        
+        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages, 'mobile:', isMobile);
         console.log('✅ Текущий слайд:', window.productSwiper.activeIndex);
-    }, 50);
+    }, 100);
 }
 
 function updateDetailPrice() {

@@ -32,10 +32,35 @@
         /* 3D Scroll Effects */
         html {
             scroll-behavior: smooth;
+            overflow-x: hidden;
         }
 
         body {
             overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 1024px) {
+            /* Prevent zoom on input focus for iOS */
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+            
+            /* Improve touch scrolling */
+            * {
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Better tap feedback */
+            button, a {
+                transition: all 0.2s ease;
+            }
+            
+            button:active, a:active {
+                transform: scale(0.96);
+            }
         }
 
         /* 3D Scroll Container */
@@ -1029,35 +1054,46 @@
         <div
             class="absolute inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-4xl bg-white rounded-t-2xl md:rounded-2xl shadow-2xl border border-gray-100 flex flex-col md:flex-row h-full md:h-auto md:max-h-[88vh] md:overflow-hidden relative">
             <button onclick="closeProductDetail()"
-                class="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/95 hover:bg-rose-50 text-gray-600 hover:text-rose-600 transition-all shadow-md hidden md:flex items-center justify-center">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-            <button onclick="closeProductDetail()"
-                class="fixed top-3 right-3 z-[70] p-2 rounded-full bg-white shadow-lg text-gray-600 hover:text-rose-600 md:hidden">
+                class="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/95 hover:bg-rose-50 text-gray-600 hover:text-rose-600 transition-all shadow-md flex items-center justify-center">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
 
             <!-- Image block -->
             <div class="w-full md:w-[48%] bg-gray-50 flex-shrink-0 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden">
                 <style>
-                    #product-detail-modal .swiper-container { width: 100%; height: 48vh; }
+                    #product-detail-modal .swiper-container { width: 100%; height: 50vh; min-height: 280px; }
                     @media (min-width: 768px) {
-                        #product-detail-modal .swiper-container { height: 100%; min-height: 420px; }
+                        #product-detail-modal .swiper-container { height: 100%; min-height: 450px; }
+                    }
+                    @media (min-height: 800px) {
+                        #product-detail-modal .swiper-container { height: 55vh; }
                     }
                     #product-detail-modal .swiper-slide { display: flex; justify-content: center; align-items: center; background: #fafafa; }
                     #product-detail-modal .swiper-slide img { width: 100%; height: 100%; object-fit: contain; }
                     #product-detail-modal .swiper-button-next, #product-detail-modal .swiper-button-prev {
-                        color: #e11d48; background: #fff; width: 40px; height: 40px; border-radius: 50%;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                        color: #e11d48; background: rgba(255, 255, 255, 0.95); width: 44px; height: 44px; border-radius: 50%;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        backdrop-filter: blur(8px);
+                        transition: all 0.2s ease;
                     }
-                    #product-detail-modal .swiper-button-next:after, #product-detail-modal .swiper-button-prev:after { font-size: 18px; font-weight: bold; }
-                    #product-detail-modal .swiper-pagination-bullet-active { background: #e11d48; }
+                    #product-detail-modal .swiper-button-next:hover, #product-detail-modal .swiper-button-prev:hover {
+                        background: #fff; transform: scale(1.1); box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+                    }
+                    #product-detail-modal .swiper-button-next:after, #product-detail-modal .swiper-button-prev:after { font-size: 20px; font-weight: bold; }
+                    #product-detail-modal .swiper-pagination-bullet { width: 8px; height: 8px; background: rgba(255,255,255,0.6); opacity: 1; }
+                    #product-detail-modal .swiper-pagination-bullet-active { background: #e11d48; width: 24px; border-radius: 4px; }
+                    /* Mobile navigation buttons - always visible */
+                    #product-detail-modal .swiper-button-next, #product-detail-modal .swiper-button-prev { display: flex !important; }
+                    @media (max-width: 768px) {
+                        #product-detail-modal .swiper-button-next { right: 10px !important; }
+                        #product-detail-modal .swiper-button-prev { left: 10px !important; }
+                    }
                 </style>
                 <div class="swiper swiper-container">
                     <div class="swiper-wrapper" id="detail-swiper-wrapper"></div>
-                    <div class="swiper-button-next hidden md:flex"></div>
-                    <div class="swiper-button-prev hidden md:flex"></div>
-                    <div class="swiper-pagination pb-2"></div>
+                    <div class="swiper-button-next"></div>
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-pagination"></div>
                 </div>
             </div>
 
@@ -1574,11 +1610,11 @@
             <div class="flex items-center justify-around py-3 px-4 sm:px-8">
                 <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
                     <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.home">Главная</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="home">Главная</span>
                 </button>
                 <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
                     <i data-lucide="search" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.search">Поиск</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="search">Поиск</span>
                 </button>
                 <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[70px]">
                     <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6"></i>

@@ -190,12 +190,17 @@ html, body {
 @media (max-width: 1024px) {
     #categories-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 0.75rem !important;
-        padding: 0 1rem !important;
+        gap: 0.625rem !important;
+        padding: 0 0.75rem !important;
     }
 
     #categories-grid .w-full.aspect-square {
         border-radius: 0.75rem !important;
+    }
+    
+    #categories-grid span {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
     }
 }
 
@@ -204,6 +209,19 @@ html, body {
     #categories-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 1rem !important;
+        padding: 0 1.5rem !important;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 375px) {
+    #categories-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+    
+    #categories-grid span {
+        font-size: 0.6875rem !important;
     }
 }
 
@@ -219,6 +237,7 @@ html, body {
 
     #products-grid .rounded-xl {
         border-radius: 0.5rem !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
     }
 
     #products-grid .p-4 {
@@ -227,22 +246,30 @@ html, body {
 
     #products-grid h3 {
         font-size: 0.75rem !important;
-        line-height: 1.2 !important;
+        line-height: 1.3 !important;
+        margin-bottom: 0.375rem !important;
     }
 
     #products-grid .text-2xl {
-        font-size: 1rem !important;
+        font-size: 0.9375rem !important;
     }
 
     #products-grid .w-5.h-5 {
-        width: 1rem !important;
-        height: 1rem !important;
+        width: 0.875rem !important;
+        height: 0.875rem !important;
+    }
+    
+    /* Кнопки действий - минимальный размер для тача */
+    #products-grid button {
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0.375rem !important;
     }
 
-    /* Hide size buttons on mobile */
-    #product-detail-modal .grid.grid-cols-3 {
-        grid-template-columns: 1fr !important;
-        gap: 0.5rem !important;
+    /* Изображения товаров */
+    #products-grid img {
+        object-fit: contain !important;
+        padding: 0.25rem !important;
     }
 }
 
@@ -251,6 +278,31 @@ html, body {
     #products-grid {
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 1rem !important;
+        padding: 0 1rem !important;
+    }
+    
+    #products-grid h3 {
+        font-size: 0.875rem !important;
+    }
+    
+    #products-grid .text-2xl {
+        font-size: 1.125rem !important;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 375px) {
+    #products-grid {
+        gap: 0.375rem !important;
+        padding: 0 0.375rem !important;
+    }
+    
+    #products-grid h3 {
+        font-size: 0.6875rem !important;
+    }
+    
+    #products-grid .text-2xl {
+        font-size: 0.8125rem !important;
     }
 }
 
