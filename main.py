@@ -36,6 +36,9 @@ from sqlalchemy import func, or_
 # Загружаем переменные окружения из .env файла
 load_dotenv()
 
+# Получаем DATABASE_URL для проверок в миграциях
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./uzflower.db")
+
 # ============================================================
 # Настройка логгера — все события пишутся в server_debug.log
 # и одновременно выводятся в консоль
@@ -692,16 +695,29 @@ async def lifespan(app: FastAPI):
         order_items_cols = [c['name'] for c in inspector.get_columns("order_items")]
     except NoSuchTableError:
         logger.info("📦 Создаём таблицу order_items...")
-        db.execute(text("""
-            CREATE TABLE order_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                order_id INTEGER REFERENCES orders(id),
-                product_id INTEGER REFERENCES products(id),
-                product_name TEXT,
-                product_price FLOAT,
-                quantity INTEGER DEFAULT 1
-            )
-        """))
+        # Для PostgreSQL используем SERIAL вместо AUTOINCREMENT
+        if 'postgresql' in DATABASE_URL:
+            db.execute(text("""
+                CREATE TABLE order_items (
+                    id SERIAL PRIMARY KEY,
+                    order_id INTEGER REFERENCES orders(id),
+                    product_id INTEGER REFERENCES products(id),
+                    product_name TEXT,
+                    product_price FLOAT,
+                    quantity INTEGER DEFAULT 1
+                )
+            """))
+        else:
+            db.execute(text("""
+                CREATE TABLE order_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id INTEGER REFERENCES orders(id),
+                    product_id INTEGER REFERENCES products(id),
+                    product_name TEXT,
+                    product_price FLOAT,
+                    quantity INTEGER DEFAULT 1
+                )
+            """))
         db.commit()
         order_items_cols = ['id', 'order_id', 'product_id', 'product_name', 'product_price', 'quantity']
 
