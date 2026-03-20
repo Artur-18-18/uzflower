@@ -620,10 +620,13 @@
             background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
             flex-shrink: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            width: 100%;
+            min-width: 0;
         }
 
         #mobile-search-modal .search-input-wrapper {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             position: relative;
             display: flex;
             align-items: center;
@@ -631,6 +634,7 @@
 
         #mobile-search-modal .search-input {
             width: 100%;
+            min-width: 0;
             padding: 12px 16px 12px 40px;
             background: #f3f4f6;
             border: 2px solid transparent;
@@ -641,6 +645,7 @@
             color: #1f2937;
             transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
         }
 
         #mobile-search-modal .search-input:focus {
@@ -843,6 +848,181 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+
+        /* Favorites Sidebar Styles */
+        #fav-sidebar {
+            transition: opacity 0.3s ease;
+        }
+
+        #fav-sidebar:not(.hidden) {
+            animation: fadeIn 0.3s ease;
+        }
+
+        #fav-sidebar .fav-sidebar-content {
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #fav-sidebar:not(.hidden) .fav-sidebar-content {
+            transform: translateX(0);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Favorites Item Animations */
+        .fav-item {
+            animation: slideInRight 0.3s ease;
+        }
+
+        .fav-item.removing {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+        }
+
+        .fav-heart-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fav-heart-btn:active {
+            transform: scale(0.9) !important;
+        }
+
+        .fav-heart-btn.adding {
+            animation: heartBeat 0.4s ease !important;
+            transform: none !important;
+            transition: none !important;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 14px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            pointer-events: auto;
+            animation: toastSlideUp 0.3s ease;
+            min-width: 280px;
+            max-width: 400px;
+        }
+
+        .toast.removing {
+            animation: toastSlideDown 0.3s ease forwards;
+        }
+
+        .toast.success {
+            background: rgba(16, 185, 129, 0.95);
+        }
+
+        .toast.error {
+            background: rgba(239, 68, 68, 0.95);
+        }
+
+        .toast-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @keyframes toastSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes toastSlideDown {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        /* Empty State */
+        .favorites-empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .favorites-empty-state .icon-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s ease infinite;
+        }
+
+        .favorites-empty-state .icon-wrapper i {
+            width: 40px;
+            height: 40px;
+            color: #e11d48;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono&display=swap" rel="stylesheet">
     <script>
@@ -992,7 +1172,7 @@
                                                 <option value="price_desc" data-i18n="filters.sort_price_desc">Сначала дороже</option>
                                             </select>
                                         </div>
-                                        <div>
+                                        <div class="hidden md:block">
                                             <label
                                                 class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.category_label">Категория</label>
                                             <div id="category-filters" class="space-y-2">
@@ -1337,25 +1517,39 @@
     <!-- Fav Sidebar -->
     <div id="fav-sidebar" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/50" onclick="toggleFavorites()"></div>
-        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
-            <div class="p-4 border-b flex items-center justify-between bg-rose-50 text-rose-900">
+        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col fav-sidebar-content">
+            <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-rose-50 to-pink-50 text-rose-900">
                 <h2 class="text-xl font-bold flex items-center gap-2" data-i18n="modal.favorites.title">
-                    <i data-lucide="heart" class="w-6 h-6 fill-rose-500 text-rose-500"></i> Избранное
+                    <i data-lucide="heart" class="w-6 h-6 fill-rose-500 text-rose-500"></i>
+                    <span>Избранное</span>
+                    <span id="fav-sidebar-count" class="text-sm font-normal text-rose-600 ml-2">(0)</span>
                 </h2>
-                <button onclick="toggleFavorites()" class="p-2 hover:bg-rose-100 rounded-full transition-all">
+                <button onclick="toggleFavorites()" class="p-2 hover:bg-rose-100 rounded-full transition-all -mr-2">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
-            <div id="fav-items" class="flex-1 overflow-y-auto p-4 space-y-4">
-                <p class="text-center text-gray-500 mt-10" data-i18n="modal.favorites.empty">Список избранного пуст</p>
+            <div id="fav-items" class="flex-1 overflow-y-auto p-4">
+                <!-- Empty state -->
+                <div class="favorites-empty-state">
+                    <div class="icon-wrapper">
+                        <i data-lucide="heart" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="modal.favorites.empty_title">Нет избранных товаров</h3>
+                    <p class="text-gray-500 mb-6" data-i18n="modal.favorites.empty_description">Добавляйте товары в избранное, чтобы сохранить их на потом</p>
+                    <button onclick="toggleFavorites()"
+                        class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200" data-i18n="modal.favorites.browse_catalog">Смотреть каталог</button>
+                </div>
             </div>
-            <div class="p-4 border-t bg-emerald-50">
+            <div id="fav-footer" class="p-4 border-t bg-gradient-to-r from-rose-50 to-pink-50 hidden">
                 <button onclick="toggleFavorites()"
-                    class="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-100 font-medium transition-all" data-i18n="modal.favorites.continue_shopping">Продолжить
+                    class="w-full py-3 border border-gray-300 rounded-xl hover:bg-gray-100 font-medium transition-all" data-i18n="modal.favorites.continue_shopping">Продолжить
                     покупки</button>
             </div>
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <!-- Cart Sidebar -->
     <div id="cart-sidebar" class="fixed inset-0 z-50 hidden">
@@ -1387,84 +1581,6 @@
                     Оформить заказ
                 </button>
                 -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Telegram Order Modal -->
-    <div id="telegram-order-modal" class="fixed inset-0 z-[60] hidden">
-        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTelegramOrderModal()"></div>
-        <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl">
-            <div class="p-6">
-                <!-- Header -->
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2" data-i18n="modal.telegram_order.title">
-                        <i data-lucide="send" class="w-6 h-6 text-[#24A1DE]"></i>
-                        Заказ через Telegram
-                    </h3>
-                    <button onclick="closeTelegramOrderModal()" class="p-2 hover:bg-gray-100 rounded-lg">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-
-                <!-- Form -->
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.phone_label">
-                            <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон *
-                        </label>
-                        <input type="tel" id="tg-order-phone" data-i18n-placeholder="modal.telegram_order.phone_placeholder" placeholder="+998 __ ___-__-__"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.name_label">
-                            <i data-lucide="user" class="w-4 h-4 inline mr-1"></i> Имя *
-                        </label>
-                        <input type="text" id="tg-order-name" data-i18n-placeholder="modal.telegram_order.name_placeholder" placeholder="Как к вам обращаться?"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.postcard_label">
-                            <i data-lucide="message-heart" class="w-4 h-4 inline mr-1"></i> Текст на открытке
-                        </label>
-                        <textarea id="tg-order-postcard" data-i18n-placeholder="modal.telegram_order.postcard_placeholder" placeholder="Дорогая, с любовью..." rows="2"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.comment_label">
-                            <i data-lucide="message-circle" class="w-4 h-4 inline mr-1"></i> Комментарий
-                        </label>
-                        <textarea id="tg-order-comment" data-i18n-placeholder="modal.telegram_order.comment_placeholder" placeholder="Дополнительная информация..." rows="2"
-                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
-                    </div>
-
-                    <!-- Order Summary -->
-                    <div class="bg-gray-50 rounded-xl p-4 mt-4">
-                        <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2" data-i18n="modal.telegram_order.order_summary">
-                            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
-                            Ваш заказ:
-                        </h4>
-                        <div id="tg-order-items" class="space-y-3 max-h-48 overflow-y-auto pr-2"></div>
-                        <div class="border-t border-gray-200 mt-3 pt-3 flex justify-between items-center">
-                            <span class="font-bold text-gray-900" data-i18n="modal.telegram_order.total">Итого:</span>
-                            <span id="tg-order-total" class="font-bold text-rose-600">0 сум</span>
-                        </div>
-                    </div>
-
-                    <!-- Submit Button -->
-                    <button onclick="submitTelegramOrder()"
-                        class="w-full bg-[#24A1DE] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a8abf] transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2">
-                        <i data-lucide="send" class="w-5 h-5"></i>
-                        <span data-i18n="modal.telegram_order.submit">Отправить заказ</span>
-                    </button>
-
-                    <p class="text-xs text-gray-500 text-center mt-2" data-i18n="modal.telegram_order.info">
-                        После нажатия откроется Telegram с готовым сообщением
-                    </p>
-                </div>
             </div>
         </div>
     </div>
@@ -1792,20 +1908,25 @@
     <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 xl:hidden safe-area-pb">
         <div class="max-w-sm sm:max-w-md bg-white border border-gray-200 rounded-full shadow-xl mx-4 sm:mx-6">
             <div class="flex items-center justify-around py-3 px-4 sm:px-8">
-                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
                     <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="home">Главная</span>
                 </button>
-                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
                     <i data-lucide="search" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="search">Поиск</span>
                 </button>
-                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[70px]">
+                <button onclick="toggleMobileFavorites()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[60px]">
+                    <i data-lucide="heart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                    <span id="mobile-fav-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.favorites">Избранное</span>
+                </button>
+                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[60px]">
                     <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span id="mobile-cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.cart">Корзина</span>
                 </button>
-                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
+                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
                     <i data-lucide="user" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.profile">Профиль</span>
                 </button>
@@ -1876,7 +1997,7 @@
                 } else {
                     // Видео нет - отображаем заглушку
                     container.innerHTML = `
-                        <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+                        <div class="hidden md:block w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
                             <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
                             <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
                             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>

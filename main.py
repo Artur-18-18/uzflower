@@ -876,8 +876,41 @@ async def lifespan(app: FastAPI):
 
     logger.info("✅ Кэширование инициализировано")
 
+    # ============================================================
+    # Запуск Telegram ботов (для Render.com)
+    # ============================================================
+    import asyncio
+    from app.telegram_bot.bot import start_bot as start_telegram_bot
+    from app.admin_bot.bot import start_admin_bot
+
+    # Флаг для включения/отключения ботов (можно переключать через ENV)
+    ENABLE_TELEGRAM_BOTS = os.getenv("ENABLE_TELEGRAM_BOTS", "true").lower() in ("true", "1", "yes")
+
+    if ENABLE_TELEGRAM_BOTS:
+        logger.info("🤖 Запуск Telegram ботов...")
+
+        # Создаём задачи для ботов
+        bot_task = asyncio.create_task(start_telegram_bot())
+        admin_bot_task = asyncio.create_task(start_admin_bot())
+
+        logger.info("✅ Telegram боты запущены в фоне")
+
+        # Сохраняем задачи в приложении для корректной остановки
+        app.state.bot_task = bot_task
+        app.state.admin_bot_task = admin_bot_task
+    else:
+        logger.info("ℹ️ Telegram боты отключены (ENABLE_TELEGRAM_BOTS=false)")
+
     yield
-    # Shutdown logic if needed
+
+    # Shutdown logic
+    if ENABLE_TELEGRAM_BOTS:
+        logger.info("🛑 Остановка Telegram ботов...")
+        # Отменяем задачи ботов
+        if hasattr(app.state, 'bot_task'):
+            app.state.bot_task.cancel()
+        if hasattr(app.state, 'admin_bot_task'):
+            app.state.admin_bot_task.cancel()
 
 # --- FastAPI App ---
 app = FastAPI(lifespan=lifespan)

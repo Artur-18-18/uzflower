@@ -123,13 +123,19 @@ function renderProducts(products, animate = false) {
         const isFav = favorites.includes(product.id);
         const animationStyle = animate ? `opacity: 0; animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 50}ms;` : '';
         const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
+        
+        // Для избранного используем SVG напрямую чтобы lucide не сбрасывал стили
+        const heartIcon = isFav 
+            ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="rgb(225, 29, 72)" stroke="rgb(225, 29, 72)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart fill-rose-500 text-rose-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`
+            : `<i data-lucide="heart" class="w-5 h-5 text-gray-400"></i>`;
+        
         return `
             <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
                 <div class="relative aspect-square overflow-hidden bg-white">
                     <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500" loading="lazy">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
                     <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
-                        <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
+                        ${heartIcon}
                     </button>
                     ${product.is_sale ? '<div class="absolute top-3 left-3 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">АКЦИЯ</div>' : ''}
                 </div>
@@ -155,9 +161,12 @@ function renderProducts(products, animate = false) {
             </div>
         `;
     }).join('');
-    
-    // Создаём иконки СРАЗУ после рендера
+
+    // Создаём иконки СРАЗУ после рендера, пропускаем fav-heart-btn
     if (window.lucide) {
+        // Сначала применяем стили для избранного
+        updateFavoriteButtons();
+        // Затем создаём иконки для остальных элементов
         lucide.createIcons();
         console.log('✅ Иконки созданы после рендера товаров');
     }
@@ -406,13 +415,6 @@ function updateDetailPrice() {
 }
 
 function addToCart(product) {
-    // Проверка авторизации (опционально, можно требовать вход только при оформлении)
-    // if (!currentUser) {
-    //     alert('Пожалуйста, войдите в аккаунт для добавления в корзину');
-    //     window.location.href = '/login';
-    //     return;
-    // }
-
     // Clone product to avoid reference issues
     const cartItem = { ...product };
 
@@ -425,9 +427,20 @@ function addToCart(product) {
     } else {
         cart.push({ ...cartItem, quantity: 1 });
     }
+    
     saveCart();
+    updateCartCount();
+    
+    // Показываем toast уведомление
+    showToast(`«${product.name}» добавлен в корзину`, 'success');
+    
+    // Открываем корзину
     toggleCart();
-    if (document.getElementById('product-detail-modal')) closeProductDetail();
+    
+    // Закрываем модальное окно продукта если открыто
+    if (document.getElementById('product-detail-modal')) {
+        closeProductDetail();
+    }
 }
 
 function closeProductDetail() {
@@ -1069,48 +1082,67 @@ function renderMobileCart() {
 function loadMobileFavorites() {
     const container = document.getElementById('mobile-favorites-list');
     const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    
-    // Обновляем счётчик
-    updateMobileFavCount(localFavorites.length);
-    
+
+    // Обновляем счётчики везде
+    updateFavoriteCounts();
+
     if (localFavorites.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-500 py-8">Избранное пусто</p>';
+        container.innerHTML = `
+            <div class="favorites-empty-state py-8">
+                <div class="icon-wrapper mb-4">
+                    <i data-lucide="heart" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Избранное пусто</h3>
+                <p class="text-gray-500">Добавляйте товары через сердечко в каталоге</p>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
         return;
     }
-    
+
     // Фильтруем товары которые в избранном
     const favProducts = allProductsList.filter(p => localFavorites.includes(p.id));
-    
+
     if (favProducts.length === 0) {
         container.innerHTML = '<p class="text-center text-gray-500 py-8">Товары больше недоступны</p>';
         return;
     }
-    
-    container.innerHTML = favProducts.map(product => `
-        <div class="favorites-item">
-            <img src="${product.image_url || 'https://placehold.co/80'}" alt="${product.name}">
-            <div class="flex-1">
-                <p class="font-semibold">${product.name}</p>
-                <p class="text-rose-600 font-bold">${formatPrice(product.price)} сум</p>
-                <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')}); closeMobileFavorites();" 
-                    class="mt-2 px-4 py-2 bg-rose-600 text-white text-sm rounded-lg">
-                    В корзину
+
+    container.innerHTML = favProducts.map((product, index) => `
+        <div class="fav-item flex gap-3 p-3 rounded-xl bg-white border border-gray-100 shadow-sm" style="animation-delay: ${index * 50}ms">
+            <img src="${product.image_url || 'https://placehold.co/80'}" 
+                alt="${product.name}" 
+                class="w-20 h-20 object-cover rounded-lg flex-shrink-0">
+            <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
+                <div>
+                    <h4 class="font-semibold text-sm text-gray-900 truncate">${product.name}</h4>
+                </div>
+                <div class="flex items-center justify-between">
+                    <p class="text-rose-600 font-bold text-sm">${formatPrice(product.sale_price || product.price)} сум</p>
+                </div>
+            </div>
+            <div class="flex flex-col gap-2 justify-center">
+                <button onclick="quickAddToCart(${product.id}); closeMobileFavorites();" 
+                    class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-all"
+                    title="В корзину">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                </button>
+                <button type="button" 
+                    onclick="removeFromFavorites(${product.id}); closeMobileFavorites();" 
+                    class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg" 
+                    title="Удалить">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
         </div>
     `).join('');
-    
-    lucide.createIcons();
+
+    if (window.lucide) lucide.createIcons();
 }
 
-function updateMobileFavCount(count) {
-    const badge = document.getElementById('mobile-fav-count');
-    if (badge) {
-        badge.textContent = count;
-        badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-}
-
+/**
+ * Обновить счетчик корзины в мобильном меню
+ */
 function updateMobileCartCount(count) {
     const badge = document.getElementById('mobile-cart-count');
     if (badge) {
@@ -1118,18 +1150,6 @@ function updateMobileCartCount(count) {
         badge.style.display = count > 0 ? 'flex' : 'none';
     }
 }
-
-// Обновляем счётчик при изменении избранного
-const originalToggleFavorite = toggleFavorite;
-toggleFavorite = function(productId) {
-    originalToggleFavorite(productId);
-    
-    // Обновляем счётчик через небольшую задержку
-    setTimeout(() => {
-        const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-        updateMobileFavCount(localFavorites.length);
-    }, 100);
-};
 
 function scrollToCatalog() {
     const catalogSection = document.getElementById('catalog');
@@ -1409,9 +1429,50 @@ async function loadProducts(animate = false) {
 
 // --- Favorites ---
 
+/**
+ * Показать toast уведомление
+ * @param {string} message - Сообщение
+ * @param {string} type - Тип: 'success', 'error', 'info'
+ */
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+        error: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
+        info: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+    };
+
+    toast.innerHTML = `
+        ${icons[type] || icons.info}
+        <span class="toast-message">${message}</span>
+    `;
+
+    container.appendChild(toast);
+
+    // Удаляем через 3 секунды
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
+
+/**
+ * Переключить статус избранного
+ * @param {number} productId - ID товара
+ */
 function toggleFavorite(productId) {
     const index = favorites.indexOf(productId);
     const isAdding = index === -1;
+    const product = allProductsList.find(p => p.id === productId);
 
     if (isAdding) {
         favorites.push(productId);
@@ -1420,173 +1481,224 @@ function toggleFavorite(productId) {
     }
     localStorage.setItem('favorites', JSON.stringify(favorites));
 
-    // Сразу обновляем визуальное состояние кнопки (без ожидания перерисовки)
+    // Анимация кнопки
+    animateFavoriteButton(productId, isAdding);
+
+    // Обновляем счетчики и UI
+    updateFavoriteCounts();
     updateFavoriteButtonVisual(productId, isAdding);
 
-    // Обновляем счетчики
-    const countBadge = document.getElementById('fav-count');
-    const mobileCountBadge = document.getElementById('mobile-fav-count');
-    if (countBadge) {
-        countBadge.innerText = favorites.length;
-        countBadge.classList.toggle('hidden', favorites.length === 0);
-    }
-    if (mobileCountBadge) {
-        mobileCountBadge.innerText = favorites.length;
-        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
+    // Показываем toast уведомление
+    if (isAdding) {
+        showToast(`«${product?.name || 'Товар'}» добавлен в избранное`, 'success');
+    } else {
+        showToast(`«${product?.name || 'Товар'}» удален из избранного`, 'info');
     }
 
     // Синхронизация с сервером если пользователь авторизован
-    const token = localStorage.getItem('token');
-    console.log('🔑 Токен для синхронизации:', token ? 'найден' : 'не найден');
-    
-    if (token) {
-        if (isAdding) {
-            console.log('📥 Добавление в избранное на сервере, product_id:', productId);
-            // Добавляем в избранное на сервере
-            fetch('/api/profile/favorites', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ product_id: productId })
-            })
-            .then(response => {
-                console.log('📊 Ответ сервера (POST):', response.status);
-                if (response.status === 401) {
-                    // Токен недействителен, очищаем его
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
-                }
-            })
-            .catch(err => console.error('❌ Ошибка добавления в избранное:', err));
-        } else {
-            console.log('📤 Удаление из избранного на сервере, product_id:', productId);
-            // Удаляем из избранного на сервере
-            fetch(`/api/profile/favorites/${productId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(response => {
-                console.log('📊 Ответ сервера (DELETE):', response.status);
-                if (response.status === 401) {
-                    // Токен недействителен, очищаем его
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
-                }
-            })
-            .catch(err => console.error('❌ Ошибка удаления из избранного:', err));
-        }
-    } else {
-        console.log('ℹ️ Пользователь не авторизован, синхронизация пропускается');
-    }
+    syncFavoriteWithServer(productId, isAdding);
 
     // Перерисовываем список избранного если он открыт
-    renderFavorites();
+    const sidebar = document.getElementById('fav-sidebar');
+    if (sidebar && !sidebar.classList.contains('hidden')) {
+        renderFavorites();
+    }
 }
 
-function updateFavoriteButtonVisual(productId, isFav) {
-    // Находим все кнопки с этим product-id и обновляем их состояние СРАЗУ
+/**
+ * Анимация кнопки избранного
+ */
+function animateFavoriteButton(productId, isAdding) {
     const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
-    
+    buttons.forEach(btn => {
+        // Добавляем анимацию всегда (и при добавлении, и при удалении)
+        btn.classList.remove('adding');
+        // Форсируем перерисовку для перезапуска анимации
+        void btn.offsetWidth;
+        btn.classList.add('adding');
+        setTimeout(() => {
+            btn.classList.remove('adding');
+        }, 400);
+    });
+}
+
+/**
+ * Обновить счетчики избранного
+ */
+function updateFavoriteCounts() {
+    const countBadge = document.getElementById('fav-count');
+    const mobileCountBadge = document.getElementById('mobile-fav-count');
+    const sidebarCount = document.getElementById('fav-sidebar-count');
+
+    const count = favorites.length;
+    const displayCount = count > 0 ? count : '';
+
+    if (countBadge) {
+        countBadge.innerText = displayCount;
+        countBadge.classList.toggle('hidden', count === 0);
+    }
+
+    if (mobileCountBadge) {
+        mobileCountBadge.innerText = displayCount;
+        mobileCountBadge.style.display = count === 0 ? 'none' : 'flex';
+    }
+
+    if (sidebarCount) {
+        sidebarCount.innerText = count > 0 ? `(${count})` : '';
+    }
+}
+
+/**
+ * Синхронизация с сервером
+ */
+function syncFavoriteWithServer(productId, isAdding) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    if (isAdding) {
+        fetch('/api/profile/favorites', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ product_id: productId })
+        })
+        .then(response => {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        })
+        .catch(err => console.error('Ошибка добавления в избранное:', err));
+    } else {
+        fetch(`/api/profile/favorites/${productId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
+        })
+        .catch(err => console.error('Ошибка удаления из избранного:', err));
+    }
+}
+
+/**
+ * Обновить визуальное состояние кнопки избранного
+ */
+function updateFavoriteButtonVisual(productId, isFav) {
+    const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
+
     buttons.forEach(btn => {
         const icon = btn.querySelector('i');
         if (!icon) return;
-
-        // Пропускаем кнопки с иконкой корзины (в списке избранного)
         if (icon.getAttribute('data-lucide') === 'trash-2') return;
 
-        // Обновляем классы и стили СРАЗУ
         if (isFav) {
             // Добавляем в избранное - делаем красным с заливкой
             btn.classList.remove('text-gray-400');
             btn.classList.add('text-rose-500');
             icon.classList.remove('text-gray-400');
-            icon.classList.add('text-rose-500', 'fill-rose-500');
-            // Принудительно устанавливаем цвет через style
-            icon.style.color = '#e11d48';
-            icon.style.fill = '#e11d48';
+            icon.classList.add('fill-rose-500');
+            icon.classList.remove('text-gray-400');
+            icon.classList.add('text-rose-500');
+            // Принудительно устанавливаем цвет через style с !important
+            icon.setAttribute('style', 'color: rgb(225, 29, 72) !important; fill: rgb(225, 29, 72) !important;');
         } else {
             // Удаляем из избранного - делаем серым
             btn.classList.remove('text-rose-500');
             btn.classList.add('text-gray-400');
-            icon.classList.remove('text-rose-500', 'fill-rose-500');
+            icon.classList.remove('fill-rose-500', 'text-rose-500');
             icon.classList.add('text-gray-400');
-            // Сбрасываем style
-            icon.style.color = '';
-            icon.style.fill = '';
+            // Сбрасываем inline стили
+            icon.removeAttribute('style');
         }
     });
-    
-    // НЕ вызываем lucide.createIcons() чтобы не сбрасывать классы
 }
 
+/**
+ * Обновить все кнопки избранного
+ */
 function updateFavoriteButtons() {
-    // Обновляем счетчик в хедере
-    const countBadge = document.getElementById('fav-count');
-    const mobileCountBadge = document.getElementById('mobile-fav-count');
+    updateFavoriteCounts();
 
-    if (countBadge) {
-        countBadge.innerText = favorites.length;
-        countBadge.classList.toggle('hidden', favorites.length === 0);
-    }
-
-    if (mobileCountBadge) {
-        mobileCountBadge.innerText = favorites.length;
-        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
-    }
-
-    // Обновляем состояние кнопок в каталоге (с иконкой сердца)
     document.querySelectorAll('.fav-heart-btn').forEach(btn => {
-        const productId = btn.getAttribute('data-product-id');
+        const productId = parseInt(btn.getAttribute('data-product-id'));
         if (!productId) return;
 
-        // Пропускаем кнопки с иконкой корзины (в списке избранного)
         const icon = btn.querySelector('i');
-        if (!icon) return;
-        if (icon.getAttribute('data-lucide') === 'trash-2') return;
+        if (!icon || icon.getAttribute('data-lucide') === 'trash-2') return;
 
-        const isFav = favorites.includes(parseInt(productId));
+        const isFav = favorites.includes(productId);
 
-        // Меняем иконку и цвет БЕЗ вызова lucide.createIcons()
         if (isFav) {
             btn.classList.add('text-rose-500');
             btn.classList.remove('text-gray-400');
             icon.classList.add('fill-rose-500');
             icon.classList.remove('text-gray-400');
-            // Принудительно устанавливаем цвет
-            icon.style.color = '#e11d48';
-            icon.style.fill = '#e11d48';
+            icon.classList.add('text-rose-500');
+            icon.setAttribute('style', 'color: rgb(225, 29, 72) !important; fill: rgb(225, 29, 72) !important;');
         } else {
             btn.classList.remove('text-rose-500');
             btn.classList.add('text-gray-400');
-            icon.classList.remove('fill-rose-500');
+            icon.classList.remove('fill-rose-500', 'text-rose-500');
             icon.classList.add('text-gray-400');
-            // Сбрасываем цвет
-            icon.style.color = '';
-            icon.style.fill = '';
+            icon.removeAttribute('style');
         }
     });
-    // НЕ вызываем lucide.createIcons() здесь чтобы не сбрасывать классы
 }
 
+/**
+ * Открыть/закрыть sidebar избранного
+ */
 function toggleFavorites() {
     const sidebar = document.getElementById('fav-sidebar');
+    const isOpening = sidebar.classList.contains('hidden');
+    
     sidebar.classList.toggle('hidden');
+    
+    // Если открываем - рендерим содержимое
+    if (isOpening) {
+        setTimeout(() => {
+            renderFavorites();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }, 10);
+    }
 }
 
+/**
+ * Отрендерить список избранного
+ */
 function renderFavorites() {
     const container = document.getElementById('fav-items');
+    const footer = document.getElementById('fav-footer');
     if (!container) return;
 
     if (favorites.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-500 mt-10">Список избранного пуст</p>';
+        container.innerHTML = `
+            <div class="favorites-empty-state">
+                <div class="icon-wrapper">
+                    <i data-lucide="heart" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Нет избранных товаров</h3>
+                <p class="text-gray-500 mb-6">Добавляйте товары в избранное, чтобы сохранить их на потом</p>
+                <button onclick="toggleFavorites()"
+                    class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Смотреть каталог</button>
+            </div>
+        `;
+        if (footer) footer.classList.add('hidden');
         return;
     }
+
+    // Показываем футер
+    if (footer) footer.classList.remove('hidden');
 
     // Если товары ещё не загружены, загружаем их
     if (!allProductsList || allProductsList.length === 0) {
@@ -1599,33 +1711,120 @@ function renderFavorites() {
     renderFavoritesAfterLoad(container);
 }
 
+/**
+ * Отрендерить список избранного после загрузки товаров
+ */
 function renderFavoritesAfterLoad(container) {
     const favProducts = allProductsList.filter(p => favorites.includes(p.id));
-    
+
     if (favProducts.length === 0) {
-        container.innerHTML = '<p class="text-center text-gray-500 mt-10">Товары в избранном больше недоступны</p>';
+        container.innerHTML = `
+            <div class="favorites-empty-state">
+                <div class="icon-wrapper">
+                    <i data-lucide="heart" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Товары больше недоступны</h3>
+                <p class="text-gray-500 mb-6">Все товары из избранного были удалены из каталога</p>
+                <button onclick="toggleFavorites()"
+                    class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Смотреть каталог</button>
+            </div>
+        `;
+        const footer = document.getElementById('fav-footer');
+        if (footer) footer.classList.add('hidden');
         return;
     }
-    
-    container.innerHTML = favProducts.map(product => `
-        <div class="flex gap-3 border-b pb-4 items-center">
-            <img src="${product.image_url || 'https://placehold.co/80'}" class="w-20 h-20 object-cover rounded-lg">
-            <div class="flex-1">
-                <h4 class="font-semibold text-sm">${product.name}</h4>
-                <p class="text-rose-600 font-bold">${formatPrice(product.sale_price || product.price)} сум</p>
+
+    container.innerHTML = favProducts.map((product, index) => `
+        <div class="fav-item flex gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100" style="animation-delay: ${index * 50}ms">
+            <img src="${product.image_url || 'https://placehold.co/80'}" 
+                alt="${product.name}" 
+                class="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm">
+            <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
+                <div>
+                    <h4 class="font-semibold text-sm text-gray-900 truncate">${product.name}</h4>
+                    ${product.category ? `<p class="text-xs text-gray-500 mt-0.5">${product.category}</p>` : ''}
+                </div>
+                <div class="flex items-center justify-between">
+                    <p class="text-rose-600 font-bold text-sm">${formatPrice(product.sale_price || product.price)} сум</p>
+                </div>
             </div>
-            <div class="flex flex-col gap-2">
-                <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" class="p-2 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-all">
+            <div class="flex flex-col gap-2 justify-center">
+                <button onclick="quickAddToCart(${product.id});" 
+                    class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 active:scale-95 transition-all shadow-sm"
+                    title="Добавить в корзину">
                     <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                 </button>
-                <button type="button" onclick="toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-rose-500 active:scale-95 transition-all rounded-lg" aria-label="Удалить из избранного">
-                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                <button type="button" 
+                    onclick="removeFromFavorites(${product.id})" 
+                    data-product-id="${product.id}" 
+                    class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all rounded-lg" 
+                    title="Удалить из избранного">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
         </div>
     `).join('');
 
-    lucide.createIcons();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * Быстрое добавление в корзину из избранного
+ */
+function quickAddToCart(productId) {
+    const product = allProductsList.find(p => p.id === productId);
+    if (!product) return;
+
+    addToCart(product);
+    showToast(`«${product.name}» добавлен в корзину`, 'success');
+}
+
+/**
+ * Удалить из избранного с анимацией
+ */
+function removeFromFavorites(productId) {
+    const index = favorites.indexOf(productId);
+    if (index === -1) return;
+
+    const product = allProductsList.find(p => p.id === productId);
+    
+    // Находим элемент в DOM и добавляем класс анимации
+    const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
+    buttons.forEach(btn => {
+        const item = btn.closest('.fav-item');
+        if (item) {
+            item.classList.add('removing');
+            setTimeout(() => {
+                // После анимации удаляем из массива
+                const idx = favorites.indexOf(productId);
+                if (idx > -1) {
+                    favorites.splice(idx, 1);
+                    localStorage.setItem('favorites', JSON.stringify(favorites));
+                    
+                    updateFavoriteCounts();
+                    updateFavoriteButtonVisual(productId, false);
+                    syncFavoriteWithServer(productId, false);
+                    
+                    // Перерисовываем
+                    renderFavorites();
+                }
+            }, 300);
+        }
+    });
+
+    // Если элемент не найден, просто удаляем
+    if (buttons.length === 0) {
+        favorites.splice(index, 1);
+        localStorage.setItem('favorites', JSON.stringify(favorites));
+        updateFavoriteCounts();
+        updateFavoriteButtonVisual(productId, false);
+        syncFavoriteWithServer(productId, false);
+        renderFavorites();
+    }
+
+    showToast(`«${product?.name || 'Товар'}» удален из избранного`, 'info');
 }
 
 // --- Cart ---
@@ -1645,7 +1844,27 @@ function updateQuantity(productId, delta) {
         } else {
             localStorage.setItem('cart', JSON.stringify(cart));
             renderCart();
+            updateCartCount();
         }
+    }
+}
+
+/**
+ * Обновить счетчики корзины
+ */
+function updateCartCount() {
+    const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
+    
+    const countElem = document.getElementById('cart-count');
+    if (countElem) {
+        countElem.innerText = totalQuantity;
+        countElem.classList.toggle('hidden', totalQuantity === 0);
+    }
+
+    const mobileCartCount = document.getElementById('mobile-cart-count');
+    if (mobileCartCount) {
+        mobileCartCount.innerText = totalQuantity;
+        mobileCartCount.style.display = totalQuantity > 0 ? 'flex' : 'none';
     }
 }
 
@@ -1712,6 +1931,8 @@ function renderCart() {
 function removeFromCart(productId) {
     cart = cart.filter(item => item.id !== productId);
     saveCart();
+    renderCart();
+    updateCartCount();
 }
 
 async function handleCheckout() {
@@ -1818,10 +2039,6 @@ document.addEventListener('input', (e) => {
 // Вспомогательная функция для сохранения корзины
 function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
-    renderCart();
-    // Обновляем счётчик корзины в мобильном меню
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    updateMobileCartCount(totalItems);
 }
 
 // Функция отправки
@@ -2369,186 +2586,62 @@ function goBackToAdmin() {
     window.close();
 }
 
-// Заказ через Telegram - модальное окно
+// Заказ через Telegram - прямое перенаправление в Telegram
 function openTelegramOrderModal() {
     if (cart.length === 0) {
         alert('Корзина пуста');
         return;
     }
 
-    // Заполняем список товаров с фото
-    const itemsContainer = document.getElementById('tg-order-items');
-    if (itemsContainer) {
-        itemsContainer.innerHTML = cart.map(item => `
-            <div class="flex gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-                <img src="${item.image_url || 'https://placehold.co/80'}"
-                    alt="${item.name}"
-                    class="w-16 h-16 object-cover rounded-lg flex-shrink-0">
-                <div class="flex-1 min-w-0">
-                    <h5 class="font-semibold text-sm text-gray-900 truncate">${item.name}</h5>
-                    <p class="text-xs text-gray-500 mt-1">
-                        ${item.quantity} шт.
-                    </p>
-                    <p class="text-rose-600 font-bold text-sm mt-1">
-                        ${formatPrice(item.price * item.quantity)} сум
-                    </p>
-                </div>
-            </div>
-        `).join('');
-    }
+    // Формируем сообщение для Telegram
+    let message = '🌸 Новый заказ\n\n';
+    message += '📦 Товары:\n';
 
-    // Обновляем итоговую сумму
+    cart.forEach((item, index) => {
+        message += `${index + 1}. ${item.name} — ${item.quantity} шт. × ${formatPrice(item.price)} сум\n`;
+    });
+
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalElem = document.getElementById('tg-order-total');
-    if (totalElem) {
-        totalElem.innerText = formatPrice(total) + ' сум';
-    }
+    message += `\n💰 Итого: ${formatPrice(total)} сум`;
 
-    // Заполняем данные пользователя если авторизован
-    if (currentUser) {
-        const phoneElem = document.getElementById('tg-order-phone');
-        if (phoneElem && currentUser.phone) {
-            phoneElem.value = currentUser.phone;
+    // Копируем сообщение в буфер обмена
+    navigator.clipboard.writeText(message).then(() => {
+        alert('✅ Детали заказа скопированы в буфер обмена.\n\nСейчас откроется Telegram — просто вставьте сообщение в чат.');
+
+        // Очищаем корзину
+        cart = [];
+        saveCart();
+        toggleCart();
+
+        // Открываем Telegram
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = 'https://t.me/uzflower';
+        } else {
+            window.open('https://t.me/uzflower', '_blank');
         }
-    }
+    }).catch(() => {
+        alert('✅ Сейчас откроется Telegram.');
 
-    // Показываем модальное окно
-    const modal = document.getElementById('telegram-order-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
-    }
-    
-    lucide.createIcons();
+        cart = [];
+        saveCart();
+        toggleCart();
+
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            window.location.href = 'https://t.me/uzflower';
+        } else {
+            window.open('https://t.me/uzflower', '_blank');
+        }
+    });
 }
 
 function closeTelegramOrderModal() {
-    const modal = document.getElementById('telegram-order-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+    // Функция больше не используется
 }
 
 async function submitTelegramOrder() {
-    const phone = document.getElementById('tg-order-phone')?.value.trim();
-    const name = document.getElementById('tg-order-name')?.value.trim();
-    const postcard = document.getElementById('tg-order-postcard')?.value.trim();
-    const comment = document.getElementById('tg-order-comment')?.value.trim();
-
-    if (!phone || !name) {
-        alert('Пожалуйста, заполните телефон и имя');
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-    try {
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-        // Создаём заказ в базе
-        const res = await fetch('/api/order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                name: name,
-                phone: phone,
-                delivery_address: '',
-                comment: comment || '',
-                delivery_date: '',
-                delivery_time: '',
-                postcard_text: postcard || ''
-            })
-        });
-
-        const orderData = await res.json();
-
-        if (!res.ok || !orderData.success) {
-            throw new Error(orderData.detail || 'Ошибка при создании заказа');
-        }
-
-        const orderId = orderData.order_id;
-
-        // Добавляем товары в заказ
-        for (const item of cart) {
-            await fetch(`/api/order/${orderId}/add-item`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    product_id: item.id,
-                    quantity: item.quantity,
-                    comment: null
-                })
-            });
-        }
-
-        // Формируем сообщение для Telegram
-        let message = '🌸 Новый заказ\n\n';
-        message += '📦 Товары:\n';
-
-        cart.forEach((item, index) => {
-            message += `${index + 1}. ${item.name} — ${item.quantity} шт. × ${formatPrice(item.price)} сум\n`;
-        });
-
-        message += `\n💰 Итого: ${formatPrice(total)} сум`;
-
-        if (address) message += `\n📍 Адрес: ${address}`;
-        if (phone) message += `\n📞 Телефон: ${phone}`;
-        if (date) message += `\n📅 Дата: ${date}`;
-        if (time) {
-            const timeLabels = {
-                '09:00-12:00': '09:00-12:00 (Утро)',
-                '12:00-15:00': '12:00-15:00 (День)',
-                '15:00-18:00': '15:00-18:00 (Вечер)',
-                '18:00-21:00': '18:00-21:00 (Поздний вечер)'
-            };
-            message += `\n⏰ Время: ${timeLabels[time] || time}`;
-        }
-
-        if (postcard) message += `\n💌 Открытка: ${postcard}`;
-        if (comment) message += `\n💬 Комментарий: ${comment}`;
-
-        message += `\n\n🔢 Номер заказа: #${orderId}`;
-
-        // Копируем сообщение в буфер обмена
-        navigator.clipboard.writeText(message).then(() => {
-            alert('✅ Заказ создан! Детали скопированы в буфер обмена.\n\nСейчас откроется Telegram — просто вставьте сообщение в чат.');
-
-            // Очищаем корзину
-            cart = [];
-            saveCart();
-            closeTelegramOrderModal();
-            toggleCart();
-
-            // Открываем Telegram
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                window.location.href = 'https://t.me/uzflower';
-            } else {
-                window.open('https://t.me/uzflower', '_blank');
-            }
-        }).catch(() => {
-            alert('✅ Заказ создан! Сейчас откроется Telegram.');
-
-            cart = [];
-            saveCart();
-            closeTelegramOrderModal();
-            toggleCart();
-
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                window.location.href = 'https://t.me/uzflower';
-            } else {
-                window.open('https://t.me/uzflower', '_blank');
-            }
-        });
-
-    } catch (error) {
-        console.error('Ошибка при создании заказа:', error);
-        alert('Ошибка: ' + (error.message || 'Не удалось создать заказ'));
-    }
+    // Функция больше не используется - заказ оформляется напрямую через Telegram
 }
 
 // Старая функция orderViaTelegram (для совместимости)
