@@ -50,6 +50,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+bot_debug.log
+admin_bot.log
+server_debug.log
 
 # Database
 *.db

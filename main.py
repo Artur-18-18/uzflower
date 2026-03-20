@@ -909,8 +909,16 @@ async def lifespan(app: FastAPI):
         # Отменяем задачи ботов
         if hasattr(app.state, 'bot_task'):
             app.state.bot_task.cancel()
+            try:
+                await app.state.bot_task
+            except asyncio.CancelledError:
+                logger.info("✅ Telegram бот остановлен")
         if hasattr(app.state, 'admin_bot_task'):
             app.state.admin_bot_task.cancel()
+            try:
+                await app.state.admin_bot_task
+            except asyncio.CancelledError:
+                logger.info("✅ Admin Telegram бот остановлен")
 
 # --- FastAPI App ---
 app = FastAPI(lifespan=lifespan)

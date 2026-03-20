@@ -34,6 +34,7 @@ class AdminBotSettings:
             self.admin_ids = [self.admin_user_id] if self.admin_user_id else []
 
         # URL API сайта (для получения информации о заказах)
+        # На Render.com используется localhost, так как боты работают в том же контейнере
         self.api_url = os.getenv("TELEGRAM_API_URL", "http://localhost:8000")
 
         # API ключ для авторизации бота в API

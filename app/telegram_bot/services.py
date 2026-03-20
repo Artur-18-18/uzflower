@@ -28,7 +28,7 @@ class UzFlowerAPI:
                     "Authorization": f"Bearer {self.api_secret}",
                     "Content-Type": "application/json"
                 },
-                timeout=30.0
+                timeout=60.0  # Увеличенный таймаут для медленных соединений
             )
         return self._client
 
@@ -88,14 +88,22 @@ class UzFlowerAPI:
         """
         try:
             client = await self._get_client()
-            response = await client.get(f"/api/products/{product_id}")
+            request_url = f"/api/products/{product_id}"
+            logger.info("🔍 Запрос товара #%s: GET %s%s", product_id, self.base_url, request_url)
+            
+            response = await client.get(request_url)
+            logger.info("📥 Ответ API: статус=%s, тело=%s", response.status_code, response.text[:200] if response.text else "пусто")
+            
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            logger.info("✅ Товар #%s получен успешно: %s", product_id, data.get("name", "unknown"))
+            return data
         except httpx.HTTPStatusError as e:
-            logger.error("❌ Ошибка API при получении товара: %s", e)
+            logger.error("❌ Ошибка API при получении товара #%s: статус=%s, ответ=%s", 
+                        product_id, e.response.status_code, e.response.text)
             return None
         except Exception as e:
-            logger.error("❌ Ошибка при получении товара: %s", e)
+            logger.error("❌ Ошибка при получении товара #%s: %s", product_id, e, exc_info=True)
             return None
 
     async def add_product_image(self, product_id: int, image_url: str) -> bool:

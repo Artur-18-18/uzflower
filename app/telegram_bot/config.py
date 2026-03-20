@@ -26,6 +26,7 @@ class TelegramBotSettings:
             self.owner_id = 0
 
         # URL API сайта (для отправки товаров)
+        # На Render.com используется localhost, так как боты работают в том же контейнере
         self.api_url = os.getenv("TELEGRAM_API_URL", "http://localhost:8000")
 
         # API ключ для авторизации бота в API

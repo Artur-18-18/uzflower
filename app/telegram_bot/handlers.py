@@ -169,10 +169,13 @@ async def handle_start_command(message: Message, command: CommandStart = None):
         match = re.match(r"product_(\d+)", args)
         if match:
             product_id = int(match.group(1))
+            logger.info("🔍 Deep-link: запрошен товар #%s от пользователя #%s", product_id, message.from_user.id)
+            
             api = UzFlowerAPI()
             product = await api.get_product(product_id)
 
             if not product:
+                logger.warning("⚠️ Товар #%s не найден в API для пользователя #%s", product_id, message.from_user.id)
                 await message.answer(
                     "❌ Товар не найден или уже недоступен.\n\n"
                     "Возможно, он был удалён или продан."
