@@ -109,7 +109,12 @@ function handleSignOut() {
 
 function renderProducts(products, animate = false) {
     const container = document.getElementById('products-grid');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ Контейнер products-grid не найден!');
+        return;
+    }
+
+    console.log('📦 Рендер товаров:', products.length, 'штук');
 
     // Очищаем контейнер перед рендерингом
     container.innerHTML = '';
@@ -121,7 +126,7 @@ function renderProducts(products, animate = false) {
         return `
             <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
                 <div class="relative aspect-square overflow-hidden bg-white">
-                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500">
+                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500" loading="lazy">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
                     <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
                         <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
@@ -150,8 +155,13 @@ function renderProducts(products, animate = false) {
             </div>
         `;
     }).join('');
-    lucide.createIcons();
     
+    // Создаём иконки СРАЗУ после рендера
+    if (window.lucide) {
+        lucide.createIcons();
+        console.log('✅ Иконки созданы после рендера товаров');
+    }
+
     // Trigger scroll reveal after products are rendered
     setTimeout(() => {
         const reveals = document.querySelectorAll('.scroll-reveal');
@@ -471,6 +481,22 @@ function filterByCategory(id) {
     loadProducts(true); // true = с анимацией
 }
 
+// Фильтрация по категории из мобильного поиска
+function filterByCategoryFromSearch(id) {
+    selectedCategory = id;
+    
+    // Закрываем мобильное меню если открыто
+    const favRadio = document.getElementById('mobile-favorites');
+    const cartRadio = document.getElementById('mobile-cart');
+    if (favRadio) favRadio.checked = false;
+    if (cartRadio) cartRadio.checked = false;
+    
+    // Плавная прокрутка к каталогу
+    scrollToCatalog();
+    
+    loadProducts(true);
+}
+
 // Debounced search function (оптимизация поиска)
 const handleSearch = debounce(function() {
     const query = document.getElementById('search-input')?.value?.toLowerCase().trim() || '';
@@ -604,32 +630,97 @@ function showEmptySearchState() {
     // Если товары ещё не загружены
     if (!allProductsList || allProductsList.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="text-center py-10">
-                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
-                <p class="text-gray-500">Загрузка товаров...</p>
+            <div class="flex flex-col items-center justify-center py-16">
+                <div class="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                    <i data-lucide="loader" class="w-8 h-8 text-rose-500 animate-spin"></i>
+                </div>
+                <p class="text-gray-500 font-medium">Загрузка товаров...</p>
             </div>
         `;
         lucide.createIcons();
         return;
     }
 
-    // Показываем популярные товары (первые 8)
-    const popularProducts = allProductsList.slice(0, 8);
-    resultsContainer.innerHTML = `
-        <div class="mb-4">
-            <h3 class="text-sm font-semibold text-gray-500 mb-3">Популярные букеты</h3>
-            <div class="grid grid-cols-2 gap-3">
-                ${popularProducts.map(product => `
-                    <div class="bg-white p-2 rounded-xl shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="selectProductFromSearch(${product.id})">
-                        <img src="${product.image_url || 'https://placehold.co/150'}" alt="${product.name}" class="w-full aspect-square object-cover rounded-lg mb-2">
-                        <p class="text-xs font-medium text-gray-900 line-clamp-2">${product.name}</p>
-                        <p class="text-xs text-rose-600 font-bold mt-1">${formatPrice(product.price)} сум</p>
+    // Загружаем категории для отображения в поиске
+    fetch('/api/categories')
+        .then(res => res.json())
+        .then(categories => {
+            let categoriesHTML = '';
+            
+            if (categories && categories.length > 0) {
+                categoriesHTML = `
+                    <div class="mb-6">
+                        <div class="search-section-header">
+                            <div class="section-icon">
+                                <i data-lucide="grid" class="w-4 h-4"></i>
+                            </div>
+                            <span class="section-title">Категории</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="filterByCategoryFromSearch(null); closeMobileSearch();" 
+                                class="search-category-card">
+                                <span class="category-name">Все букеты</span>
+                            </button>
+                            ${categories.map(cat => `
+                                <button onclick="filterByCategoryFromSearch(${cat.id}); closeMobileSearch();" 
+                                    class="search-category-card">
+                                    <span class="category-name">${cat.name}</span>
+                                </button>
+                            `).join('')}
+                        </div>
                     </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-    lucide.createIcons();
+                `;
+            }
+
+            // Показываем популярные товары (первые 12)
+            const popularProducts = allProductsList.slice(0, 12);
+            resultsContainer.innerHTML = `
+                ${categoriesHTML}
+                <div class="mb-6">
+                    <div class="search-section-header">
+                        <div class="section-icon">
+                            <i data-lucide="flame" class="w-4 h-4"></i>
+                        </div>
+                        <span class="section-title">Популярные букеты</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        ${popularProducts.map(product => `
+                            <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
+                                <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
+                                <p class="product-name line-clamp-2">${product.name}</p>
+                                <p class="product-price">${formatPrice(product.price)} сум</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        })
+        .catch(err => {
+            console.error('Ошибка загрузки категорий:', err);
+            // Показываем только товары если категории не загрузились
+            const popularProducts = allProductsList.slice(0, 12);
+            resultsContainer.innerHTML = `
+                <div class="mb-6">
+                    <div class="search-section-header">
+                        <div class="section-icon">
+                            <i data-lucide="flame" class="w-4 h-4"></i>
+                        </div>
+                        <span class="section-title">Популярные букеты</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        ${popularProducts.map(product => `
+                            <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
+                                <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
+                                <p class="product-name line-clamp-2">${product.name}</p>
+                                <p class="product-price">${formatPrice(product.price)} сум</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        });
 }
 
 // Debounced mobile search function
@@ -652,9 +743,11 @@ function performMobileSearch() {
     // Если товары ещё не загружены
     if (!allProductsList || allProductsList.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="text-center py-10">
-                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
-                <p class="text-gray-500">Товары загружаются...</p>
+            <div class="flex flex-col items-center justify-center py-16">
+                <div class="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+                    <i data-lucide="loader" class="w-8 h-8 text-rose-500 animate-spin"></i>
+                </div>
+                <p class="text-gray-500 font-medium">Товары загружаются...</p>
             </div>
         `;
         lucide.createIcons();
@@ -675,22 +768,45 @@ function performMobileSearch() {
 
     if (filtered.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="text-center py-10">
-                <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
-                <p class="text-gray-500 font-medium">Ничего не найдено</p>
-                <p class="text-gray-400 text-sm mt-1">Попробуйте изменить запрос</p>
+            <div class="flex flex-col items-center justify-center py-16">
+                <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <i data-lucide="search-x" class="w-10 h-10 text-gray-400"></i>
+                </div>
+                <p class="text-gray-600 font-semibold text-lg mb-1">Ничего не найдено</p>
+                <p class="text-gray-400 text-sm">Попробуйте изменить запрос</p>
             </div>
         `;
     } else {
         resultsContainer.innerHTML = `
-            <div class="mb-3">
-                <p class="text-xs text-gray-500">Найдено: ${filtered.length} товар(ов)</p>
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
+                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-semibold text-gray-700">Результаты поиска</span>
+                    </div>
+                    <span class="text-xs font-medium bg-rose-100 text-rose-600 px-3 py-1 rounded-full">${filtered.length} тов.</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    ${filtered.map(product => renderSearchProductCard(product)).join('')}
+                </div>
             </div>
-            ${filtered.map(product => renderSearchResultItem(product, query)).join('')}
         `;
     }
 
     lucide.createIcons();
+}
+
+// Рендеринг карточки товара для поиска
+function renderSearchProductCard(product) {
+    return `
+        <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
+            <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
+            <p class="product-name line-clamp-2">${product.name}</p>
+            <p class="product-price">${formatPrice(product.price)} сум</p>
+        </div>
+    `;
 }
 
 // Рендеринг элемента результата поиска с подсветкой совпадений
@@ -1038,8 +1154,17 @@ async function loadBanners() {
 
         // Слайдер с несколькими баннерами
         let currentBannerIndex = 0;
+        let bannerTimeout = null;
 
-        const renderBanner = (banner) => {
+        // Очищаем предыдущий таймер при переключении
+        const clearBannerTimeout = () => {
+            if (bannerTimeout) {
+                clearTimeout(bannerTimeout);
+                bannerTimeout = null;
+            }
+        };
+
+        const renderBanner = (banner, index) => {
             const bannerText = banner.text || 'Весенняя Коллекция';
             const bannerSubtext = banner.subtext || 'Создайте незабываемые моменты с нашими авторскими букетами';
 
@@ -1061,14 +1186,25 @@ async function loadBanners() {
 
                 // Обработка ошибок загрузки видео
                 const video = document.getElementById('hero-video');
-                video.addEventListener('error', () => {
-                    console.error('Ошибка загрузки видео:', banner.video_url);
-                    // Переключаем на следующий баннер если видео не загрузилось
-                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
-                    renderBanner(banners[currentBannerIndex]);
-                });
+                if (video) {
+                    video.addEventListener('error', () => {
+                        console.error('Ошибка загрузки видео:', banner.video_url);
+                        // Переключаем на следующий баннер если видео не загрузилось
+                        clearBannerTimeout();
+                        const nextIndex = (index + 1) % banners.length;
+                        renderBanner(banners[nextIndex], nextIndex);
+                    });
 
-                // Для видео с зацикливанием — не переключаем баннер
+                    // Видео успешно загрузилось - переключаем через 15 секунд
+                    video.addEventListener('loadeddata', () => {
+                        console.log('✅ Видео загружено, показываем 15 сек');
+                        clearBannerTimeout();
+                        bannerTimeout = setTimeout(() => {
+                            const nextIndex = (index + 1) % banners.length;
+                            renderBanner(banners[nextIndex], nextIndex);
+                        }, 15000);
+                    });
+                }
 
             } else if (banner.image_url) {
                 bannerContainer.innerHTML = `
@@ -1086,20 +1222,30 @@ async function loadBanners() {
                 `;
 
                 // Для изображений — автопереключение через 5 секунд
-                setTimeout(() => {
-                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
-                    renderBanner(banners[currentBannerIndex]);
+                console.log(`🖼️ Показываем изображение #${index + 1}, переключение через 5 сек`);
+                clearBannerTimeout();
+                bannerTimeout = setTimeout(() => {
+                    const nextIndex = (index + 1) % banners.length;
+                    renderBanner(banners[nextIndex], nextIndex);
                 }, 5000);
             }
 
             // Клик по баннеру с ссылкой
             if (banner.link) {
                 bannerContainer.style.cursor = 'pointer';
-                bannerContainer.onclick = () => window.location.href = banner.link;
+                bannerContainer.onclick = (e) => {
+                    // Если это кнопка - не переходим по ссылке баннера
+                    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                        return;
+                    }
+                    window.location.href = banner.link;
+                };
             }
         };
 
-        renderBanner(banners[currentBannerIndex]);
+        // Запускаем первый баннер
+        console.log(`🚀 Запуск слайдера, всего баннеров: ${banners.length}`);
+        renderBanner(banners[currentBannerIndex], currentBannerIndex);
 
     } catch (e) {
         console.error("Error loading banners:", e);
@@ -1208,6 +1354,15 @@ async function loadProducts(animate = false) {
     // Защита от повторных вызовов
     if (isLoadingProducts) return;
 
+    const container = document.getElementById('products-grid');
+    
+    // Если контейнер ещё не готов, пробуем позже
+    if (!container) {
+        console.warn('⚠️ products-grid не найден, повторная попытка через 100мс...');
+        setTimeout(() => loadProducts(animate), 100);
+        return;
+    }
+
     try {
         isLoadingProducts = true;
         const sort = document.getElementById('sort-filter')?.value || 'popular';
@@ -1229,9 +1384,6 @@ async function loadProducts(animate = false) {
         const products = await res.json();
         allProductsList = products; // Keep for favorites side-filtering
 
-        const container = document.getElementById('products-grid');
-        if (!container) return;
-
         if (products.length === 0) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-20">
@@ -1242,9 +1394,11 @@ async function loadProducts(animate = false) {
             lucide.createIcons();
         } else {
             renderProducts(products, animate);
+            // Обновляем кнопки избранного после рендера товаров
+            setTimeout(() => updateFavoriteButtons(), 50);
         }
 
-        // Обновляем кнопки избранного после загрузки товаров
+        // Обновляем счетчики и кнопки избранного
         updateFavoriteButtons();
     } catch (error) {
         console.error("Ошибка загрузки:", error);
@@ -1375,45 +1529,49 @@ function updateFavoriteButtons() {
     // Обновляем счетчик в хедере
     const countBadge = document.getElementById('fav-count');
     const mobileCountBadge = document.getElementById('mobile-fav-count');
-    
+
     if (countBadge) {
         countBadge.innerText = favorites.length;
         countBadge.classList.toggle('hidden', favorites.length === 0);
     }
-    
+
     if (mobileCountBadge) {
         mobileCountBadge.innerText = favorites.length;
         mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
     }
-    
+
     // Обновляем состояние кнопок в каталоге (с иконкой сердца)
     document.querySelectorAll('.fav-heart-btn').forEach(btn => {
         const productId = btn.getAttribute('data-product-id');
         if (!productId) return;
-        
+
         // Пропускаем кнопки с иконкой корзины (в списке избранного)
         const icon = btn.querySelector('i');
         if (!icon) return;
         if (icon.getAttribute('data-lucide') === 'trash-2') return;
-        
+
         const isFav = favorites.includes(parseInt(productId));
-        
-        // Меняем иконку и цвет
+
+        // Меняем иконку и цвет БЕЗ вызова lucide.createIcons()
         if (isFav) {
             btn.classList.add('text-rose-500');
             btn.classList.remove('text-gray-400');
             icon.classList.add('fill-rose-500');
+            icon.classList.remove('text-gray-400');
+            // Принудительно устанавливаем цвет
+            icon.style.color = '#e11d48';
+            icon.style.fill = '#e11d48';
         } else {
             btn.classList.remove('text-rose-500');
             btn.classList.add('text-gray-400');
             icon.classList.remove('fill-rose-500');
+            icon.classList.add('text-gray-400');
+            // Сбрасываем цвет
+            icon.style.color = '';
+            icon.style.fill = '';
         }
     });
-    
-    // Перерисовываем иконки
-    if (window.lucide) {
-        lucide.createIcons();
-    }
+    // НЕ вызываем lucide.createIcons() здесь чтобы не сбрасывать классы
 }
 
 function toggleFavorites() {

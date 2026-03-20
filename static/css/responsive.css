@@ -258,7 +258,7 @@ html, body {
         width: 0.875rem !important;
         height: 0.875rem !important;
     }
-    
+
     /* Кнопки действий - минимальный размер для тача */
     #products-grid button {
         min-width: 36px !important;
@@ -266,10 +266,21 @@ html, body {
         padding: 0.375rem !important;
     }
 
-    /* Изображения товаров */
+    /* Изображения товаров - ИСПРАВЛЕНИЕ для мобильных */
     #products-grid img {
         object-fit: contain !important;
         padding: 0.25rem !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 120px !important;
+        display: block !important;
+    }
+
+    /* Контейнер изображения */
+    #products-grid .aspect-square {
+        aspect-ratio: 1 !important;
+        background: #fff !important;
+        position: relative !important;
     }
 }
 

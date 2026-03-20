@@ -29,7 +29,7 @@
     <script src="/static/js/app.js?v=2.2"></script>
     <script src="/static/js/loader.js?v=1.0"></script>
     <style>
-        /* 3D Scroll Effects */
+        /* 3D Scroll Effects - OPTIMIZED FOR MOBILE */
         html {
             scroll-behavior: smooth;
             overflow-x: hidden;
@@ -47,43 +47,76 @@
             input, select, textarea {
                 font-size: 16px !important;
             }
-            
+
             /* Improve touch scrolling */
             * {
                 -webkit-overflow-scrolling: touch;
             }
-            
+
             /* Better tap feedback */
             button, a {
                 transition: all 0.2s ease;
             }
-            
+
             button:active, a:active {
                 transform: scale(0.96);
             }
         }
 
-        /* 3D Scroll Container */
+        /* 3D Scroll Container - DISABLED ON MOBILE */
         .scroll-container {
             perspective: 1000px;
         }
 
-        /* 3D Card Effect on Scroll */
+        @media (max-width: 1024px) {
+            .scroll-container {
+                perspective: none;
+            }
+        }
+
+        /* 3D Card Effect on Scroll - OPTIMIZED */
         .scroll-reveal {
             opacity: 0;
-            transform: translateY(50px) rotateX(10deg);
-            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            will-change: opacity, transform;
         }
 
         .scroll-reveal.revealed {
             opacity: 1;
-            transform: translateY(0) rotateX(0);
+            transform: translateY(0);
         }
 
-        /* 3D Parallax Effect */
+        /* DISABLE 3D ROTATION ON MOBILE - FIX FOR LAG */
+        @media (max-width: 1024px) {
+            .scroll-reveal {
+                transform: translateY(20px);
+                transition: opacity 0.4s ease, transform 0.4s ease;
+            }
+
+            .scroll-reveal.revealed {
+                transform: translateY(0);
+            }
+
+            /* Remove heavy transforms */
+            .scroll-reveal,
+            .scroll-reveal.revealed {
+                transform: none !important;
+                transition: opacity 0.3s ease !important;
+            }
+        }
+
+        /* 3D Parallax Effect - DISABLED ON MOBILE */
         .parallax-section {
             transform-style: preserve-3d;
             will-change: transform;
+        }
+
+        @media (max-width: 1024px) {
+            .parallax-section {
+                transform-style: flat;
+                will-change: auto;
+            }
         }
 
         /* Smooth Scroll Progress Bar */
@@ -584,29 +617,58 @@
             gap: 12px;
             padding: 16px;
             border-bottom: 1px solid #e5e7eb;
-            background: white;
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        #mobile-search-modal .search-input-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
         #mobile-search-modal .search-input {
-            padding: 10px 12px;
+            width: 100%;
+            padding: 12px 16px 12px 40px;
             background: #f3f4f6;
-            border: none;
-            border-radius: 12px;
+            border: 2px solid transparent;
+            border-radius: 14px;
             outline: none;
             font-size: 16px;
-            min-width: 0;
-            flex: 1;
+            font-weight: 400;
+            color: #1f2937;
+            transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
 
         #mobile-search-modal .search-input:focus {
-            background: #e5e7eb;
+            background: #ffffff;
+            border-color: #e11d48;
+            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
+        }
+
+        #mobile-search-modal .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        #mobile-search-modal .search-icon {
+            position: absolute;
+            left: 12px;
+            color: #9ca3af;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        #mobile-search-modal .search-input:focus + .search-icon,
+        #mobile-search-modal .search-input:not(:placeholder-shown) + .search-icon {
+            color: #e11d48;
         }
 
         #mobile-search-modal .close-search {
-            padding: 8px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 10px;
             background: #f3f4f6;
             color: #6b7280;
             transition: all 0.2s;
@@ -614,18 +676,39 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            border: none;
+            cursor: pointer;
         }
 
         #mobile-search-modal .close-search:hover {
             background: #e5e7eb;
             color: #1f2937;
+            transform: rotate(90deg);
+        }
+
+        #mobile-search-modal .close-search:active {
+            transform: scale(0.95);
         }
 
         #mobile-search-modal .search-results {
-            background: #f9fafb;
+            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding: 16px;
+        }
+
+        #mobile-search-modal .search-results::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #mobile-search-modal .search-results::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #mobile-search-modal .search-results::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
         }
 
         .search-result-item {
@@ -636,16 +719,117 @@
             transform: scale(0.98);
         }
 
-        /* Highlight styles for search results */
-        #mobile-search-modal mark {
-            background-color: #fef08a;
-            color: #111827;
-            padding: 0.125rem 0.25rem;
-            border-radius: 0.25rem;
-            font-weight: 600;
+        /* Category cards in search */
+        .search-category-card {
+            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+            border: 1px solid #fecdd3;
+            border-radius: 12px;
+            padding: 12px 10px;
+            text-align: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
-        /* Line clamp utilities */
+        .search-category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.4s ease;
+        }
+
+        .search-category-card:active::before {
+            left: 100%;
+        }
+
+        .search-category-card:active {
+            transform: scale(0.95);
+            border-color: #f43f5e;
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15);
+        }
+
+        .search-category-card .category-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #881337;
+            line-height: 1.3;
+        }
+
+        /* Product cards in search */
+        .search-product-card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid #f3f4f6;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .search-product-card:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border-color: #e11d48;
+        }
+
+        .search-product-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 10px;
+            background: #f9fafb;
+            margin-bottom: 8px;
+        }
+
+        .search-product-card .product-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+
+        .search-product-card .product-price {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e11d48;
+        }
+
+        /* Section headers in search */
+        .search-section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .search-section-header .section-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .search-section-header .section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Line clamp utilities for search */
         .line-clamp-1 {
             display: -webkit-box;
             -webkit-line-clamp: 1;
@@ -1633,15 +1817,17 @@
     <div id="mobile-search-modal" class="fixed inset-0 bg-white z-[60] hidden flex-col">
         <div class="flex flex-col h-full">
             <div class="search-header flex-shrink-0">
-                <i data-lucide="search" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>
-                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input flex-1 min-w-0"
-                    oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
-                    autocomplete="off">
-                <button onclick="closeMobileSearch()" class="close-search flex-shrink-0" aria-label="Закрыть поиск">
+                <div class="search-input-wrapper">
+                    <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input"
+                        oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
+                        autocomplete="off">
+                    <i data-lucide="search" class="search-icon w-5 h-5"></i>
+                </div>
+                <button onclick="closeMobileSearch()" class="close-search" aria-label="Закрыть поиск">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto p-4 bg-gray-50"></div>
+            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto"></div>
         </div>
     </div>
 
@@ -1732,10 +1918,39 @@
             });
         });
 
-        // === 3D Scroll Effects ===
-        
+        // === 3D Scroll Effects - OPTIMIZED ===
+
+        // Throttle function for scroll events - PERFORMANCE FIX
+        function throttle(func, delay) {
+            let timeoutId;
+            let lastExecTime = 0;
+
+            return function(...args) {
+                const currentTime = Date.now();
+
+                if (currentTime - lastExecTime < delay) {
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        lastExecTime = currentTime;
+                        func.apply(this, args);
+                    }, delay);
+                } else {
+                    lastExecTime = currentTime;
+                    func.apply(this, args);
+                }
+            };
+        }
+
+        // Check if device is mobile
+        function isMobile() {
+            return window.innerWidth < 1024;
+        }
+
         // Scroll Progress Bar
         function createScrollProgressBar() {
+            // Don't create progress bar on mobile - saves performance
+            if (isMobile()) return;
+
             const progressBar = document.createElement('div');
             progressBar.className = 'scroll-progress';
             progressBar.id = 'scroll-progress';
@@ -1744,24 +1959,30 @@
 
         // Scroll to Top Button
         function createScrollToTopButton() {
+            // Don't create scroll indicator on mobile - saves performance
+            if (isMobile()) return;
+
             const scrollBtn = document.createElement('div');
             scrollBtn.className = 'scroll-indicator';
             scrollBtn.id = 'scroll-to-top';
             scrollBtn.innerHTML = '<i data-lucide="arrow-down" class="w-6 h-6 transform rotate-180"></i>';
             scrollBtn.onclick = scrollToTop;
             document.body.appendChild(scrollBtn);
-            
+
             if (window.lucide) {
                 lucide.createIcons();
             }
         }
 
-        // Update Scroll Progress
-        function updateScrollProgress() {
+        // Update Scroll Progress - THROTTLED
+        const updateScrollProgress = throttle(function() {
+            // Skip on mobile
+            if (isMobile()) return;
+
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolled = (winScroll / height) * 100;
-            
+
             const progressBar = document.getElementById('scroll-progress');
             if (progressBar) {
                 progressBar.style.width = scrolled + '%';
@@ -1776,7 +1997,7 @@
                     scrollBtn.classList.remove('visible');
                 }
             }
-        }
+        }, 100); // 100ms throttle on desktop
 
         // Scroll to Top Function
         function scrollToTop() {
@@ -1786,11 +2007,21 @@
             });
         }
 
-        // 3D Scroll Reveal Effect
+        // 3D Scroll Reveal Effect - OPTIMIZED FOR MOBILE
         function initScrollReveal() {
             const reveals = document.querySelectorAll('.scroll-reveal');
-            
-            const revealOnScroll = () => {
+
+            // On mobile, use simplified reveal without scroll listener
+            if (isMobile()) {
+                // Just reveal all elements immediately on mobile
+                reveals.forEach((reveal) => {
+                    reveal.classList.add('revealed');
+                });
+                return;
+            }
+
+            // Desktop: use scroll-based reveal with throttle
+            const revealOnScroll = throttle(() => {
                 const windowHeight = window.innerHeight;
                 const elementVisible = 100;
 
@@ -1800,45 +2031,74 @@
                         reveal.classList.add('revealed');
                     }
                 });
-            };
+            }, 150); // 150ms throttle
 
             window.addEventListener('scroll', revealOnScroll);
             revealOnScroll(); // Trigger once on load
         }
 
-        // Parallax Effect for Sections
+        // Parallax Effect for Sections - DISABLED ON MOBILE
         function initParallax() {
+            // Completely disable parallax on mobile - major performance fix
+            if (isMobile()) return;
+
             const parallaxSections = document.querySelectorAll('.parallax-section');
-            
-            window.addEventListener('scroll', () => {
+
+            const parallaxOnScroll = throttle(() => {
                 const scrolled = window.pageYOffset;
-                
+
                 parallaxSections.forEach((section) => {
                     const speed = 0.5;
                     const yPos = -(scrolled * speed);
                     section.style.transform = `translateY(${yPos}px)`;
                 });
-            });
+            }, 100); // 100ms throttle
+
+            window.addEventListener('scroll', parallaxOnScroll);
         }
 
         // Initialize 3D Scroll Effects on Load
         document.addEventListener('DOMContentLoaded', () => {
-            createScrollProgressBar();
-            createScrollToTopButton();
-            initScrollReveal();
-            window.addEventListener('scroll', updateScrollProgress);
-            updateScrollProgress(); // Trigger once on load
-            
-            // Reveal elements that are already in viewport
+            // Delay initialization for better performance on mobile
+            const initDelay = isMobile() ? 300 : 100;
+
             setTimeout(() => {
+                createScrollProgressBar();
+                createScrollToTopButton();
+                initScrollReveal();
+
+                if (!isMobile()) {
+                    window.addEventListener('scroll', updateScrollProgress);
+                    updateScrollProgress();
+                    initParallax();
+                }
+
+                // Reveal elements that are already in viewport
                 const reveals = document.querySelectorAll('.scroll-reveal');
                 reveals.forEach((reveal) => {
                     const elementTop = reveal.getBoundingClientRect().top;
-                    if (elementTop < window.innerHeight - 100) {
+                    if (elementTop < window.innerHeight - 50) {
                         reveal.classList.add('revealed');
                     }
                 });
-            }, 100);
+            }, initDelay);
+        });
+
+        // Re-init on resize (for orientation change)
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Re-check if mobile and adjust
+                if (isMobile()) {
+                    // Remove heavy effects on mobile
+                    const progressBar = document.getElementById('scroll-progress');
+                    if (progressBar) progressBar.remove();
+
+                    const scrollBtn = document.getElementById('scroll-to-top');
+                    if (scrollBtn) scrollBtn.remove();
+                }
+            }, 200);
         });
     </script>
     
