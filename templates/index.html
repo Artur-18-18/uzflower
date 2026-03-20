@@ -1452,6 +1452,14 @@
                         #product-detail-modal .swiper-button-next { right: 10px !important; }
                         #product-detail-modal .swiper-button-prev { left: 10px !important; }
                     }
+                    /* FIX: Изображения на мобильных */
+                    @media (max-width: 768px) {
+                        #product-detail-modal .swiper-slide img {
+                            max-width: 100%;
+                            max-height: 100%;
+                            object-fit: contain !important;
+                        }
+                    }
                 </style>
                 <div class="swiper swiper-container">
                     <div class="swiper-wrapper" id="detail-swiper-wrapper"></div>

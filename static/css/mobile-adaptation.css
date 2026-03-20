@@ -940,7 +940,7 @@ img[loading="lazy"] {
 
 /*
   Mobile First Breakpoints:
-  
+
   - Mobile Small:    max-width: 375px   (iPhone SE, small Android)
   - Mobile Medium:   max-width: 425px   (iPhone 12/13/14)
   - Mobile Large:    max-width: 640px   (iPhone Pro Max, large Android)
@@ -949,6 +949,43 @@ img[loading="lazy"] {
   - Desktop Small:   max-width: 1279px  (small laptops)
   - Desktop:         min-width: 1280px  (standard desktops)
 */
+
+/* ============================================================
+   19.5 PRODUCT IMAGES FIX - Исправление изображений товаров
+   ============================================================ */
+
+/* Исправление для карточек товаров на мобильных */
+@media (max-width: 640px) {
+    #products-grid .card-3d img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+        display: block !important;
+        background: #fff !important;
+    }
+    
+    #products-grid .aspect-square {
+        overflow: hidden !important;
+        background: #fff !important;
+    }
+}
+
+/* Исправление для модального окна товара на мобильных */
+@media (max-width: 768px) {
+    #product-detail-modal .swiper-slide img {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        width: auto !important;
+        height: auto !important;
+    }
+    
+    #product-detail-modal .swiper-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+}
 
 /* ============================================================
    21. LANDSCAPE MODE - Альбомная ориентация

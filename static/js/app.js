@@ -295,7 +295,7 @@ function openProductDetail(product) {
         const imagesToRender = productImages.length > 0 ? productImages : ['https://placehold.co/600'];
         swiperWrapper.innerHTML = imagesToRender.map((url, idx) => `
             <div class="swiper-slide" data-slide-index="${idx}">
-                <img src="${url}" alt="Product image ${idx + 1}" style="width: 100%; height: auto;">
+                <img src="${url}" alt="Product image ${idx + 1}" style="width: 100%; height: 100%; object-fit: contain; display: block;">
             </div>
         `).join('');
 
