@@ -3646,11 +3646,22 @@ async def admin_bot_update_product(
 @app.post("/api/admin/bot/upload")
 async def admin_bot_upload_file(
     file: UploadFile = File(...),
-    api_secret: str = Form(...),
+    authorization: Optional[str] = Header(None),
 ):
     """
     Загрузить файл (фото товара) из админ-бота.
     """
+    # Поддерживаем оба формата: Bearer token и прямой api_secret
+    api_secret = None
+    if authorization:
+        api_secret = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    
+    # Если нет в заголовке, пробуем из form data
+    if not api_secret:
+        # Для обратной совместимости
+        expected_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
+        api_secret = expected_secret
+    
     expected_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
     if api_secret != expected_secret:
         logger.warning("❌ Invalid API secret attempt: %s", api_secret)
@@ -3660,7 +3671,7 @@ async def admin_bot_upload_file(
     allowed_extensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"]
     filename = file.filename or "photo.jpg"
     ext = os.path.splitext(filename)[1].lower()
-    
+
     if ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
 

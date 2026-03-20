@@ -270,23 +270,23 @@ class UzFlowerAPI:
         Загрузить изображение на сервер.
         """
         try:
-            # Подготовка данных: файл в files, строка в data
+            # Подготовка данных: файл в files
             files = {
                 "file": (filename, file_bytes, "image/jpeg")
             }
-            data = {
-                "api_secret": self.api_secret
-            }
 
+            # Создаём клиент с заголовком Authorization
             async with httpx.AsyncClient(
                 base_url=self.base_url,
-                timeout=30.0
+                timeout=60.0,
+                headers={
+                    "Authorization": f"Bearer {self.api_secret}"
+                }
             ) as client:
                 logger.info("📤 Загрузка фото на сервер: %s, размер: %s байт", filename, len(file_bytes))
                 response = await client.post(
                     "/api/admin/bot/upload",
-                    files=files,
-                    data=data
+                    files=files
                 )
                 logger.info("📥 Ответ сервера: статус=%s", response.status_code)
                 if response.status_code != 200:
