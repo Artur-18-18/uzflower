@@ -7,6 +7,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # Явный публичный URL (альтернатива: Render подставляет RENDER_EXTERNAL_URL автоматически)
+      - key: PUBLIC_BASE_URL
+        sync: false
       - key: PYTHON_VERSION
         value: 3.12.0
       - key: DATABASE_URL
@@ -17,8 +20,9 @@ services:
         value: true
       - key: BOT_MODE
         value: webhook
+      # Внутренние вызовы API ботами; на Render оставьте localhost (тот же процесс)
       - key: TELEGRAM_API_URL
-        value: http://localhost:8000
+        value: http://127.0.0.1:8000
       - key: TELEGRAM_API_SECRET
         generateValue: true
       - key: CLOUDINARY_CLOUD_NAME

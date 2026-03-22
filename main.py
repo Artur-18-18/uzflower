@@ -564,6 +564,54 @@ class SavedCardCreate(BaseModel):
     card_type: str
     is_default: bool = False
 
+
+async def register_telegram_webhooks_for_production(base_url: str) -> dict:
+    """
+    Регистрирует оба webhook в Telegram API (нужно для Render и любого HTTPS-домена).
+    Использует TELEGRAM_BOT_TOKEN, ADMIN_BOT_TOKEN и TELEGRAM_API_SECRET из окружения.
+    """
+    from app.telegram_bot.config import settings as main_bot_settings
+    from app.admin_bot.config import settings as admin_bot_settings
+
+    base = (base_url or "").strip().rstrip("/")
+    if not base:
+        return {}
+
+    main_wh = f"{base}/api/telegram/webhook"
+    admin_wh = f"{base}/api/admin-telegram/webhook"
+    result: dict = {}
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        bots = [
+            ("main_bot", main_bot_settings.bot_token, main_wh, main_bot_settings.api_secret),
+            ("admin_bot", admin_bot_settings.bot_token, admin_wh, admin_bot_settings.api_secret),
+        ]
+        for key, token, url, secret in bots:
+            if not token or len(token) < 20:
+                logger.warning("⚠️ Пропуск setWebhook для %s: токен не задан", key)
+                result[key] = {"skipped": True}
+                continue
+            try:
+                response = await client.get(
+                    f"https://api.telegram.org/bot{token}/setWebhook",
+                    params={
+                        "url": url,
+                        "secret_token": secret,
+                        "drop_pending_updates": True,
+                    },
+                )
+                result[key] = response.json()
+                if response.json().get("ok"):
+                    logger.info("✅ Telegram setWebhook (%s): %s", key, url)
+                else:
+                    logger.error("❌ Telegram setWebhook (%s) ответ: %s", key, response.text)
+            except Exception as exc:
+                logger.error("❌ Ошибка setWebhook (%s): %s", key, exc)
+                result[key] = {"error": str(exc)}
+
+    return result
+
+
 # --- Lifespan ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -837,9 +885,7 @@ async def lifespan(app: FastAPI):
             db.execute(text("ALTER TABLE reviews ADD COLUMN is_verified_purchase BOOLEAN DEFAULT 0"))
     db.commit()
 
-    db.close()
-
-    # Создаём индексы для ускорения запросов
+    # Создаём индексы для ускорения запросов (сессия ещё открыта)
     try:
         from sqlalchemy import text
         logger.info("🚀 Создание индексов базы данных...")
@@ -870,6 +916,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("⚠️ Ошибка при создании индексов: %s", e)
         db.rollback()
+    finally:
+        db.close()
 
     # Инициализация кэша
     FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
@@ -898,6 +946,20 @@ async def lifespan(app: FastAPI):
             
             # Сохраняем настройки для использования в endpoints
             app.state.bot_mode = "webhook"
+
+            public_base = (
+                os.getenv("PUBLIC_BASE_URL", "").strip().rstrip("/")
+                or os.getenv("RENDER_EXTERNAL_URL", "").strip().rstrip("/")
+            )
+            if public_base:
+                logger.info("📡 Регистрация webhook в Telegram (базовый URL: %s)", public_base)
+                await register_telegram_webhooks_for_production(public_base)
+            else:
+                logger.warning(
+                    "⚠️ PUBLIC_BASE_URL и RENDER_EXTERNAL_URL не заданы — "
+                    "webhook не зарегистрированы автоматически. "
+                    "Укажите PUBLIC_BASE_URL в Render или вызовите GET /api/telegram/set-webhook?base_url=..."
+                )
         else:
             # Polling режим - для локальной разработки
             import asyncio
@@ -4798,17 +4860,22 @@ async def read_forgot_password(request: Request):
 # ============================================================
 
 @app.post("/api/telegram/webhook")
-async def telegram_webhook(request: Request, x_telegram_bot_token: Optional[str] = Header(None)):
+async def telegram_webhook(
+    request: Request,
+    x_telegram_bot_api_secret_token: Optional[str] = Header(
+        None, alias="X-Telegram-Bot-Api-Secret-Token"
+    ),
+):
     """
     Webhook endpoint для основного Telegram-бота.
     Обрабатывает обновления от Telegram API.
+    Telegram передаёт секрет в заголовке X-Telegram-Bot-Api-Secret-Token (Bot API 6.2+).
     """
     from app.telegram_bot.config import settings as main_bot_settings
     from app.telegram_bot.bot import bot, dp
-    from aiohttp import web
 
-    # Проверяем секретный токен
-    if x_telegram_bot_token != main_bot_settings.api_secret:
+    # Проверяем секретный токен (именно такой заголовок шлёт Telegram)
+    if x_telegram_bot_api_secret_token != main_bot_settings.api_secret:
         logger.warning("⚠️ Неверный секретный токен для основного бота")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -4830,7 +4897,12 @@ async def telegram_webhook(request: Request, x_telegram_bot_token: Optional[str]
 
 
 @app.post("/api/admin-telegram/webhook")
-async def admin_telegram_webhook(request: Request, x_telegram_bot_token: Optional[str] = Header(None)):
+async def admin_telegram_webhook(
+    request: Request,
+    x_telegram_bot_api_secret_token: Optional[str] = Header(
+        None, alias="X-Telegram-Bot-Api-Secret-Token"
+    ),
+):
     """
     Webhook endpoint для Admin Telegram-бота.
     Обрабатывает обновления от Telegram API.
@@ -4838,8 +4910,7 @@ async def admin_telegram_webhook(request: Request, x_telegram_bot_token: Optiona
     from app.admin_bot.config import settings as admin_bot_settings
     from app.admin_bot.bot import bot as admin_bot, dp as admin_dp
 
-    # Проверяем секретный токен
-    if x_telegram_bot_token != admin_bot_settings.api_secret:
+    if x_telegram_bot_api_secret_token != admin_bot_settings.api_secret:
         logger.warning("⚠️ Неверный секретный токен для админ-бота")
         raise HTTPException(status_code=401, detail="Unauthorized")
 

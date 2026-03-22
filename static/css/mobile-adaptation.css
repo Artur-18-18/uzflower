@@ -954,19 +954,23 @@ img[loading="lazy"] {
    19.5 PRODUCT IMAGES FIX - Исправление изображений товаров
    ============================================================ */
 
-/* Исправление для карточек товаров на мобильных */
+/* Карточки товаров: фото заполняет квадрат (absolute + object-cover в разметке) */
 @media (max-width: 640px) {
+    #products-grid .card-3d .aspect-square {
+        position: relative !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        background: #f9fafb !important;
+    }
+
     #products-grid .card-3d img {
+        position: absolute !important;
+        inset: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        object-fit: contain !important;
+        object-fit: cover !important;
+        object-position: center !important;
         display: block !important;
-        background: #fff !important;
-    }
-    
-    #products-grid .aspect-square {
-        overflow: hidden !important;
-        background: #fff !important;
     }
 }
 

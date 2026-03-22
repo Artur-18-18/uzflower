@@ -120,8 +120,8 @@ function renderProducts(products, animate = false) {
         const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
         return `
             <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
-                <div class="relative aspect-square overflow-hidden bg-white">
-                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500">
+                <div class="relative aspect-square w-full overflow-hidden bg-gray-50">
+                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" width="400" height="400" class="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
                     <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
                         <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
@@ -217,19 +217,11 @@ function openProductDetail(product) {
     productImages = [];
     const seenUrls = new Set();
 
-    console.log('🔍 Открытие товара:', product.name);
-    console.log('📷 Главное изображение (image_url):', product.image_url);
-    console.log('📷 Дополнительные изображения (images):', product.images);
-    console.log('📷 Полный объект product:', product);
-
     // Добавляем главное изображение первым (ОБЯЗАТЕЛЬНО)
     if (product.image_url && product.image_url.trim() !== '') {
         const highQualityUrl = getHighQualityImageUrl(product.image_url);
         productImages.push(highQualityUrl);
         seenUrls.add(product.image_url.split('?')[0]);
-        console.log('✅ Добавлено главное изображение:', highQualityUrl);
-    } else {
-        console.warn('⚠️ Главное изображение отсутствует (image_url пустой)');
     }
 
     // Добавляем дополнительные изображения (проверяем что это массив)
@@ -243,17 +235,9 @@ function openProductDetail(product) {
                 seenUrls.add(urlBase);
                 const highQualityUrl = getHighQualityImageUrl(url);
                 productImages.push(highQualityUrl);
-                console.log(`✅ Добавлено дополнительное изображение #${idx + 1}:`, highQualityUrl);
-            } else {
-                console.log(`⚠️ Пропущен дубликат:`, url);
             }
         });
-    } else {
-        console.log('ℹ️ Дополнительные изображения отсутствуют или не являются массивом');
     }
-
-    console.log('📸 ВСЕГО изображений в галерее:', productImages.length);
-    console.log('📸 Список URL:', productImages);
 
     const modal = document.getElementById('product-detail-modal');
     if (!modal) {
@@ -279,8 +263,6 @@ function openProductDetail(product) {
     if (swiperWrapper) {
         // Если изображений нет, ставим placeholder
         const imagesToRender = productImages.length > 0 ? productImages : ['https://placehold.co/600x600?text=No+Image'];
-        console.log('🖼️ Рендерим изображений:', imagesToRender.length);
-        
         swiperWrapper.innerHTML = imagesToRender.map((url, idx) => `
             <div class="swiper-slide" data-slide-index="${idx}">
                 <img src="${url}" alt="Product image ${idx + 1}" 
@@ -289,15 +271,12 @@ function openProductDetail(product) {
                      onerror="console.error('Ошибка загрузки изображения:', this.src)">
             </div>
         `).join('');
-
-        console.log('🖼️ HTML для Swiper создан, слайдов:', imagesToRender.length);
     }
 
     // Удаляем старый инстанс Swiper если он был
     if (window.productSwiper && typeof window.productSwiper.destroy === 'function') {
         window.productSwiper.destroy(true, true);
         window.productSwiper = null;
-        console.log('🔄 Старый Swiper уничтожен');
     }
 
     updateDetailPrice();
@@ -332,7 +311,7 @@ function openProductDetail(product) {
             pagination: {
                 el: '.swiper-pagination',
                 clickable: true,
-                dynamicBullets: true,
+                dynamicBullets: false,
             },
             navigation: {
                 nextEl: '.swiper-button-next',
@@ -341,14 +320,9 @@ function openProductDetail(product) {
             on: {
                 slideChange: function() {
                     currentImageIndex = this.activeIndex;
-                },
-                init: function() {
-                    console.log('✅ Swiper инициализирован, слайдов:', this.slides.length);
                 }
             }
         });
-        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages);
-        console.log('✅ Текущий слайд:', window.productSwiper.activeIndex);
     }, 50);
 }
 
