@@ -7,10 +7,14 @@
 // 1. SWIPE GESTURES - Свайп жесты для навигации
 // ============================================================
 
-let touchStartX = 0;
-let touchEndX = 0;
-let touchStartY = 0;
-let touchEndY = 0;
+// Используем глобальные переменные из app.js если они есть
+// Если нет - создаём локальные
+if (typeof window.touchStartX === 'undefined') {
+    window.touchStartX = 0;
+    window.touchEndX = 0;
+    window.touchStartY = 0;
+    window.touchEndY = 0;
+}
 
 function initSwipeGestures() {
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
@@ -18,16 +22,16 @@ function initSwipeGestures() {
 }
 
 function handleTouchStart(event) {
-    touchStartX = event.touches[0].clientX;
-    touchStartY = event.touches[0].clientY;
+    window.touchStartX = event.touches[0].clientX;
+    window.touchStartY = event.touches[0].clientY;
 }
 
 function handleTouchEnd(event) {
-    touchEndX = event.changedTouches[0].clientX;
-    touchEndY = event.changedTouches[0].clientY;
+    window.touchEndX = event.changedTouches[0].clientX;
+    window.touchEndY = event.changedTouches[0].clientY;
     
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
+    const deltaX = window.touchEndX - window.touchStartX;
+    const deltaY = window.touchEndY - window.touchStartY;
     
     // Определяем, было ли движение горизонтальным
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
