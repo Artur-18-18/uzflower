@@ -10,6 +10,13 @@ services:
       # Явный публичный URL (альтернатива: Render подставляет RENDER_EXTERNAL_URL автоматически)
       - key: PUBLIC_BASE_URL
         sync: false
+      # Числовой Telegram ID владельца (узнать у @userinfobot) — доступ к админ-боту
+      - key: ADMIN_USER_ID
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_BOT_TOKEN
+        sync: false
       - key: PYTHON_VERSION
         value: 3.12.0
       - key: DATABASE_URL
@@ -20,9 +27,7 @@ services:
         value: true
       - key: BOT_MODE
         value: webhook
-      # Внутренние вызовы API ботами; на Render оставьте localhost (тот же процесс)
-      - key: TELEGRAM_API_URL
-        value: http://127.0.0.1:8000
+      # TELEGRAM_API_URL не задавайте на Render: боты сами берут http://127.0.0.1:$PORT
       - key: TELEGRAM_API_SECRET
         generateValue: true
       - key: CLOUDINARY_CLOUD_NAME

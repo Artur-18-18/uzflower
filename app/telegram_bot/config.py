@@ -5,6 +5,8 @@
 import os
 from dotenv import load_dotenv
 
+from app.internal_api_url import get_internal_api_base_url
+
 # Загружаем переменные из .env файла
 load_dotenv()
 
@@ -25,9 +27,8 @@ class TelegramBotSettings:
         except ValueError:
             self.owner_id = 0
 
-        # URL API сайта (для отправки товаров)
-        # На Render.com используется localhost, так как боты работают в том же контейнере
-        self.api_url = os.getenv("TELEGRAM_API_URL", "http://localhost:8000")
+        # URL API: тот же процесс; на Render обязателен PORT (см. get_internal_api_base_url)
+        self.api_url = get_internal_api_base_url()
 
         # API ключ для авторизации бота в API
         self.api_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")

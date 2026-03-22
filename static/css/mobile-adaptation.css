@@ -154,53 +154,48 @@ input, textarea, [contenteditable="true"] {
 
 @media (max-width: 1024px) {
     #hero-banner {
-        padding: 2rem 1rem !important;
+        padding: 1rem 0.75rem 2rem !important;
+        min-height: min(70vh, 620px) !important;
     }
 
     #hero-banner h1 {
-        font-size: 2rem !important;
-        line-height: 1.2 !important;
-        margin-bottom: 1rem !important;
-        padding: 0 0.5rem !important;
+        font-size: clamp(1.5rem, 6vw, 2.25rem) !important;
+        line-height: 1.15 !important;
+        margin-bottom: 0.75rem !important;
+        padding: 0 0.25rem !important;
     }
 
-    #hero-banner .text-xl,
-    #hero-banner .md\:text-2xl {
-        font-size: 1rem !important;
-        line-height: 1.5 !important;
-        padding: 0 0.5rem !important;
-        margin-bottom: 1.5rem !important;
+    #hero-banner p {
+        font-size: 0.95rem !important;
+        line-height: 1.45 !important;
+        padding: 0 0.25rem !important;
+        margin-bottom: 1.25rem !important;
     }
 
-    /* Кнопки в одну колонку */
-    #hero-banner .flex.gap-4 {
+    #hero-banner-cta {
         flex-direction: column !important;
-        gap: 0.75rem !important;
-        padding: 0 0.5rem !important;
-    }
-
-    #hero-banner button {
+        gap: 0.65rem !important;
         width: 100% !important;
-        max-width: 300px !important;
+        max-width: 20rem !important;
         margin-left: auto !important;
         margin-right: auto !important;
-        padding: 0.875rem 1.5rem !important;
+    }
+
+    #hero-banner-cta button,
+    #hero-banner-cta a {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 0.75rem 1.25rem !important;
         font-size: 0.9375rem !important;
     }
 }
 
-/* Маленькие телефоны */
 @media (max-width: 375px) {
     #hero-banner h1 {
-        font-size: 1.5rem !important;
+        font-size: 1.375rem !important;
     }
 
-    #hero-banner .text-xl {
-        font-size: 0.875rem !important;
-    }
-
-    #hero-banner button {
-        padding: 0.75rem 1.25rem !important;
+    #hero-banner p {
         font-size: 0.875rem !important;
     }
 }
@@ -666,10 +661,10 @@ input, textarea, [contenteditable="true"] {
    11. MOBILE BOTTOM MENU - Нижнее мобильное меню
    ============================================================ */
 
-/* Отступ для контента под мобильное меню */
+/* Отступ для контента под мобильное меню (компактная панель) */
 @media (max-width: 1279px) {
     body {
-        padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
 

@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadUserFromStorage();
-    loadCategories();
+    loadCategories().then(() => {
+        syncDesktopFiltersToMobile();
+    }).catch(() => {});
     loadBanners();
     loadProducts();
     loadReviews();  // Загружаем отзывы
@@ -387,22 +389,68 @@ async function loadCategories() {
             `).join('');
         }
 
-        // Render in Side Filter
-        const filters = document.getElementById('category-filters');
-        if (filters) {
-            filters.innerHTML = `
-                <button onclick="filterByCategory(null)" class="w-full text-left px-3 py-2 rounded-lg text-sm ${!selectedCategory ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}">Все букеты</button>
+        const filterButtonsHtml = `
+                <button type="button" onclick="filterByCategory(null)" class="w-full text-left px-3 py-2 rounded-lg text-sm ${!selectedCategory ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}">Все букеты</button>
                 ${categories.map(cat => `
-                    <button onclick="filterByCategory(${cat.id})" class="w-full text-left px-3 py-2 rounded-lg text-sm ${selectedCategory === cat.id ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}">${cat.name}</button>
+                    <button type="button" onclick="filterByCategory(${cat.id})" class="w-full text-left px-3 py-2 rounded-lg text-sm ${selectedCategory === cat.id ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}">${cat.name}</button>
                 `).join('')}
             `;
-        }
+        const filters = document.getElementById('category-filters');
+        if (filters) filters.innerHTML = filterButtonsHtml;
+        const filtersMobile = document.getElementById('category-filters-mobile');
+        if (filtersMobile) filtersMobile.innerHTML = filterButtonsHtml;
     } catch (e) { console.error("Error loading categories:", e); }
+}
+
+function syncMobileFiltersToDesktop() {
+    const ms = document.getElementById('sort-filter-mobile');
+    const ds = document.getElementById('sort-filter');
+    if (ms && ds) ds.value = ms.value;
+    const mp = document.getElementById('price-range-mobile');
+    const dp = document.getElementById('price-range');
+    if (mp && dp) dp.value = mp.value;
+}
+
+function syncDesktopFiltersToMobile() {
+    const ms = document.getElementById('sort-filter-mobile');
+    const ds = document.getElementById('sort-filter');
+    if (ms && ds) ms.value = ds.value;
+    const mp = document.getElementById('price-range-mobile');
+    const dp = document.getElementById('price-range');
+    if (mp && dp) mp.value = dp.value;
+    syncMobilePriceLabel();
+}
+
+function syncMobilePriceLabel() {
+    const range = document.getElementById('price-range-mobile');
+    const label = document.getElementById('price-label-mobile');
+    if (range && label) label.innerText = formatPrice(range.value);
+}
+
+function getActiveSortFilter() {
+    const mobileFirst = window.matchMedia('(max-width: 767px)').matches;
+    const m = document.getElementById('sort-filter-mobile');
+    const d = document.getElementById('sort-filter');
+    if (mobileFirst && m) return m.value || 'popular';
+    return d?.value || m?.value || 'popular';
+}
+
+function getActivePriceMax() {
+    const mobileFirst = window.matchMedia('(max-width: 767px)').matches;
+    const m = document.getElementById('price-range-mobile');
+    const d = document.getElementById('price-range');
+    if (mobileFirst && m) return m.value || 2000000;
+    return d?.value || m?.value || 2000000;
 }
 
 function filterByCategory(id) {
     selectedCategory = id;
     loadCategories(); // Refresh buttons state
+
+    const mobileModal = document.getElementById('mobile-search-modal');
+    if (mobileModal && !mobileModal.classList.contains('hidden')) {
+        closeMobileSearch();
+    }
 
     // Плавная прокрутка к каталогу
     scrollToCatalog();
@@ -502,17 +550,18 @@ function openMobileSearch() {
         return;
     }
 
+    syncDesktopFiltersToMobile();
     modal.classList.remove('hidden');
 
     setTimeout(() => {
         const input = document.getElementById('mobile-search-input');
         if (input) {
             input.focus();
-            // Показываем популярные товары или подсказку при пустом поиске
             if (!input.value.trim()) {
                 showEmptySearchState();
             }
         }
+        if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     }, 100);
 
     document.body.style.overflow = 'hidden';
@@ -1186,11 +1235,13 @@ async function loadProducts(animate = false) {
 
     try {
         isLoadingProducts = true;
-        const sort = document.getElementById('sort-filter')?.value || 'popular';
-        const priceMax = document.getElementById('price-range')?.value || 2000000;
+        const sort = getActiveSortFilter();
+        const priceMax = getActivePriceMax();
 
         const priceLabel = document.getElementById('price-label');
         if (priceLabel) priceLabel.innerText = formatPrice(priceMax);
+        const priceLabelMobile = document.getElementById('price-label-mobile');
+        if (priceLabelMobile) priceLabelMobile.innerText = formatPrice(priceMax);
 
         // Добавляем timestamp для обхода кэша
         let url = `/api/products?sort_by=${sort}&max_price=${priceMax}&_t=${Date.now()}`;

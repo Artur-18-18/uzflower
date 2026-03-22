@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="/static/js/optimization.js?v=1.0"></script>
     <script src="/static/js/i18n.js?v=2.2"></script>
-    <script src="/static/js/app.js?v=2.4"></script>
+    <script src="/static/js/app.js?v=2.5"></script>
     <script src="/static/js/loader.js?v=1.0"></script>
     <script src="/static/js/mobile-optimization.js?v=1.1"></script>
     <style>
@@ -565,6 +565,10 @@
         }
 
         #mobile-search-modal .search-input {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            color: #111827;
             padding: 10px 12px;
             background: #f3f4f6;
             border: none;
@@ -728,7 +732,7 @@
         <!-- Home Page Content -->
         <div id="page-home">
             <!-- Hero Banner -->
-            <section class="relative min-h-[72vh] md:min-h-screen md:h-screen overflow-hidden bg-gradient-to-br from-rose-100 via-stone-50 to-emerald-50" id="hero-banner">
+            <section class="relative min-h-[65vh] sm:min-h-[70vh] md:min-h-screen md:h-screen overflow-hidden bg-gradient-to-br from-rose-100 via-stone-50 to-emerald-50" id="hero-banner">
                 <!-- Banner content will be loaded via JS; светлый фон до загрузки фото — без чёрного экрана -->
                 <div class="absolute inset-0">
                     <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=1600" alt="Hero"
@@ -737,19 +741,19 @@
                 </div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/25 via-black/10 to-transparent pointer-events-none" aria-hidden="true"></div>
                 <div
-                    class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[72vh] md:min-h-screen flex flex-col justify-center items-center text-center text-white py-24 md:py-0">
-                    <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl" data-i18n="hero.title">
+                    class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[65vh] sm:min-h-[70vh] md:min-h-screen flex flex-col justify-center items-center text-center text-white pt-20 pb-28 sm:py-24 md:py-0">
+                    <h1 class="text-3xl sm:text-4xl md:text-6xl lg:text-8xl font-serif font-bold mb-4 sm:mb-6 drop-shadow-2xl leading-tight px-1" data-i18n="hero.title">
                         Весенняя Коллекция</h1>
-                    <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg"
+                    <p class="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-10 text-white/95 max-w-2xl drop-shadow-lg px-2"
                         data-i18n="hero.subtitle">Создайте незабываемые
                         моменты с нашими авторскими букетами</p>
-                    <div class="flex gap-4">
+                    <div id="hero-banner-cta" class="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full max-w-md sm:max-w-none justify-center items-stretch sm:items-center px-2">
                         <button onclick="scrollToCatalog()"
-                            class="px-10 py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-lg shadow-xl"
+                            class="px-8 sm:px-10 py-3.5 sm:py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-base sm:text-lg shadow-xl"
                             data-i18n="hero.cta_primary">Выбрать
                             букет</button>
                         <a href="https://t.me/uzflower" target="_blank"
-                            class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg shadow-xl flex items-center gap-2"
+                            class="px-8 sm:px-10 py-3.5 sm:py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-base sm:text-lg shadow-xl flex items-center justify-center gap-2"
                             data-i18n="hero.cta_secondary">
                             Собрать свой
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle">
@@ -769,7 +773,7 @@
                     </div>
                     <div class="flex flex-col md:flex-row gap-8">
                         <!-- Filters Sidebar -->
-                        <aside class="w-full md:w-80 flex-shrink-0">
+                        <aside class="hidden md:block w-full md:w-80 flex-shrink-0" id="catalog-filters-sidebar">
                             <div class="sticky top-24 space-y-8">
                                 <div>
                                     <h3 class="font-bold text-lg mb-4 flex items-center gap-2" data-i18n="filters.title">
@@ -779,7 +783,7 @@
                                         <div>
                                             <label
                                                 class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.sort_label">Сортировка</label>
-                                            <select id="sort-filter" onchange="loadProducts()"
+                                            <select id="sort-filter" onchange="syncDesktopFiltersToMobile(); loadProducts()"
                                                 class="w-full p-2 border rounded-lg outline-none focus:ring-1 focus:ring-rose-500">
                                                 <option value="popular" data-i18n="filters.sort_popular">Популярные</option>
                                                 <option value="price_asc" data-i18n="filters.sort_price_asc">Сначала дешевле</option>
@@ -797,6 +801,7 @@
                                             <label class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.price_label">Цена
                                                 (до)</label>
                                             <input type="range" id="price-range" min="0" max="2000000" step="50000"
+                                                oninput="syncDesktopFiltersToMobile();"
                                                 onchange="loadProducts()" class="w-full accent-rose-600">
                                             <div class="flex justify-between text-xs text-gray-500 mt-1">
                                                 <span>0</span>
@@ -1549,7 +1554,7 @@
 
     <!-- чат Виджет -->
     <div id="chat-window"
-        class="hidden shadow-2xl fixed bottom-24 right-6 w-96 h-[500px] bg-white rounded-2xl flex flex-col z-50">
+        class="hidden shadow-2xl fixed bottom-[5.5rem] left-3 right-3 sm:left-auto sm:right-6 w-auto sm:w-96 max-h-[min(70vh,500px)] h-[min(70vh,500px)] bg-white rounded-2xl flex flex-col z-50 max-[1279px]:bottom-[5.25rem]">
         <div class="bg-rose-600 p-4 text-white flex justify-between items-center rounded-t-2xl">
             <h3 class="font-bold flex items-center gap-2">
                 <i data-lucide="headset" class="w-5 h-5"></i> Поддержка UzFlower
@@ -1576,61 +1581,93 @@
         </div>
     </div>
 
-    <!-- чат для поддержки -->
-    <div class="fixed bottom-6 right-6 flex flex-col items-end gap-3 z-40">
+    <!-- чат для поддержки (на телефоне компактнее, выше нижнего меню) -->
+    <div class="fixed bottom-[4.5rem] right-3 sm:bottom-6 sm:right-6 flex flex-col items-end gap-2 sm:gap-3 z-40 max-[1279px]:bottom-[4.25rem]">
         <button onclick="toggleChat()"
-            class="p-4 bg-gray-900 text-white rounded-full shadow-xl hover:bg-gray-800 transition-all group flex items-center gap-2">
+            type="button"
+            class="p-2.5 sm:p-3.5 md:p-4 bg-gray-900 text-white rounded-full shadow-lg sm:shadow-xl hover:bg-gray-800 transition-all group flex items-center gap-1.5 sm:gap-2">
             <span
-                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.contact_button">Связаться
+                class="hidden md:inline max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.contact_button">Связаться
                 с нами</span>
-            <i data-lucide="message-square" class="w-6 h-6"></i>
+            <i data-lucide="message-square" class="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6"></i>
         </button>
-        <a href="https://t.me/uzflower" target="_blank"
-            class="p-4 bg-[#24A1DE] text-white rounded-full shadow-xl hover:opacity-90 transition-all flex items-center gap-2 group">
+        <a href="https://t.me/uzflower" target="_blank" rel="noopener noreferrer"
+            class="p-2.5 sm:p-3.5 md:p-4 bg-[#24A1DE] text-white rounded-full shadow-lg sm:shadow-xl hover:opacity-90 transition-all flex items-center gap-1.5 sm:gap-2 group">
             <span
-                class="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.telegram_button">Telegram-чат</span>
-            <i data-lucide="message-circle" class="w-6 h-6"></i>
+                class="hidden md:inline max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-medium text-sm whitespace-nowrap" data-i18n="chat.telegram_button">Telegram-чат</span>
+            <i data-lucide="message-circle" class="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6"></i>
         </a>
     </div>
 
     <!-- Mobile Bottom Navigation -->
-    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 xl:hidden safe-area-pb">
-        <div class="max-w-sm sm:max-w-md bg-white border border-gray-200 rounded-full shadow-xl mx-4 sm:mx-6">
-            <div class="flex items-center justify-around py-3 px-4 sm:px-8">
-                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
-                    <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.home">Главная</span>
+    <div class="fixed bottom-2.5 left-1/2 -translate-x-1/2 z-40 xl:hidden safe-area-pb pb-[env(safe-area-inset-bottom,0px)]">
+        <div class="max-w-[min(100vw-1rem,360px)] sm:max-w-md bg-white/95 backdrop-blur-sm border border-gray-200/80 rounded-full shadow-lg mx-2 sm:mx-6">
+            <div class="flex items-center justify-around py-1.5 px-2 sm:py-2.5 sm:px-6">
+                <button onclick="showPage('')" class="flex flex-col items-center py-1 px-1.5 text-gray-600 hover:text-rose-600 transition-colors min-w-[52px] sm:min-w-[64px]">
+                    <i data-lucide="home" class="w-[18px] h-[18px] sm:w-5 sm:h-5"></i>
+                    <span class="text-[9px] sm:text-[10px] mt-0.5 leading-tight" data-i18n="mobile.home">Главная</span>
                 </button>
-                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
-                    <i data-lucide="search" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.search">Поиск</span>
+                <button onclick="openMobileSearch()" class="flex flex-col items-center py-1 px-1.5 text-gray-600 hover:text-rose-600 transition-colors min-w-[52px] sm:min-w-[64px]">
+                    <i data-lucide="search" class="w-[18px] h-[18px] sm:w-5 sm:h-5"></i>
+                    <span class="text-[9px] sm:text-[10px] mt-0.5 leading-tight" data-i18n="mobile.search">Поиск</span>
                 </button>
-                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[70px]">
-                    <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span id="mobile-cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.cart">Корзина</span>
+                <button onclick="toggleCart()" class="flex flex-col items-center py-1 px-1.5 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[52px] sm:min-w-[64px]">
+                    <i data-lucide="shopping-cart" class="w-[18px] h-[18px] sm:w-5 sm:h-5"></i>
+                    <span id="mobile-cart-count" class="absolute top-0 right-0 bg-rose-500 text-white text-[9px] min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center hidden">0</span>
+                    <span class="text-[9px] sm:text-[10px] mt-0.5 leading-tight" data-i18n="mobile.cart">Корзина</span>
                 </button>
-                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
-                    <i data-lucide="user" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.profile">Профиль</span>
+                <button onclick="showPage('/profile')" class="flex flex-col items-center py-1 px-1.5 text-gray-600 hover:text-rose-600 transition-colors min-w-[52px] sm:min-w-[64px]">
+                    <i data-lucide="user" class="w-[18px] h-[18px] sm:w-5 sm:h-5"></i>
+                    <span class="text-[9px] sm:text-[10px] mt-0.5 leading-tight" data-i18n="mobile.profile">Профиль</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Search Modal -->
+    <!-- Mobile Search Modal: поиск + фильтры каталога -->
     <div id="mobile-search-modal" class="fixed inset-0 bg-white z-[60] hidden flex-col">
-        <div class="flex flex-col h-full">
-            <div class="search-header flex-shrink-0">
+        <div class="flex flex-col h-full min-h-0">
+            <div class="search-header flex-shrink-0 border-b border-gray-100 pt-[env(safe-area-inset-top,0px)]">
                 <i data-lucide="search" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>
-                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input flex-1 min-w-0"
+                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." inputmode="search" enterkeyhint="search"
+                    class="search-input flex-1 min-w-0 text-gray-900 placeholder:text-gray-400"
                     oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
                     autocomplete="off">
-                <button onclick="closeMobileSearch()" class="close-search flex-shrink-0" aria-label="Закрыть поиск">
+                <button type="button" onclick="closeMobileSearch()" class="close-search flex-shrink-0" aria-label="Закрыть поиск">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto p-4 bg-gray-50"></div>
+            <div class="flex-shrink-0 border-b border-gray-100 bg-emerald-50/80 px-4 py-3 max-h-[42vh] overflow-y-auto">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <i data-lucide="filter" class="w-4 h-4"></i> <span data-i18n="filters.title">Фильтры</span>
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.sort_label">Сортировка</label>
+                        <select id="sort-filter-mobile" onchange="syncMobileFiltersToDesktop(); loadProducts();"
+                            class="w-full p-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                            <option value="popular" data-i18n="filters.sort_popular">Популярные</option>
+                            <option value="price_asc" data-i18n="filters.sort_price_asc">Сначала дешевле</option>
+                            <option value="price_desc" data-i18n="filters.sort_price_desc">Сначала дороже</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.category_label">Категория</label>
+                        <div id="category-filters-mobile" class="space-y-1 max-h-28 overflow-y-auto pr-1"></div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.price_label">Цена (до)</label>
+                        <input type="range" id="price-range-mobile" min="0" max="2000000" step="50000"
+                            oninput="syncMobilePriceLabel(); syncMobileFiltersToDesktop(); loadProducts();"
+                            class="w-full accent-rose-600 h-2">
+                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                            <span>0</span>
+                            <span id="price-label-mobile">2 000 000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="mobile-search-results" class="search-results flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 bg-gray-50"></div>
         </div>
     </div>
 

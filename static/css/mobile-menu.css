@@ -17,14 +17,19 @@
         bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     }
 
-    * {
-        margin: 0;
-        padding: 0;
+    /* Не трогаем глобально все input — иначе на сайте пропадают поиск, range, чат */
+    .mobile-bottom-menu *,
+    .mobile-bottom-menu *::before,
+    .mobile-bottom-menu *::after {
         box-sizing: border-box;
     }
 
-    input {
-        display: none;
+    .mobile-bottom-menu input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
     }
 
     label.menu-icon {
@@ -216,15 +221,13 @@
         transform: translate(-50%, -50%);
     }
 
-    /* Add padding to body for mobile menu */
     body {
-        padding-bottom: 80px;
+        padding-bottom: 68px;
     }
 
-    /* Padding for tablets */
     @media (min-width: 768px) and (max-width: 1279px) {
         body {
-            padding-bottom: 100px;
+            padding-bottom: 88px;
         }
     }
 

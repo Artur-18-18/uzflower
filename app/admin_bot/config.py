@@ -2,11 +2,26 @@
 Конфигурация Admin Telegram-бота.
 """
 
+import logging
 import os
 from dotenv import load_dotenv
 
+from app.internal_api_url import get_internal_api_base_url
+
 # Загружаем переменные из .env файла
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+
+def _parse_int_env(key: str, default: int = 0) -> int:
+    raw = os.getenv(key)
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        return int(str(raw).strip())
+    except ValueError:
+        return default
 
 
 class AdminBotSettings:
@@ -16,26 +31,37 @@ class AdminBotSettings:
         # Токен админ-бота от @BotFather
         self.bot_token = os.getenv("ADMIN_BOT_TOKEN", "8443193754:AAHWu7NqH9nE7UHshZW4Jb0M3TqqMdlRcSA")
 
-        # ID администратора/владельца (основной админ)
-        try:
-            self.admin_user_id = int(os.getenv("ADMIN_USER_ID", "0") or "0")
-        except ValueError:
-            self.admin_user_id = 0
+        # Основной админ; если не задан — пробуем TELEGRAM_OWNER_ID (часто тот же человек)
+        admin_user_id = _parse_int_env("ADMIN_USER_ID")
+        owner_id = _parse_int_env("TELEGRAM_OWNER_ID")
+        if admin_user_id == 0 and owner_id:
+            admin_user_id = owner_id
 
-        # Список ID администраторов (для поддержки нескольких админов)
-        admin_ids_str = os.getenv("ADMIN_IDS", "")
+        admin_ids: list[int] = []
+        admin_ids_str = (os.getenv("ADMIN_IDS") or "").strip()
         if admin_ids_str:
-            try:
-                self.admin_ids = [int(x.strip()) for x in admin_ids_str.split(",")]
-            except ValueError:
-                self.admin_ids = []
-        else:
-            # Если ADMIN_IDS не указан, используем ADMIN_USER_ID
-            self.admin_ids = [self.admin_user_id] if self.admin_user_id else []
+            for part in admin_ids_str.split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                try:
+                    admin_ids.append(int(part))
+                except ValueError:
+                    continue
 
-        # URL API сайта (для получения информации о заказах)
-        # На Render.com используется localhost, так как боты работают в том же контейнере
-        self.api_url = os.getenv("TELEGRAM_API_URL", "http://localhost:8000")
+        if admin_user_id and admin_user_id not in admin_ids:
+            admin_ids.append(admin_user_id)
+
+        self.admin_user_id = admin_user_id
+        self.admin_ids = admin_ids if admin_ids else ([admin_user_id] if admin_user_id else [])
+
+        if not self.admin_ids:
+            logger.warning(
+                "ADMIN_USER_ID, ADMIN_IDS и TELEGRAM_OWNER_ID пусты — "
+                "админ-бот будет отвечать «нет доступа». Задайте ADMIN_USER_ID в Render."
+            )
+
+        self.api_url = get_internal_api_base_url()
 
         # API ключ для авторизации бота в API
         self.api_secret = os.getenv("TELEGRAM_API_SECRET", "telegram-bot-secret-key")
@@ -53,7 +79,11 @@ class AdminBotSettings:
         Returns:
             True если пользователь администратор
         """
-        return user_id in self.admin_ids or (self.admin_user_id and user_id == self.admin_user_id)
+        try:
+            uid = int(user_id)
+        except (TypeError, ValueError):
+            return False
+        return uid in self.admin_ids
 
 
 # Глобальный экземпляр настроек
