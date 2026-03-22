@@ -8,6 +8,7 @@ let appliedPromoCode = null;
 let allProductsList = [];
 let selectedPaymentMethod = 'cash';
 let isLoadingProducts = false;
+let loadProductsQueued = false;
 
 // Telegram Bot Configuration
 // Username берётся из window.TELEGRAM_BOT_USERNAME (задаётся в HTML) или используется по умолчанию
@@ -17,34 +18,43 @@ function formatPrice(price) {
     return Number(price).toLocaleString('ru-RU');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
 
-    // Инициализация системы переводов
     if (window.i18n) {
-        i18n.init();
+        try {
+            await i18n.init();
+        } catch (e) {
+            console.warn('i18n init:', e);
+        }
     }
 
     loadUserFromStorage();
-    loadCategories().then(() => {
+
+    try {
+        await loadCategories();
         syncDesktopFiltersToMobile();
-    }).catch(() => {});
+    } catch (e) {
+        console.warn('loadCategories:', e);
+    }
+
     loadBanners();
-    loadProducts();
-    loadReviews();  // Загружаем отзывы
+    try {
+        await loadProducts(false);
+    } catch (e) {
+        console.error('Начальная загрузка товаров:', e);
+    }
+    loadReviews();
     setupNavigation();
     setupHeaderScroll();
-    // Инициализируем счётчики и кнопки избранного
     updateFavoriteButtons();
     const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
     const totalCartItems = localCart.reduce((sum, item) => sum + item.quantity, 0);
     updateMobileCartCount(totalCartItems);
-    // Сбрасываем radio button в мобильном меню
     const favRadio = document.getElementById('mobile-favorites');
     const cartRadio = document.getElementById('mobile-cart');
     if (favRadio) favRadio.checked = false;
     if (cartRadio) cartRadio.checked = false;
-    // Избранное и корзина будут обновлены после загрузки товаров
 });
 
 function setupHeaderScroll() {
@@ -121,7 +131,7 @@ function renderProducts(products, animate = false) {
         const animationStyle = animate ? `opacity: 0; animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 50}ms;` : '';
         const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
         return `
-            <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
+            <div class="card-3d bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
                 <div class="relative aspect-square w-full overflow-hidden bg-gray-50">
                     <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" width="400" height="400" class="absolute inset-0 w-full h-full object-cover object-center hover:scale-105 transition-transform duration-500">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
@@ -153,17 +163,6 @@ function renderProducts(products, animate = false) {
         `;
     }).join('');
     lucide.createIcons();
-    
-    // Trigger scroll reveal after products are rendered
-    setTimeout(() => {
-        const reveals = document.querySelectorAll('.scroll-reveal');
-        reveals.forEach((reveal) => {
-            const elementTop = reveal.getBoundingClientRect().top;
-            if (elementTop < window.innerHeight - 100) {
-                reveal.classList.add('revealed');
-            }
-        });
-    }, 100);
 }
 
 let activeProduct = null;
@@ -395,10 +394,16 @@ async function loadCategories() {
                     <button type="button" onclick="filterByCategory(${cat.id})" class="w-full text-left px-3 py-2 rounded-lg text-sm ${selectedCategory === cat.id ? 'bg-rose-50 text-rose-600 font-bold' : 'text-gray-600 hover:bg-gray-50'}">${cat.name}</button>
                 `).join('')}
             `;
+        const filterButtonsMobileHtml = `
+                <button type="button" onclick="filterByCategory(null)" class="mobile-filter-chip${!selectedCategory ? ' is-active' : ''}">Все букеты</button>
+                ${categories.map(cat => `
+                    <button type="button" onclick="filterByCategory(${cat.id})" class="mobile-filter-chip${selectedCategory === cat.id ? ' is-active' : ''}">${cat.name}</button>
+                `).join('')}
+            `;
         const filters = document.getElementById('category-filters');
         if (filters) filters.innerHTML = filterButtonsHtml;
         const filtersMobile = document.getElementById('category-filters-mobile');
-        if (filtersMobile) filtersMobile.innerHTML = filterButtonsHtml;
+        if (filtersMobile) filtersMobile.innerHTML = filterButtonsMobileHtml;
     } catch (e) { console.error("Error loading categories:", e); }
 }
 
@@ -1230,8 +1235,12 @@ function renderStars(rating) {
 }
 
 async function loadProducts(animate = false) {
-    // Защита от повторных вызовов
-    if (isLoadingProducts) return;
+    if (isLoadingProducts) {
+        loadProductsQueued = true;
+        return;
+    }
+
+    const container = document.getElementById('products-grid');
 
     try {
         isLoadingProducts = true;
@@ -1243,8 +1252,7 @@ async function loadProducts(animate = false) {
         const priceLabelMobile = document.getElementById('price-label-mobile');
         if (priceLabelMobile) priceLabelMobile.innerText = formatPrice(priceMax);
 
-        // Добавляем timestamp для обхода кэша
-        let url = `/api/products?sort_by=${sort}&max_price=${priceMax}&_t=${Date.now()}`;
+        let url = `/api/products?sort_by=${encodeURIComponent(sort)}&max_price=${encodeURIComponent(priceMax)}&_t=${Date.now()}`;
         if (selectedCategory) url += `&category_id=${selectedCategory}`;
 
         const res = await fetch(url, {
@@ -1253,10 +1261,18 @@ async function loadProducts(animate = false) {
                 'Pragma': 'no-cache'
             }
         });
-        const products = await res.json();
-        allProductsList = products; // Keep for favorites side-filtering
 
-        const container = document.getElementById('products-grid');
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const products = await res.json();
+        if (!Array.isArray(products)) {
+            throw new Error('Некорректный ответ API');
+        }
+
+        allProductsList = products;
+
         if (!container) return;
 
         if (products.length === 0) {
@@ -1271,12 +1287,28 @@ async function loadProducts(animate = false) {
             renderProducts(products, animate);
         }
 
-        // Обновляем кнопки избранного после загрузки товаров
         updateFavoriteButtons();
     } catch (error) {
-        console.error("Ошибка загрузки:", error);
+        console.error('Ошибка загрузки товаров:', error);
+        if (container) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 px-4">
+                    <i data-lucide="wifi-off" class="w-14 h-14 text-rose-300 mx-auto mb-3"></i>
+                    <p class="text-gray-700 font-medium mb-2">Не удалось загрузить каталог</p>
+                    <p class="text-sm text-gray-500 mb-4">Проверьте соединение и попробуйте снова.</p>
+                    <button type="button" onclick="loadProducts(false)" class="px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-semibold shadow-md hover:bg-rose-700 transition-colors">
+                        Повторить
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
     } finally {
         isLoadingProducts = false;
+        if (loadProductsQueued) {
+            loadProductsQueued = false;
+            loadProducts(false);
+        }
     }
 }
 

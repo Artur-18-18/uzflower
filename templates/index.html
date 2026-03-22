@@ -26,7 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="/static/js/optimization.js?v=1.0"></script>
     <script src="/static/js/i18n.js?v=2.2"></script>
-    <script src="/static/js/app.js?v=2.5"></script>
+    <script src="/static/js/app.js?v=2.7"></script>
     <script src="/static/js/loader.js?v=1.0"></script>
     <script src="/static/js/mobile-optimization.js?v=1.1"></script>
     <style>
@@ -625,6 +625,103 @@
             font-weight: 600;
         }
 
+        /* Мобильные фильтры в поиске — карточка */
+        #mobile-search-filters-panel {
+            background: linear-gradient(155deg, #fffefb 0%, #ecfdf5 38%, #fff1f2 100%);
+            border: 1px solid rgba(244, 63, 94, 0.14);
+            border-radius: 1.25rem;
+            box-shadow:
+                0 4px 6px -1px rgba(225, 29, 72, 0.06),
+                0 10px 28px -8px rgba(16, 185, 129, 0.12);
+        }
+
+        #mobile-search-filters-panel .msf-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+
+        #mobile-search-modal #sort-filter-mobile {
+            width: 100%;
+            padding: 0.65rem 2.25rem 0.65rem 0.85rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #1f2937;
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(251, 113, 133, 0.35);
+            border-radius: 0.875rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23e11d48'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.65rem center;
+            background-size: 1rem;
+        }
+
+        #mobile-search-modal #sort-filter-mobile:focus {
+            outline: none;
+            border-color: #e11d48;
+            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
+        }
+
+        #mobile-search-modal #category-filters-mobile {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            max-height: 7.5rem;
+            overflow-y: auto;
+            padding: 2px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #mobile-search-modal #category-filters-mobile .mobile-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.4rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            line-height: 1.2;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            border: 1px solid rgba(229, 231, 235, 0.95);
+            background: rgba(255, 255, 255, 0.92);
+            color: #4b5563;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+
+        #mobile-search-modal #category-filters-mobile .mobile-filter-chip:hover {
+            border-color: #fda4af;
+            color: #be123c;
+        }
+
+        #mobile-search-modal #category-filters-mobile .mobile-filter-chip.is-active {
+            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
+        }
+
+        #mobile-search-modal #price-range-mobile {
+            height: 0.45rem;
+            border-radius: 9999px;
+            accent-color: #e11d48;
+        }
+
+        #mobile-search-modal .msf-price-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #be123c;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(251, 113, 133, 0.45);
+            box-shadow: 0 1px 2px rgba(225, 29, 72, 0.08);
+        }
+
         /* Line clamp utilities */
         .line-clamp-1 {
             display: -webkit-box;
@@ -765,11 +862,20 @@
             </section>
 
             <!-- Main Catalog Section -->
-            <section id="catalog" class="scroll-reveal py-20 bg-emerald-50">
+            <section id="catalog" class="py-20 bg-emerald-50">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="text-center mb-12">
                         <h2 class="text-4xl font-serif font-bold text-gray-900 mb-4" data-i18n="products.title">Наши букеты</h2>
                         <div class="w-24 h-1 bg-rose-500 mx-auto"></div>
+                    </div>
+                    <!-- Промо-баннер (видео из админки) — только на телефоне -->
+                    <div class="md:hidden mb-8 -mx-1" id="mobile-catalog-banner-wrap">
+                        <div class="rounded-2xl overflow-hidden shadow-lg ring-1 ring-rose-100/60 bg-white/80 backdrop-blur-sm" id="mobile-catalog-banner">
+                            <div class="text-center py-10 text-gray-400 px-4">
+                                <div class="animate-spin rounded-full h-9 w-9 border-2 border-rose-500 border-t-transparent mx-auto mb-2"></div>
+                                <p class="text-xs" data-i18n="filters.loading">Загрузка...</p>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex flex-col md:flex-row gap-8">
                         <!-- Filters Sidebar -->
@@ -1637,37 +1743,45 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div class="flex-shrink-0 border-b border-gray-100 bg-emerald-50/80 px-4 py-3 max-h-[42vh] overflow-y-auto">
-                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <i data-lucide="filter" class="w-4 h-4"></i> <span data-i18n="filters.title">Фильтры</span>
-                </h3>
-                <div class="space-y-3">
+            <div id="mobile-search-filters-panel" class="flex-shrink-0 mx-3 mt-2 mb-2 px-3 py-3.5 max-h-[44vh] overflow-y-auto rounded-2xl">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/25">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                        </span>
+                        <span data-i18n="filters.title">Фильтры</span>
+                    </h3>
+                    <span class="text-[10px] font-medium text-emerald-700/80 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200/60">каталог</span>
+                </div>
+                <div class="space-y-4">
                     <div>
-                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.sort_label">Сортировка</label>
-                        <select id="sort-filter-mobile" onchange="syncMobileFiltersToDesktop(); loadProducts();"
-                            class="w-full p-2.5 text-sm border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                        <label class="msf-label block mb-1.5" data-i18n="filters.sort_label">Сортировка</label>
+                        <select id="sort-filter-mobile" onchange="syncMobileFiltersToDesktop(); loadProducts();">
                             <option value="popular" data-i18n="filters.sort_popular">Популярные</option>
                             <option value="price_asc" data-i18n="filters.sort_price_asc">Сначала дешевле</option>
                             <option value="price_desc" data-i18n="filters.sort_price_desc">Сначала дороже</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.category_label">Категория</label>
-                        <div id="category-filters-mobile" class="space-y-1 max-h-28 overflow-y-auto pr-1"></div>
+                        <label class="msf-label block mb-1.5" data-i18n="filters.category_label">Категория</label>
+                        <div id="category-filters-mobile"></div>
                     </div>
                     <div>
-                        <label class="text-xs font-medium text-gray-600 block mb-1" data-i18n="filters.price_label">Цена (до)</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="msf-label" data-i18n="filters.price_label">Цена (до)</label>
+                            <span id="price-label-mobile" class="msf-price-pill tabular-nums">2 000 000</span>
+                        </div>
                         <input type="range" id="price-range-mobile" min="0" max="2000000" step="50000"
                             oninput="syncMobilePriceLabel(); syncMobileFiltersToDesktop(); loadProducts();"
-                            class="w-full accent-rose-600 h-2">
-                        <div class="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                            class="w-full">
+                        <div class="flex justify-between text-[10px] text-gray-400 mt-1 px-0.5">
                             <span>0</span>
-                            <span id="price-label-mobile">2 000 000</span>
+                            <span>макс.</span>
                         </div>
                     </div>
                 </div>
             </div>
-            <div id="mobile-search-results" class="search-results flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 bg-gray-50"></div>
+            <div id="mobile-search-results" class="search-results flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 bg-gradient-to-b from-gray-50 to-white border-t border-rose-100/40"></div>
         </div>
     </div>
 
@@ -1677,7 +1791,68 @@
         window.TELEGRAM_BOT_USERNAME = 'uzflowershop_bot'; // Username вашего бота
         window.TELEGRAM_API_SECRET = '{{ TELEGRAM_API_SECRET }}'; // API secret для авторизации
 
-        // Загрузка бокового баннера
+        function buildPromoPlaceholderHtml(text, variant) {
+            const isMobile = variant === 'mobile';
+            const boxClass = isMobile
+                ? 'w-full aspect-video max-h-56 min-h-[140px] rounded-2xl'
+                : 'w-full aspect-[9/16] md:aspect-[9/14] rounded-lg';
+            return `
+                <div class="${boxClass} bg-gradient-to-br from-rose-100 via-pink-50 to-emerald-50 flex items-center justify-center relative overflow-hidden ring-1 ring-rose-100/80">
+                    <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300/60 rounded-full blur-[1px] animate-pulse"></div>
+                    <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400/40 rounded-full animate-pulse" style="animation-delay: 0.5s"></div>
+                    <div class="text-center z-10 p-4">
+                        <div class="text-4xl mb-2">🌸</div>
+                        <p class="text-sm font-medium text-rose-800" data-i18n="banner.no_video">Нет видео</p>
+                        <p class="text-xs text-rose-500 mt-1" data-i18n="banner.configure_admin">Настройте в админ-панели</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-600 mt-3 text-center italic px-1" data-i18n="banner.default_text">${text}</p>
+            `;
+        }
+
+        function buildPromoVideoHtml(data, variant) {
+            const videoUrl = (data.video_url || '').trim();
+            const text = data.text || '🌸 Красота в каждом букете';
+            const isMobile = variant === 'mobile';
+            const videoClass = isMobile
+                ? 'w-full aspect-video max-h-56 object-cover rounded-2xl shadow-lg ring-1 ring-rose-100/70'
+                : 'w-full aspect-[9/16] md:aspect-[9/14] object-cover rounded-lg shadow-md';
+            if (!videoUrl) {
+                return buildPromoPlaceholderHtml(text, variant);
+            }
+            return `
+                <div class="relative w-full">
+                    <video class="${videoClass}" autoplay loop muted playsinline preload="metadata">
+                        <source src="${videoUrl}" type="video/mp4">
+                    </video>
+                    <p class="text-xs text-gray-600 mt-3 text-center italic px-1" data-i18n="banner.default_text">${text}</p>
+                </div>
+            `;
+        }
+
+        function applyPromoFallback(data) {
+            const text = data.text || '🌸 Красота в каждом букете';
+            const sideEl = document.getElementById('sidebar-banner-container');
+            const mobEl = document.getElementById('mobile-catalog-banner');
+            if (sideEl) sideEl.innerHTML = buildPromoPlaceholderHtml(text, 'sidebar');
+            if (mobEl) mobEl.innerHTML = buildPromoPlaceholderHtml(text, 'mobile');
+        }
+
+        function wirePromoVideo(data, rootEl) {
+            if (!rootEl) return;
+            const video = rootEl.querySelector('video');
+            if (!video) return;
+            const videoUrl = (data.video_url || '').trim();
+            video.addEventListener('error', () => {
+                console.error('Ошибка загрузки промо-видео:', videoUrl);
+                applyPromoFallback(data);
+            });
+            video.addEventListener('loadeddata', () => {
+                video.play().catch(() => {});
+            });
+        }
+
+        // Боковой баннер (десктоп) + тот же контент в блоке каталога на телефоне
         async function loadSidebarBanner() {
             try {
                 const response = await fetch('/api/admin/bot/settings/sidebar-banner', {
@@ -1692,77 +1867,18 @@
 
                 const data = await response.json();
 
-                const container = document.getElementById('sidebar-banner-container');
-                if (!container) return;
+                const sideEl = document.getElementById('sidebar-banner-container');
+                const mobEl = document.getElementById('mobile-catalog-banner');
 
-                const videoUrl = data.video_url;
-                const text = data.text || '🌸 Красота в каждом букете';
+                const htmlSide = buildPromoVideoHtml(data, 'sidebar');
+                const htmlMob = buildPromoVideoHtml(data, 'mobile');
 
-                if (videoUrl && videoUrl.trim()) {
-                    // Видео загружено - отображаем его
-                    container.innerHTML = `
-                        <div class="relative w-full">
-                            <video
-                                class="w-full aspect-[9/16] md:aspect-[9/14] object-cover rounded-lg shadow-md"
-                                autoplay
-                                loop
-                                muted
-                                playsinline
-                                preload="metadata"
-                            >
-                                <source src="${videoUrl}" type="video/mp4">
-                                Ваш браузер не поддерживает видео.
-                            </video>
-                            <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
-                        </div>
-                    `;
-                    
-                    // Обработка ошибок для видео
-                    const video = container.querySelector('video');
-                    if (video) {
-                        video.addEventListener('error', (e) => {
-                            console.error('Ошибка загрузки видео бокового баннера:', videoUrl, e);
-                            // Показываем заглушку
-                            container.innerHTML = `
-                                <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
-                                    <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
-                                    <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
-                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>
-                                    <div class="text-center z-10 p-4">
-                                        <div class="text-5xl mb-3">🌸</div>
-                                        <p class="text-sm font-medium text-rose-700" data-i18n="banner.no_video">Нет видео</p>
-                                        <p class="text-xs text-rose-500 mt-1" data-i18n="banner.configure_admin">Настройте в админ-панели</p>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
-                            `;
-                        });
-                        
-                        video.addEventListener('loadeddata', () => {
-                            console.log('Видео бокового баннера загружено:', videoUrl);
-                            video.play().catch(err => {
-                                console.warn('Автовоспроизведение бокового баннера заблокировано:', err);
-                            });
-                        });
-                    }
-                } else {
-                    // Видео нет - отображаем заглушку
-                    container.innerHTML = `
-                        <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
-                            <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
-                            <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
-                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>
-                            <div class="text-center z-10 p-4">
-                                <div class="text-5xl mb-3">🌸</div>
-                                <p class="text-sm font-medium text-rose-700" data-i18n="banner.no_video">Нет видео</p>
-                                <p class="text-xs text-rose-500 mt-1" data-i18n="banner.configure_admin">Настройте в админ-панели</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
-                    `;
-                }
+                if (sideEl) sideEl.innerHTML = htmlSide;
+                if (mobEl) mobEl.innerHTML = htmlMob;
 
-                // Пересоздаём иконки Lucide
+                wirePromoVideo(data, sideEl);
+                wirePromoVideo(data, mobEl);
+
                 if (window.lucide) {
                     lucide.createIcons();
                 }
