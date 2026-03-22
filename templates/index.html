@@ -29,94 +29,36 @@
     <script src="/static/js/app.js?v=2.2"></script>
     <script src="/static/js/loader.js?v=1.0"></script>
     <style>
-        /* 3D Scroll Effects - OPTIMIZED FOR MOBILE */
+        /* 3D Scroll Effects */
         html {
             scroll-behavior: smooth;
-            overflow-x: hidden;
         }
 
         body {
             overflow-x: hidden;
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Mobile Optimizations */
-        @media (max-width: 1024px) {
-            /* Prevent zoom on input focus for iOS */
-            input, select, textarea {
-                font-size: 16px !important;
-            }
-
-            /* Improve touch scrolling */
-            * {
-                -webkit-overflow-scrolling: touch;
-            }
-
-            /* Better tap feedback */
-            button, a {
-                transition: all 0.2s ease;
-            }
-
-            button:active, a:active {
-                transform: scale(0.96);
-            }
-        }
-
-        /* 3D Scroll Container - DISABLED ON MOBILE */
+        /* 3D Scroll Container */
         .scroll-container {
             perspective: 1000px;
         }
 
-        @media (max-width: 1024px) {
-            .scroll-container {
-                perspective: none;
-            }
-        }
-
-        /* 3D Card Effect on Scroll - OPTIMIZED */
+        /* 3D Card Effect on Scroll */
         .scroll-reveal {
             opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-            will-change: opacity, transform;
+            transform: translateY(50px) rotateX(10deg);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .scroll-reveal.revealed {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) rotateX(0);
         }
 
-        /* DISABLE 3D ROTATION ON MOBILE - FIX FOR LAG */
-        @media (max-width: 1024px) {
-            .scroll-reveal {
-                transform: translateY(20px);
-                transition: opacity 0.4s ease, transform 0.4s ease;
-            }
-
-            .scroll-reveal.revealed {
-                transform: translateY(0);
-            }
-
-            /* Remove heavy transforms */
-            .scroll-reveal,
-            .scroll-reveal.revealed {
-                transform: none !important;
-                transition: opacity 0.3s ease !important;
-            }
-        }
-
-        /* 3D Parallax Effect - DISABLED ON MOBILE */
+        /* 3D Parallax Effect */
         .parallax-section {
             transform-style: preserve-3d;
             will-change: transform;
-        }
-
-        @media (max-width: 1024px) {
-            .parallax-section {
-                transform-style: flat;
-                will-change: auto;
-            }
         }
 
         /* Smooth Scroll Progress Bar */
@@ -617,63 +559,29 @@
             gap: 12px;
             padding: 16px;
             border-bottom: 1px solid #e5e7eb;
-            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            background: white;
             flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            width: 100%;
-            min-width: 0;
-        }
-
-        #mobile-search-modal .search-input-wrapper {
-            flex: 1 1 0;
-            min-width: 0;
-            position: relative;
-            display: flex;
-            align-items: center;
         }
 
         #mobile-search-modal .search-input {
-            width: 100%;
-            min-width: 0;
-            padding: 12px 16px 12px 40px;
+            padding: 10px 12px;
             background: #f3f4f6;
-            border: 2px solid transparent;
-            border-radius: 14px;
+            border: none;
+            border-radius: 12px;
             outline: none;
             font-size: 16px;
-            font-weight: 400;
-            color: #1f2937;
-            transition: all 0.2s ease;
+            min-width: 0;
+            flex: 1;
             -webkit-tap-highlight-color: transparent;
-            box-sizing: border-box;
         }
 
         #mobile-search-modal .search-input:focus {
-            background: #ffffff;
-            border-color: #e11d48;
-            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
-        }
-
-        #mobile-search-modal .search-input::placeholder {
-            color: #9ca3af;
-        }
-
-        #mobile-search-modal .search-icon {
-            position: absolute;
-            left: 12px;
-            color: #9ca3af;
-            pointer-events: none;
-            transition: color 0.2s;
-        }
-
-        #mobile-search-modal .search-input:focus + .search-icon,
-        #mobile-search-modal .search-input:not(:placeholder-shown) + .search-icon {
-            color: #e11d48;
+            background: #e5e7eb;
         }
 
         #mobile-search-modal .close-search {
-            padding: 10px;
-            border-radius: 10px;
+            padding: 8px;
+            border-radius: 8px;
             background: #f3f4f6;
             color: #6b7280;
             transition: all 0.2s;
@@ -681,39 +589,18 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            border: none;
-            cursor: pointer;
         }
 
         #mobile-search-modal .close-search:hover {
             background: #e5e7eb;
             color: #1f2937;
-            transform: rotate(90deg);
-        }
-
-        #mobile-search-modal .close-search:active {
-            transform: scale(0.95);
         }
 
         #mobile-search-modal .search-results {
-            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%);
+            background: #f9fafb;
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding: 16px;
-        }
-
-        #mobile-search-modal .search-results::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        #mobile-search-modal .search-results::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #mobile-search-modal .search-results::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 4px;
         }
 
         .search-result-item {
@@ -724,117 +611,16 @@
             transform: scale(0.98);
         }
 
-        /* Category cards in search */
-        .search-category-card {
-            background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-            border: 1px solid #fecdd3;
-            border-radius: 12px;
-            padding: 12px 10px;
-            text-align: center;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .search-category-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transition: left 0.4s ease;
-        }
-
-        .search-category-card:active::before {
-            left: 100%;
-        }
-
-        .search-category-card:active {
-            transform: scale(0.95);
-            border-color: #f43f5e;
-            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15);
-        }
-
-        .search-category-card .category-name {
-            font-size: 12px;
+        /* Highlight styles for search results */
+        #mobile-search-modal mark {
+            background-color: #fef08a;
+            color: #111827;
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
             font-weight: 600;
-            color: #881337;
-            line-height: 1.3;
         }
 
-        /* Product cards in search */
-        .search-product-card {
-            background: #ffffff;
-            border-radius: 14px;
-            padding: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            border: 1px solid #f3f4f6;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .search-product-card:active {
-            transform: scale(0.97);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-            border-color: #e11d48;
-        }
-
-        .search-product-card img {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            border-radius: 10px;
-            background: #f9fafb;
-            margin-bottom: 8px;
-        }
-
-        .search-product-card .product-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1f2937;
-            line-height: 1.4;
-            margin-bottom: 4px;
-        }
-
-        .search-product-card .product-price {
-            font-size: 13px;
-            font-weight: 700;
-            color: #e11d48;
-        }
-
-        /* Section headers in search */
-        .search-section-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 14px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f3f4f6;
-        }
-
-        .search-section-header .section-icon {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .search-section-header .section-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Line clamp utilities for search */
+        /* Line clamp utilities */
         .line-clamp-1 {
             display: -webkit-box;
             -webkit-line-clamp: 1;
@@ -847,181 +633,6 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-        }
-
-        /* Favorites Sidebar Styles */
-        #fav-sidebar {
-            transition: opacity 0.3s ease;
-        }
-
-        #fav-sidebar:not(.hidden) {
-            animation: fadeIn 0.3s ease;
-        }
-
-        #fav-sidebar .fav-sidebar-content {
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #fav-sidebar:not(.hidden) .fav-sidebar-content {
-            transform: translateX(0);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Favorites Item Animations */
-        .fav-item {
-            animation: slideInRight 0.3s ease;
-        }
-
-        .fav-item.removing {
-            animation: slideOutRight 0.3s ease forwards;
-        }
-
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes slideOutRight {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-        }
-
-        .fav-heart-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .fav-heart-btn:active {
-            transform: scale(0.9) !important;
-        }
-
-        .fav-heart-btn.adding {
-            animation: heartBeat 0.4s ease !important;
-            transform: none !important;
-            transition: none !important;
-        }
-
-        @keyframes heartBeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-
-        /* Toast Notifications */
-        #toast-container {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            pointer-events: none;
-        }
-
-        .toast {
-            background: rgba(17, 24, 39, 0.95);
-            backdrop-filter: blur(8px);
-            color: white;
-            padding: 14px 24px;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-top: 8px;
-            pointer-events: auto;
-            animation: toastSlideUp 0.3s ease;
-            min-width: 280px;
-            max-width: 400px;
-        }
-
-        .toast.removing {
-            animation: toastSlideDown 0.3s ease forwards;
-        }
-
-        .toast.success {
-            background: rgba(16, 185, 129, 0.95);
-        }
-
-        .toast.error {
-            background: rgba(239, 68, 68, 0.95);
-        }
-
-        .toast-icon {
-            flex-shrink: 0;
-            width: 24px;
-            height: 24px;
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        @keyframes toastSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes toastSlideDown {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-        }
-
-        /* Empty State */
-        .favorites-empty-state {
-            text-align: center;
-            padding: 48px 24px;
-        }
-
-        .favorites-empty-state .icon-wrapper {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
-            background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: pulse 2s ease infinite;
-        }
-
-        .favorites-empty-state .icon-wrapper i {
-            width: 40px;
-            height: 40px;
-            color: #e11d48;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.8; }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono&display=swap" rel="stylesheet">
@@ -1172,7 +783,7 @@
                                                 <option value="price_desc" data-i18n="filters.sort_price_desc">Сначала дороже</option>
                                             </select>
                                         </div>
-                                        <div class="hidden md:block">
+                                        <div>
                                             <label
                                                 class="text-sm font-medium text-gray-700 block mb-2" data-i18n="filters.category_label">Категория</label>
                                             <div id="category-filters" class="space-y-2">
@@ -1418,54 +1029,52 @@
         <div
             class="absolute inset-x-0 bottom-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 w-full md:w-auto md:max-w-4xl bg-white rounded-t-2xl md:rounded-2xl shadow-2xl border border-gray-100 flex flex-col md:flex-row h-full md:h-auto md:max-h-[88vh] md:overflow-hidden relative">
             <button onclick="closeProductDetail()"
-                class="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/95 hover:bg-rose-50 text-gray-600 hover:text-rose-600 transition-all shadow-md flex items-center justify-center">
+                class="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/95 hover:bg-rose-50 text-gray-600 hover:text-rose-600 transition-all shadow-md hidden md:flex items-center justify-center">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <button onclick="closeProductDetail()"
+                class="fixed top-3 right-3 z-[70] p-2 rounded-full bg-white shadow-lg text-gray-600 hover:text-rose-600 md:hidden">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
 
             <!-- Image block -->
             <div class="w-full md:w-[48%] bg-gray-50 flex-shrink-0 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden">
                 <style>
-                    #product-detail-modal .swiper-container { width: 100%; height: 50vh; min-height: 280px; }
+                    #product-detail-modal .swiper-container { width: 100%; height: 50vh; }
                     @media (min-width: 768px) {
                         #product-detail-modal .swiper-container { height: 100%; min-height: 450px; }
-                    }
-                    @media (min-height: 800px) {
-                        #product-detail-modal .swiper-container { height: 55vh; }
                     }
                     #product-detail-modal .swiper-slide { display: flex; justify-content: center; align-items: center; background: #fafafa; }
                     #product-detail-modal .swiper-slide img { width: 100%; height: 100%; object-fit: contain; }
                     #product-detail-modal .swiper-button-next, #product-detail-modal .swiper-button-prev {
-                        color: #e11d48; background: rgba(255, 255, 255, 0.95); width: 44px; height: 44px; border-radius: 50%;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        backdrop-filter: blur(8px);
-                        transition: all 0.2s ease;
+                        color: #e11d48; background: #fff; width: 36px; height: 36px; border-radius: 50%;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                     }
-                    #product-detail-modal .swiper-button-next:hover, #product-detail-modal .swiper-button-prev:hover {
-                        background: #fff; transform: scale(1.1); box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+                    #product-detail-modal .swiper-button-next:after, #product-detail-modal .swiper-button-prev:after { font-size: 16px; font-weight: bold; }
+                    /* Маленькие точки пагинации для мобильных */
+                    #product-detail-modal .swiper-pagination-bullet {
+                        width: 6px;
+                        height: 6px;
+                        border-radius: 50%;
+                        background: #d1d5db;
+                        opacity: 1;
+                        transition: all 0.3s ease;
                     }
-                    #product-detail-modal .swiper-button-next:after, #product-detail-modal .swiper-button-prev:after { font-size: 20px; font-weight: bold; }
-                    #product-detail-modal .swiper-pagination-bullet { width: 8px; height: 8px; background: rgba(255,255,255,0.6); opacity: 1; }
-                    #product-detail-modal .swiper-pagination-bullet-active { background: #e11d48; width: 24px; border-radius: 4px; }
-                    /* Mobile navigation buttons - always visible */
-                    #product-detail-modal .swiper-button-next, #product-detail-modal .swiper-button-prev { display: flex !important; }
-                    @media (max-width: 768px) {
-                        #product-detail-modal .swiper-button-next { right: 10px !important; }
-                        #product-detail-modal .swiper-button-prev { left: 10px !important; }
+                    #product-detail-modal .swiper-pagination-bullet-active {
+                        background: #e11d48;
+                        width: 8px;
+                        height: 8px;
+                        border-radius: 4px;
                     }
-                    /* FIX: Изображения на мобильных */
-                    @media (max-width: 768px) {
-                        #product-detail-modal .swiper-slide img {
-                            max-width: 100%;
-                            max-height: 100%;
-                            object-fit: contain !important;
-                        }
+                    #product-detail-modal .swiper-pagination-bullet + .swiper-pagination-bullet {
+                        margin-left: 6px !important;
                     }
                 </style>
                 <div class="swiper swiper-container">
                     <div class="swiper-wrapper" id="detail-swiper-wrapper"></div>
-                    <div class="swiper-button-next"></div>
-                    <div class="swiper-button-prev"></div>
-                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-next hidden md:flex"></div>
+                    <div class="swiper-button-prev hidden md:flex"></div>
+                    <div class="swiper-pagination pb-2"></div>
                 </div>
             </div>
 
@@ -1525,39 +1134,25 @@
     <!-- Fav Sidebar -->
     <div id="fav-sidebar" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/50" onclick="toggleFavorites()"></div>
-        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col fav-sidebar-content">
-            <div class="p-4 border-b flex items-center justify-between bg-gradient-to-r from-rose-50 to-pink-50 text-rose-900">
+        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
+            <div class="p-4 border-b flex items-center justify-between bg-rose-50 text-rose-900">
                 <h2 class="text-xl font-bold flex items-center gap-2" data-i18n="modal.favorites.title">
-                    <i data-lucide="heart" class="w-6 h-6 fill-rose-500 text-rose-500"></i>
-                    <span>Избранное</span>
-                    <span id="fav-sidebar-count" class="text-sm font-normal text-rose-600 ml-2">(0)</span>
+                    <i data-lucide="heart" class="w-6 h-6 fill-rose-500 text-rose-500"></i> Избранное
                 </h2>
-                <button onclick="toggleFavorites()" class="p-2 hover:bg-rose-100 rounded-full transition-all -mr-2">
+                <button onclick="toggleFavorites()" class="p-2 hover:bg-rose-100 rounded-full transition-all">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
-            <div id="fav-items" class="flex-1 overflow-y-auto p-4">
-                <!-- Empty state -->
-                <div class="favorites-empty-state">
-                    <div class="icon-wrapper">
-                        <i data-lucide="heart" class="w-10 h-10"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2" data-i18n="modal.favorites.empty_title">Нет избранных товаров</h3>
-                    <p class="text-gray-500 mb-6" data-i18n="modal.favorites.empty_description">Добавляйте товары в избранное, чтобы сохранить их на потом</p>
-                    <button onclick="toggleFavorites()"
-                        class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200" data-i18n="modal.favorites.browse_catalog">Смотреть каталог</button>
-                </div>
+            <div id="fav-items" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <p class="text-center text-gray-500 mt-10" data-i18n="modal.favorites.empty">Список избранного пуст</p>
             </div>
-            <div id="fav-footer" class="p-4 border-t bg-gradient-to-r from-rose-50 to-pink-50 hidden">
+            <div class="p-4 border-t bg-emerald-50">
                 <button onclick="toggleFavorites()"
-                    class="w-full py-3 border border-gray-300 rounded-xl hover:bg-gray-100 font-medium transition-all" data-i18n="modal.favorites.continue_shopping">Продолжить
+                    class="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-100 font-medium transition-all" data-i18n="modal.favorites.continue_shopping">Продолжить
                     покупки</button>
             </div>
         </div>
     </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
 
     <!-- Cart Sidebar -->
     <div id="cart-sidebar" class="fixed inset-0 z-50 hidden">
@@ -1589,6 +1184,84 @@
                     Оформить заказ
                 </button>
                 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Order Modal -->
+    <div id="telegram-order-modal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeTelegramOrderModal()"></div>
+        <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl">
+            <div class="p-6">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2" data-i18n="modal.telegram_order.title">
+                        <i data-lucide="send" class="w-6 h-6 text-[#24A1DE]"></i>
+                        Заказ через Telegram
+                    </h3>
+                    <button onclick="closeTelegramOrderModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.phone_label">
+                            <i data-lucide="phone" class="w-4 h-4 inline mr-1"></i> Телефон *
+                        </label>
+                        <input type="tel" id="tg-order-phone" data-i18n-placeholder="modal.telegram_order.phone_placeholder" placeholder="+998 __ ___-__-__"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.name_label">
+                            <i data-lucide="user" class="w-4 h-4 inline mr-1"></i> Имя *
+                        </label>
+                        <input type="text" id="tg-order-name" data-i18n-placeholder="modal.telegram_order.name_placeholder" placeholder="Как к вам обращаться?"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.postcard_label">
+                            <i data-lucide="message-heart" class="w-4 h-4 inline mr-1"></i> Текст на открытке
+                        </label>
+                        <textarea id="tg-order-postcard" data-i18n-placeholder="modal.telegram_order.postcard_placeholder" placeholder="Дорогая, с любовью..." rows="2"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="modal.telegram_order.comment_label">
+                            <i data-lucide="message-circle" class="w-4 h-4 inline mr-1"></i> Комментарий
+                        </label>
+                        <textarea id="tg-order-comment" data-i18n-placeholder="modal.telegram_order.comment_placeholder" placeholder="Дополнительная информация..." rows="2"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:border-[#24A1DE] focus:ring-4 focus:ring-[#24A1DE]/10 transition-all resize-none"></textarea>
+                    </div>
+
+                    <!-- Order Summary -->
+                    <div class="bg-gray-50 rounded-xl p-4 mt-4">
+                        <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-2" data-i18n="modal.telegram_order.order_summary">
+                            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                            Ваш заказ:
+                        </h4>
+                        <div id="tg-order-items" class="space-y-3 max-h-48 overflow-y-auto pr-2"></div>
+                        <div class="border-t border-gray-200 mt-3 pt-3 flex justify-between items-center">
+                            <span class="font-bold text-gray-900" data-i18n="modal.telegram_order.total">Итого:</span>
+                            <span id="tg-order-total" class="font-bold text-rose-600">0 сум</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button onclick="submitTelegramOrder()"
+                        class="w-full bg-[#24A1DE] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a8abf] transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        <span data-i18n="modal.telegram_order.submit">Отправить заказ</span>
+                    </button>
+
+                    <p class="text-xs text-gray-500 text-center mt-2" data-i18n="modal.telegram_order.info">
+                        После нажатия откроется Telegram с готовым сообщением
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -1916,25 +1589,20 @@
     <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 xl:hidden safe-area-pb">
         <div class="max-w-sm sm:max-w-md bg-white border border-gray-200 rounded-full shadow-xl mx-4 sm:mx-6">
             <div class="flex items-center justify-around py-3 px-4 sm:px-8">
-                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
+                <button onclick="showPage('')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
                     <i data-lucide="home" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="home">Главная</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.home">Главная</span>
                 </button>
-                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
+                <button onclick="openMobileSearch()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
                     <i data-lucide="search" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="search">Поиск</span>
+                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.search">Поиск</span>
                 </button>
-                <button onclick="toggleMobileFavorites()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[60px]">
-                    <i data-lucide="heart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                    <span id="mobile-fav-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
-                    <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.favorites">Избранное</span>
-                </button>
-                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[60px]">
+                <button onclick="toggleCart()" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors relative min-w-[70px]">
                     <i data-lucide="shopping-cart" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span id="mobile-cart-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.cart">Корзина</span>
                 </button>
-                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[60px]">
+                <button onclick="showPage('/profile')" class="flex flex-col items-center p-2 text-gray-600 hover:text-rose-600 transition-colors min-w-[70px]">
                     <i data-lucide="user" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                     <span class="text-[10px] sm:text-xs mt-1" data-i18n="mobile.profile">Профиль</span>
                 </button>
@@ -1946,17 +1614,15 @@
     <div id="mobile-search-modal" class="fixed inset-0 bg-white z-[60] hidden flex-col">
         <div class="flex flex-col h-full">
             <div class="search-header flex-shrink-0">
-                <div class="search-input-wrapper">
-                    <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input"
-                        oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
-                        autocomplete="off">
-                    <i data-lucide="search" class="search-icon w-5 h-5"></i>
-                </div>
-                <button onclick="closeMobileSearch()" class="close-search" aria-label="Закрыть поиск">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>
+                <input type="text" id="mobile-search-input" placeholder="Поиск цветов..." class="search-input flex-1 min-w-0"
+                    oninput="handleMobileSearch()" onkeydown="handleMobileSearchKeydown(event)"
+                    autocomplete="off">
+                <button onclick="closeMobileSearch()" class="close-search flex-shrink-0" aria-label="Закрыть поиск">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto"></div>
+            <div id="mobile-search-results" class="search-results flex-1 overflow-y-auto p-4 bg-gray-50"></div>
         </div>
     </div>
 
@@ -1974,11 +1640,11 @@
                         'Authorization': `Bearer ${window.TELEGRAM_API_SECRET || ''}`
                     }
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
 
                 const container = document.getElementById('sidebar-banner-container');
@@ -1990,22 +1656,54 @@
                 if (videoUrl && videoUrl.trim()) {
                     // Видео загружено - отображаем его
                     container.innerHTML = `
-                        <video
-                            class="w-full aspect-[9/16] md:aspect-[9/14] object-cover rounded-lg shadow-md"
-                            autoplay
-                            loop
-                            muted
-                            playsinline
-                        >
-                            <source src="${videoUrl}" type="video/mp4">
-                            Ваш браузер не поддерживает видео.
-                        </video>
-                        <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
+                        <div class="relative w-full">
+                            <video
+                                class="w-full aspect-[9/16] md:aspect-[9/14] object-cover rounded-lg shadow-md"
+                                autoplay
+                                loop
+                                muted
+                                playsinline
+                                preload="metadata"
+                            >
+                                <source src="${videoUrl}" type="video/mp4">
+                                Ваш браузер не поддерживает видео.
+                            </video>
+                            <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
+                        </div>
                     `;
+                    
+                    // Обработка ошибок для видео
+                    const video = container.querySelector('video');
+                    if (video) {
+                        video.addEventListener('error', (e) => {
+                            console.error('Ошибка загрузки видео бокового баннера:', videoUrl, e);
+                            // Показываем заглушку
+                            container.innerHTML = `
+                                <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                    <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
+                                    <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
+                                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>
+                                    <div class="text-center z-10 p-4">
+                                        <div class="text-5xl mb-3">🌸</div>
+                                        <p class="text-sm font-medium text-rose-700" data-i18n="banner.no_video">Нет видео</p>
+                                        <p class="text-xs text-rose-500 mt-1" data-i18n="banner.configure_admin">Настройте в админ-панели</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-600 mt-3 text-center italic" data-i18n="banner.default_text">${text}</p>
+                            `;
+                        });
+                        
+                        video.addEventListener('loadeddata', () => {
+                            console.log('Видео бокового баннера загружено:', videoUrl);
+                            video.play().catch(err => {
+                                console.warn('Автовоспроизведение бокового баннера заблокировано:', err);
+                            });
+                        });
+                    }
                 } else {
                     // Видео нет - отображаем заглушку
                     container.innerHTML = `
-                        <div class="hidden md:block w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
+                        <div class="w-full aspect-[9/16] md:aspect-[9/14] bg-gradient-to-b from-rose-100 to-rose-200 rounded-lg flex items-center justify-center relative overflow-hidden">
                             <div class="absolute top-4 left-4 w-8 h-8 bg-rose-300 rounded-full opacity-50 animate-pulse"></div>
                             <div class="absolute bottom-8 right-8 w-12 h-12 bg-rose-400 rounded-full opacity-30 animate-pulse" style="animation-delay: 0.5s"></div>
                             <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-rose-200 rounded-full opacity-40 animate-pulse" style="animation-delay: 1s"></div>
@@ -2047,39 +1745,10 @@
             });
         });
 
-        // === 3D Scroll Effects - OPTIMIZED ===
-
-        // Throttle function for scroll events - PERFORMANCE FIX
-        function throttle(func, delay) {
-            let timeoutId;
-            let lastExecTime = 0;
-
-            return function(...args) {
-                const currentTime = Date.now();
-
-                if (currentTime - lastExecTime < delay) {
-                    clearTimeout(timeoutId);
-                    timeoutId = setTimeout(() => {
-                        lastExecTime = currentTime;
-                        func.apply(this, args);
-                    }, delay);
-                } else {
-                    lastExecTime = currentTime;
-                    func.apply(this, args);
-                }
-            };
-        }
-
-        // Check if device is mobile
-        function isMobile() {
-            return window.innerWidth < 1024;
-        }
-
+        // === 3D Scroll Effects ===
+        
         // Scroll Progress Bar
         function createScrollProgressBar() {
-            // Don't create progress bar on mobile - saves performance
-            if (isMobile()) return;
-
             const progressBar = document.createElement('div');
             progressBar.className = 'scroll-progress';
             progressBar.id = 'scroll-progress';
@@ -2088,30 +1757,24 @@
 
         // Scroll to Top Button
         function createScrollToTopButton() {
-            // Don't create scroll indicator on mobile - saves performance
-            if (isMobile()) return;
-
             const scrollBtn = document.createElement('div');
             scrollBtn.className = 'scroll-indicator';
             scrollBtn.id = 'scroll-to-top';
             scrollBtn.innerHTML = '<i data-lucide="arrow-down" class="w-6 h-6 transform rotate-180"></i>';
             scrollBtn.onclick = scrollToTop;
             document.body.appendChild(scrollBtn);
-
+            
             if (window.lucide) {
                 lucide.createIcons();
             }
         }
 
-        // Update Scroll Progress - THROTTLED
-        const updateScrollProgress = throttle(function() {
-            // Skip on mobile
-            if (isMobile()) return;
-
+        // Update Scroll Progress
+        function updateScrollProgress() {
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolled = (winScroll / height) * 100;
-
+            
             const progressBar = document.getElementById('scroll-progress');
             if (progressBar) {
                 progressBar.style.width = scrolled + '%';
@@ -2126,7 +1789,7 @@
                     scrollBtn.classList.remove('visible');
                 }
             }
-        }, 100); // 100ms throttle on desktop
+        }
 
         // Scroll to Top Function
         function scrollToTop() {
@@ -2136,21 +1799,11 @@
             });
         }
 
-        // 3D Scroll Reveal Effect - OPTIMIZED FOR MOBILE
+        // 3D Scroll Reveal Effect
         function initScrollReveal() {
             const reveals = document.querySelectorAll('.scroll-reveal');
-
-            // On mobile, use simplified reveal without scroll listener
-            if (isMobile()) {
-                // Just reveal all elements immediately on mobile
-                reveals.forEach((reveal) => {
-                    reveal.classList.add('revealed');
-                });
-                return;
-            }
-
-            // Desktop: use scroll-based reveal with throttle
-            const revealOnScroll = throttle(() => {
+            
+            const revealOnScroll = () => {
                 const windowHeight = window.innerHeight;
                 const elementVisible = 100;
 
@@ -2160,74 +1813,45 @@
                         reveal.classList.add('revealed');
                     }
                 });
-            }, 150); // 150ms throttle
+            };
 
             window.addEventListener('scroll', revealOnScroll);
             revealOnScroll(); // Trigger once on load
         }
 
-        // Parallax Effect for Sections - DISABLED ON MOBILE
+        // Parallax Effect for Sections
         function initParallax() {
-            // Completely disable parallax on mobile - major performance fix
-            if (isMobile()) return;
-
             const parallaxSections = document.querySelectorAll('.parallax-section');
-
-            const parallaxOnScroll = throttle(() => {
+            
+            window.addEventListener('scroll', () => {
                 const scrolled = window.pageYOffset;
-
+                
                 parallaxSections.forEach((section) => {
                     const speed = 0.5;
                     const yPos = -(scrolled * speed);
                     section.style.transform = `translateY(${yPos}px)`;
                 });
-            }, 100); // 100ms throttle
-
-            window.addEventListener('scroll', parallaxOnScroll);
+            });
         }
 
         // Initialize 3D Scroll Effects on Load
         document.addEventListener('DOMContentLoaded', () => {
-            // Delay initialization for better performance on mobile
-            const initDelay = isMobile() ? 300 : 100;
-
+            createScrollProgressBar();
+            createScrollToTopButton();
+            initScrollReveal();
+            window.addEventListener('scroll', updateScrollProgress);
+            updateScrollProgress(); // Trigger once on load
+            
+            // Reveal elements that are already in viewport
             setTimeout(() => {
-                createScrollProgressBar();
-                createScrollToTopButton();
-                initScrollReveal();
-
-                if (!isMobile()) {
-                    window.addEventListener('scroll', updateScrollProgress);
-                    updateScrollProgress();
-                    initParallax();
-                }
-
-                // Reveal elements that are already in viewport
                 const reveals = document.querySelectorAll('.scroll-reveal');
                 reveals.forEach((reveal) => {
                     const elementTop = reveal.getBoundingClientRect().top;
-                    if (elementTop < window.innerHeight - 50) {
+                    if (elementTop < window.innerHeight - 100) {
                         reveal.classList.add('revealed');
                     }
                 });
-            }, initDelay);
-        });
-
-        // Re-init on resize (for orientation change)
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // Re-check if mobile and adjust
-                if (isMobile()) {
-                    // Remove heavy effects on mobile
-                    const progressBar = document.getElementById('scroll-progress');
-                    if (progressBar) progressBar.remove();
-
-                    const scrollBtn = document.getElementById('scroll-to-top');
-                    if (scrollBtn) scrollBtn.remove();
-                }
-            }, 200);
+            }, 100);
         });
     </script>
     

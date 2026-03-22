@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: uzflower
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: DATABASE_URL
+        value: sqlite:///./uzflower.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENABLE_TELEGRAM_BOTS
+        value: true
+      - key: BOT_MODE
+        value: webhook
+      - key: TELEGRAM_API_URL
+        value: http://localhost:8000
+      - key: TELEGRAM_API_SECRET
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+    disk:
+      name: uzflower-data
+      mountPath: /app
+      sizeGB: 1

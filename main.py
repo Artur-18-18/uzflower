@@ -877,34 +877,52 @@ async def lifespan(app: FastAPI):
     logger.info("✅ Кэширование инициализировано")
 
     # ============================================================
-    # Запуск Telegram ботов (для Render.com)
+    # Настройка Telegram ботов (для Render.com)
     # ============================================================
-    import asyncio
-    from app.telegram_bot.bot import start_bot as start_telegram_bot
-    from app.admin_bot.bot import start_admin_bot
-
     # Флаг для включения/отключения ботов (можно переключать через ENV)
     ENABLE_TELEGRAM_BOTS = os.getenv("ENABLE_TELEGRAM_BOTS", "true").lower() in ("true", "1", "yes")
+    
+    # Режим работы: webhook (production) или polling (development)
+    BOT_MODE = os.getenv("BOT_MODE", "webhook")  # "webhook" или "polling"
 
     if ENABLE_TELEGRAM_BOTS:
-        logger.info("🤖 Запуск Telegram ботов...")
+        logger.info("🤖 Настройка Telegram ботов...")
+        logger.info("📋 Режим: %s", BOT_MODE)
 
-        # Создаём задачи для ботов
-        bot_task = asyncio.create_task(start_telegram_bot())
-        admin_bot_task = asyncio.create_task(start_admin_bot())
+        if BOT_MODE == "webhook":
+            # Webhook режим - для production (Render.com)
+            # Боты работают через webhook endpoints, которые обрабатываются FastAPI
+            logger.info("✅ Боты настроены в режиме webhook")
+            logger.info("   - Основной бот: /api/telegram/webhook")
+            logger.info("   - Админ-бот: /api/admin-telegram/webhook")
+            
+            # Сохраняем настройки для использования в endpoints
+            app.state.bot_mode = "webhook"
+        else:
+            # Polling режим - для локальной разработки
+            import asyncio
+            from app.telegram_bot.bot import start_bot as start_telegram_bot
+            from app.admin_bot.bot import start_admin_bot
 
-        logger.info("✅ Telegram боты запущены в фоне")
+            logger.info("🚀 Запуск ботов в режиме polling...")
 
-        # Сохраняем задачи в приложении для корректной остановки
-        app.state.bot_task = bot_task
-        app.state.admin_bot_task = admin_bot_task
+            # Создаём задачи для ботов
+            bot_task = asyncio.create_task(start_telegram_bot())
+            admin_bot_task = asyncio.create_task(start_admin_bot())
+
+            logger.info("✅ Telegram боты запущены в фоне")
+
+            # Сохраняем задачи в приложении для корректной остановки
+            app.state.bot_task = bot_task
+            app.state.admin_bot_task = admin_bot_task
+            app.state.bot_mode = "polling"
     else:
         logger.info("ℹ️ Telegram боты отключены (ENABLE_TELEGRAM_BOTS=false)")
 
     yield
 
     # Shutdown logic
-    if ENABLE_TELEGRAM_BOTS:
+    if ENABLE_TELEGRAM_BOTS and hasattr(app.state, 'bot_mode') and app.state.bot_mode == "polling":
         logger.info("🛑 Остановка Telegram ботов...")
         # Отменяем задачи ботов
         if hasattr(app.state, 'bot_task'):
@@ -4773,6 +4791,133 @@ async def read_login(request: Request):
 @app.get("/forgot-password", response_class=HTMLResponse)
 async def read_forgot_password(request: Request):
     return templates.TemplateResponse("forgot-password.html", {"request": request})
+
+
+# ============================================================
+# Telegram Webhook Endpoints (для работы ботов в production)
+# ============================================================
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request, x_telegram_bot_token: Optional[str] = Header(None)):
+    """
+    Webhook endpoint для основного Telegram-бота.
+    Обрабатывает обновления от Telegram API.
+    """
+    from app.telegram_bot.config import settings as main_bot_settings
+    from app.telegram_bot.bot import bot, dp
+    from aiohttp import web
+
+    # Проверяем секретный токен
+    if x_telegram_bot_token != main_bot_settings.api_secret:
+        logger.warning("⚠️ Неверный секретный токен для основного бота")
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        # Получаем update из запроса
+        update_data = await request.json()
+        
+        # Создаём aiogram Update объект
+        from aiogram.types import Update
+        update = Update(**update_data)
+        
+        # Обрабатываем update через диспетчер
+        await dp.feed_update(bot=bot, update=update)
+        
+        return {"ok": True}
+    except Exception as e:
+        logger.error("❌ Ошибка при обработке webhook основного бота: %s", e)
+        return {"ok": False, "error": str(e)}
+
+
+@app.post("/api/admin-telegram/webhook")
+async def admin_telegram_webhook(request: Request, x_telegram_bot_token: Optional[str] = Header(None)):
+    """
+    Webhook endpoint для Admin Telegram-бота.
+    Обрабатывает обновления от Telegram API.
+    """
+    from app.admin_bot.config import settings as admin_bot_settings
+    from app.admin_bot.bot import bot as admin_bot, dp as admin_dp
+
+    # Проверяем секретный токен
+    if x_telegram_bot_token != admin_bot_settings.api_secret:
+        logger.warning("⚠️ Неверный секретный токен для админ-бота")
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        # Получаем update из запроса
+        update_data = await request.json()
+        
+        # Создаём aiogram Update объект
+        from aiogram.types import Update
+        update = Update(**update_data)
+        
+        # Обрабатываем update через диспетчер
+        await admin_dp.feed_update(bot=admin_bot, update=update)
+        
+        return {"ok": True}
+    except Exception as e:
+        logger.error("❌ Ошибка при обработке webhook админ-бота: %s", e)
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/telegram/set-webhook")
+async def set_telegram_webhook(base_url: str, admin_user_id: Optional[str] = Header(None)):
+    """
+    Эндпоинт для установки webhook на Render.
+    Вызывается один раз при деплое или вручную.
+    
+    Пример: GET /api/telegram/set-webhook?base_url=https://your-app.onrender.com
+    """
+    from app.telegram_bot.config import settings as main_bot_settings
+    from app.admin_bot.config import settings as admin_bot_settings
+    import httpx
+
+    # Проверяем авторизацию (только для админов)
+    if admin_user_id and admin_user_id != os.getenv("ADMIN_USER_ID", "0"):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    main_webhook_url = f"{base_url}/api/telegram/webhook"
+    admin_webhook_url = f"{base_url}/api/admin-telegram/webhook"
+
+    result = {"main_bot": {}, "admin_bot": {}}
+
+    async with httpx.AsyncClient() as client:
+        # Устанавливаем webhook для основного бота
+        try:
+            response = await client.get(
+                f"https://api.telegram.org/bot{main_bot_settings.bot_token}/setWebhook",
+                params={
+                    "url": main_webhook_url,
+                    "secret_token": main_bot_settings.api_secret,
+                    "drop_pending_updates": True
+                },
+                timeout=10.0
+            )
+            result["main_bot"] = response.json()
+            logger.info("✅ Webhook основного бота установлен: %s", main_webhook_url)
+        except Exception as e:
+            result["main_bot"] = {"error": str(e)}
+            logger.error("❌ Ошибка установки webhook основного бота: %s", e)
+
+        # Устанавливаем webhook для админ-бота
+        try:
+            response = await client.get(
+                f"https://api.telegram.org/bot{admin_bot_settings.bot_token}/setWebhook",
+                params={
+                    "url": admin_webhook_url,
+                    "secret_token": admin_bot_settings.api_secret,
+                    "drop_pending_updates": True
+                },
+                timeout=10.0
+            )
+            result["admin_bot"] = response.json()
+            logger.info("✅ Webhook админ-бота установлен: %s", admin_webhook_url)
+        except Exception as e:
+            result["admin_bot"] = {"error": str(e)}
+            logger.error("❌ Ошибка установки webhook админ-бота: %s", e)
+
+    return result
+
 
 if __name__ == "__main__":
     import uvicorn

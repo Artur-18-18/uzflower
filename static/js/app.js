@@ -109,12 +109,7 @@ function handleSignOut() {
 
 function renderProducts(products, animate = false) {
     const container = document.getElementById('products-grid');
-    if (!container) {
-        console.error('❌ Контейнер products-grid не найден!');
-        return;
-    }
-
-    console.log('📦 Рендер товаров:', products.length, 'штук');
+    if (!container) return;
 
     // Очищаем контейнер перед рендерингом
     container.innerHTML = '';
@@ -123,19 +118,13 @@ function renderProducts(products, animate = false) {
         const isFav = favorites.includes(product.id);
         const animationStyle = animate ? `opacity: 0; animation: fadeInUp 0.5s ease forwards; animation-delay: ${index * 50}ms;` : '';
         const productJson = JSON.stringify(product).replace(/"/g, '&quot;');
-        
-        // Для избранного используем SVG напрямую чтобы lucide не сбрасывал стили
-        const heartIcon = isFav 
-            ? `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="rgb(225, 29, 72)" stroke="rgb(225, 29, 72)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart fill-rose-500 text-rose-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`
-            : `<i data-lucide="heart" class="w-5 h-5 text-gray-400"></i>`;
-        
         return `
             <div class="card-3d scroll-reveal bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 group cursor-pointer border border-gray-100" style="${animationStyle}" onclick="openProductDetail(${productJson})">
                 <div class="relative aspect-square overflow-hidden bg-white">
-                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500" loading="lazy">
+                    <img src="${product.image_url || 'https://placehold.co/400'}" alt="${product.name}" class="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-500">
                     ${product.stock === 0 ? '<div class="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold">Нет в наличии</div>' : ''}
                     <button type="button" onclick="event.stopPropagation(); toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn absolute top-3 right-3 flex items-center justify-center min-w-[44px] min-h-[44px] p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white active:scale-95 transition-all z-10" aria-label="${isFav ? 'Убрать из избранного' : 'В избранное'}">
-                        ${heartIcon}
+                        <i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}"></i>
                     </button>
                     ${product.is_sale ? '<div class="absolute top-3 left-3 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">АКЦИЯ</div>' : ''}
                 </div>
@@ -161,16 +150,8 @@ function renderProducts(products, animate = false) {
             </div>
         `;
     }).join('');
-
-    // Создаём иконки СРАЗУ после рендера, пропускаем fav-heart-btn
-    if (window.lucide) {
-        // Сначала применяем стили для избранного
-        updateFavoriteButtons();
-        // Затем создаём иконки для остальных элементов
-        lucide.createIcons();
-        console.log('✅ Иконки созданы после рендера товаров');
-    }
-
+    lucide.createIcons();
+    
     // Trigger scroll reveal after products are rendered
     setTimeout(() => {
         const reveals = document.querySelectorAll('.scroll-reveal');
@@ -239,19 +220,22 @@ function openProductDetail(product) {
     console.log('🔍 Открытие товара:', product.name);
     console.log('📷 Главное изображение (image_url):', product.image_url);
     console.log('📷 Дополнительные изображения (images):', product.images);
+    console.log('📷 Полный объект product:', product);
 
-    // Добавляем главное изображение первым
-    if (product.image_url) {
+    // Добавляем главное изображение первым (ОБЯЗАТЕЛЬНО)
+    if (product.image_url && product.image_url.trim() !== '') {
         const highQualityUrl = getHighQualityImageUrl(product.image_url);
         productImages.push(highQualityUrl);
         seenUrls.add(product.image_url.split('?')[0]);
         console.log('✅ Добавлено главное изображение:', highQualityUrl);
+    } else {
+        console.warn('⚠️ Главное изображение отсутствует (image_url пустой)');
     }
 
     // Добавляем дополнительные изображения (проверяем что это массив)
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
         product.images.forEach((url, idx) => {
-            if (!url) return;
+            if (!url || url.trim() === '') return;
 
             // Проверяем на дубликаты (сравниваем без параметров)
             const urlBase = url.split('?')[0];
@@ -264,6 +248,8 @@ function openProductDetail(product) {
                 console.log(`⚠️ Пропущен дубликат:`, url);
             }
         });
+    } else {
+        console.log('ℹ️ Дополнительные изображения отсутствуют или не являются массивом');
     }
 
     console.log('📸 ВСЕГО изображений в галерее:', productImages.length);
@@ -284,7 +270,7 @@ function openProductDetail(product) {
         scrollContainer.scrollTop = 0;
     }
 
-    document.getElementById('detail-name').innerText = product.name;
+    document.getElementById('detail-name').innerText = product.name || 'Товар';
     document.getElementById('detail-desc').innerText = product.description || 'Описание отсутствует';
     document.getElementById('detail-composition').innerText = product.composition || 'Состав уточняйте у флориста';
 
@@ -292,10 +278,15 @@ function openProductDetail(product) {
     const swiperWrapper = document.getElementById('detail-swiper-wrapper');
     if (swiperWrapper) {
         // Если изображений нет, ставим placeholder
-        const imagesToRender = productImages.length > 0 ? productImages : ['https://placehold.co/600'];
+        const imagesToRender = productImages.length > 0 ? productImages : ['https://placehold.co/600x600?text=No+Image'];
+        console.log('🖼️ Рендерим изображений:', imagesToRender.length);
+        
         swiperWrapper.innerHTML = imagesToRender.map((url, idx) => `
             <div class="swiper-slide" data-slide-index="${idx}">
-                <img src="${url}" alt="Product image ${idx + 1}" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+                <img src="${url}" alt="Product image ${idx + 1}" 
+                     style="width: 100%; height: 100%; object-fit: contain;"
+                     loading="eager"
+                     onerror="console.error('Ошибка загрузки изображения:', this.src)">
             </div>
         `).join('');
 
@@ -320,16 +311,12 @@ function openProductDetail(product) {
             return;
         }
 
-        // Определяем количество изображений
-        const hasMultipleImages = productImages.length > 1;
-        const isMobile = window.innerWidth < 768;
-
         // Показываем/скрываем кнопки навигации в зависимости от количества фото
+        const hasMultipleImages = productImages.length > 1;
         const nextBtn = modal.querySelector('.swiper-button-next');
         const prevBtn = modal.querySelector('.swiper-button-prev');
         const pagination = modal.querySelector('.swiper-pagination');
 
-        // На мобильных кнопки всегда видны если есть несколько изображений
         if (nextBtn) nextBtn.style.display = hasMultipleImages ? 'flex' : 'none';
         if (prevBtn) prevBtn.style.display = hasMultipleImages ? 'flex' : 'none';
         if (pagination) pagination.style.display = hasMultipleImages ? 'block' : 'none';
@@ -341,69 +328,28 @@ function openProductDetail(product) {
             observer: true,
             observeParents: true,
             preloadImages: true,
-            updateOnImagesReady: true,
             lazy: false,
-            
-            // Улучшенная навигация
-            navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            },
-            
-            // Пагинация
             pagination: {
                 el: '.swiper-pagination',
                 clickable: true,
                 dynamicBullets: true,
-                dynamicMainBullets: 5,
             },
-            
-            // Настройки для мобильных
-            grabCursor: true,
-            slidesPerView: 1,
-            spaceBetween: 0,
-            
-            // Предотвращение случайных свайпов
-            threshold: 10,
-            touchRatio: 1,
-            touchAngle: 45,
-            
-            // Автопрокрутка отключена
-            autoplay: false,
-            
-            // Бесконечная прокрутка с эффектом
-            rewind: false,
-            
-            // Эффект при переключении
-            speed: 300,
-            
-            // Accessibility
-            a11y: {
-                prevSlideMessage: 'Предыдущее изображение',
-                nextSlideMessage: 'Следующее изображение',
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
             },
-            
-            // События
             on: {
-                init: function() {
-                    console.log('✅ Swiper инициализирован');
-                },
                 slideChange: function() {
                     currentImageIndex = this.activeIndex;
-                    console.log('📸 Слайд изменён:', currentImageIndex);
                 },
-                reachEnd: function() {
-                    console.log('📸 Достигнут конец слайдера');
-                },
-                fromEdge: function() {
-                    console.log('📸 Возврат от края');
+                init: function() {
+                    console.log('✅ Swiper инициализирован, слайдов:', this.slides.length);
                 }
             }
         });
-        
-        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages, 'mobile:', isMobile);
+        console.log('✅ Swiper инициализирован, loop:', hasMultipleImages);
         console.log('✅ Текущий слайд:', window.productSwiper.activeIndex);
-    }, 100);
+    }, 50);
 }
 
 function updateDetailPrice() {
@@ -415,6 +361,13 @@ function updateDetailPrice() {
 }
 
 function addToCart(product) {
+    // Проверка авторизации (опционально, можно требовать вход только при оформлении)
+    // if (!currentUser) {
+    //     alert('Пожалуйста, войдите в аккаунт для добавления в корзину');
+    //     window.location.href = '/login';
+    //     return;
+    // }
+
     // Clone product to avoid reference issues
     const cartItem = { ...product };
 
@@ -427,20 +380,9 @@ function addToCart(product) {
     } else {
         cart.push({ ...cartItem, quantity: 1 });
     }
-    
     saveCart();
-    updateCartCount();
-    
-    // Показываем toast уведомление
-    showToast(`«${product.name}» добавлен в корзину`, 'success');
-    
-    // Открываем корзину
     toggleCart();
-    
-    // Закрываем модальное окно продукта если открыто
-    if (document.getElementById('product-detail-modal')) {
-        closeProductDetail();
-    }
+    if (document.getElementById('product-detail-modal')) closeProductDetail();
 }
 
 function closeProductDetail() {
@@ -492,22 +434,6 @@ function filterByCategory(id) {
     scrollToCatalog();
 
     loadProducts(true); // true = с анимацией
-}
-
-// Фильтрация по категории из мобильного поиска
-function filterByCategoryFromSearch(id) {
-    selectedCategory = id;
-    
-    // Закрываем мобильное меню если открыто
-    const favRadio = document.getElementById('mobile-favorites');
-    const cartRadio = document.getElementById('mobile-cart');
-    if (favRadio) favRadio.checked = false;
-    if (cartRadio) cartRadio.checked = false;
-    
-    // Плавная прокрутка к каталогу
-    scrollToCatalog();
-    
-    loadProducts(true);
 }
 
 // Debounced search function (оптимизация поиска)
@@ -643,97 +569,32 @@ function showEmptySearchState() {
     // Если товары ещё не загружены
     if (!allProductsList || allProductsList.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-16">
-                <div class="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                    <i data-lucide="loader" class="w-8 h-8 text-rose-500 animate-spin"></i>
-                </div>
-                <p class="text-gray-500 font-medium">Загрузка товаров...</p>
+            <div class="text-center py-10">
+                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
+                <p class="text-gray-500">Загрузка товаров...</p>
             </div>
         `;
         lucide.createIcons();
         return;
     }
 
-    // Загружаем категории для отображения в поиске
-    fetch('/api/categories')
-        .then(res => res.json())
-        .then(categories => {
-            let categoriesHTML = '';
-            
-            if (categories && categories.length > 0) {
-                categoriesHTML = `
-                    <div class="mb-6">
-                        <div class="search-section-header">
-                            <div class="section-icon">
-                                <i data-lucide="grid" class="w-4 h-4"></i>
-                            </div>
-                            <span class="section-title">Категории</span>
-                        </div>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button onclick="filterByCategoryFromSearch(null); closeMobileSearch();" 
-                                class="search-category-card">
-                                <span class="category-name">Все букеты</span>
-                            </button>
-                            ${categories.map(cat => `
-                                <button onclick="filterByCategoryFromSearch(${cat.id}); closeMobileSearch();" 
-                                    class="search-category-card">
-                                    <span class="category-name">${cat.name}</span>
-                                </button>
-                            `).join('')}
-                        </div>
+    // Показываем популярные товары (первые 8)
+    const popularProducts = allProductsList.slice(0, 8);
+    resultsContainer.innerHTML = `
+        <div class="mb-4">
+            <h3 class="text-sm font-semibold text-gray-500 mb-3">Популярные букеты</h3>
+            <div class="grid grid-cols-2 gap-3">
+                ${popularProducts.map(product => `
+                    <div class="bg-white p-2 rounded-xl shadow-sm cursor-pointer active:scale-95 transition-transform" onclick="selectProductFromSearch(${product.id})">
+                        <img src="${product.image_url || 'https://placehold.co/150'}" alt="${product.name}" class="w-full aspect-square object-cover rounded-lg mb-2">
+                        <p class="text-xs font-medium text-gray-900 line-clamp-2">${product.name}</p>
+                        <p class="text-xs text-rose-600 font-bold mt-1">${formatPrice(product.price)} сум</p>
                     </div>
-                `;
-            }
-
-            // Показываем популярные товары (первые 12)
-            const popularProducts = allProductsList.slice(0, 12);
-            resultsContainer.innerHTML = `
-                ${categoriesHTML}
-                <div class="mb-6">
-                    <div class="search-section-header">
-                        <div class="section-icon">
-                            <i data-lucide="flame" class="w-4 h-4"></i>
-                        </div>
-                        <span class="section-title">Популярные букеты</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        ${popularProducts.map(product => `
-                            <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
-                                <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
-                                <p class="product-name line-clamp-2">${product.name}</p>
-                                <p class="product-price">${formatPrice(product.price)} сум</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        })
-        .catch(err => {
-            console.error('Ошибка загрузки категорий:', err);
-            // Показываем только товары если категории не загрузились
-            const popularProducts = allProductsList.slice(0, 12);
-            resultsContainer.innerHTML = `
-                <div class="mb-6">
-                    <div class="search-section-header">
-                        <div class="section-icon">
-                            <i data-lucide="flame" class="w-4 h-4"></i>
-                        </div>
-                        <span class="section-title">Популярные букеты</span>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        ${popularProducts.map(product => `
-                            <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
-                                <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
-                                <p class="product-name line-clamp-2">${product.name}</p>
-                                <p class="product-price">${formatPrice(product.price)} сум</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        });
+                `).join('')}
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
 }
 
 // Debounced mobile search function
@@ -756,11 +617,9 @@ function performMobileSearch() {
     // Если товары ещё не загружены
     if (!allProductsList || allProductsList.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-16">
-                <div class="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                    <i data-lucide="loader" class="w-8 h-8 text-rose-500 animate-spin"></i>
-                </div>
-                <p class="text-gray-500 font-medium">Товары загружаются...</p>
+            <div class="text-center py-10">
+                <i data-lucide="loader" class="w-12 h-12 text-gray-300 mx-auto mb-3 animate-spin"></i>
+                <p class="text-gray-500">Товары загружаются...</p>
             </div>
         `;
         lucide.createIcons();
@@ -781,45 +640,22 @@ function performMobileSearch() {
 
     if (filtered.length === 0) {
         resultsContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-16">
-                <div class="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                    <i data-lucide="search-x" class="w-10 h-10 text-gray-400"></i>
-                </div>
-                <p class="text-gray-600 font-semibold text-lg mb-1">Ничего не найдено</p>
-                <p class="text-gray-400 text-sm">Попробуйте изменить запрос</p>
+            <div class="text-center py-10">
+                <i data-lucide="search-x" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
+                <p class="text-gray-500 font-medium">Ничего не найдено</p>
+                <p class="text-gray-400 text-sm mt-1">Попробуйте изменить запрос</p>
             </div>
         `;
     } else {
         resultsContainer.innerHTML = `
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-gray-100">
-                    <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg flex items-center justify-center">
-                            <i data-lucide="check" class="w-4 h-4 text-white"></i>
-                        </div>
-                        <span class="font-semibold text-gray-700">Результаты поиска</span>
-                    </div>
-                    <span class="text-xs font-medium bg-rose-100 text-rose-600 px-3 py-1 rounded-full">${filtered.length} тов.</span>
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                    ${filtered.map(product => renderSearchProductCard(product)).join('')}
-                </div>
+            <div class="mb-3">
+                <p class="text-xs text-gray-500">Найдено: ${filtered.length} товар(ов)</p>
             </div>
+            ${filtered.map(product => renderSearchResultItem(product, query)).join('')}
         `;
     }
 
     lucide.createIcons();
-}
-
-// Рендеринг карточки товара для поиска
-function renderSearchProductCard(product) {
-    return `
-        <div class="search-product-card" onclick="selectProductFromSearch(${product.id})">
-            <img src="${product.image_url || 'https://placehold.co/200'}" alt="${product.name}" loading="lazy">
-            <p class="product-name line-clamp-2">${product.name}</p>
-            <p class="product-price">${formatPrice(product.price)} сум</p>
-        </div>
-    `;
 }
 
 // Рендеринг элемента результата поиска с подсветкой совпадений
@@ -1082,67 +918,48 @@ function renderMobileCart() {
 function loadMobileFavorites() {
     const container = document.getElementById('mobile-favorites-list');
     const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-
-    // Обновляем счётчики везде
-    updateFavoriteCounts();
-
+    
+    // Обновляем счётчик
+    updateMobileFavCount(localFavorites.length);
+    
     if (localFavorites.length === 0) {
-        container.innerHTML = `
-            <div class="favorites-empty-state py-8">
-                <div class="icon-wrapper mb-4">
-                    <i data-lucide="heart" class="w-10 h-10"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">Избранное пусто</h3>
-                <p class="text-gray-500">Добавляйте товары через сердечко в каталоге</p>
-            </div>
-        `;
-        if (window.lucide) lucide.createIcons();
+        container.innerHTML = '<p class="text-center text-gray-500 py-8">Избранное пусто</p>';
         return;
     }
-
+    
     // Фильтруем товары которые в избранном
     const favProducts = allProductsList.filter(p => localFavorites.includes(p.id));
-
+    
     if (favProducts.length === 0) {
         container.innerHTML = '<p class="text-center text-gray-500 py-8">Товары больше недоступны</p>';
         return;
     }
-
-    container.innerHTML = favProducts.map((product, index) => `
-        <div class="fav-item flex gap-3 p-3 rounded-xl bg-white border border-gray-100 shadow-sm" style="animation-delay: ${index * 50}ms">
-            <img src="${product.image_url || 'https://placehold.co/80'}" 
-                alt="${product.name}" 
-                class="w-20 h-20 object-cover rounded-lg flex-shrink-0">
-            <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
-                <div>
-                    <h4 class="font-semibold text-sm text-gray-900 truncate">${product.name}</h4>
-                </div>
-                <div class="flex items-center justify-between">
-                    <p class="text-rose-600 font-bold text-sm">${formatPrice(product.sale_price || product.price)} сум</p>
-                </div>
-            </div>
-            <div class="flex flex-col gap-2 justify-center">
-                <button onclick="quickAddToCart(${product.id}); closeMobileFavorites();" 
-                    class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 transition-all"
-                    title="В корзину">
-                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
-                </button>
-                <button type="button" 
-                    onclick="removeFromFavorites(${product.id}); closeMobileFavorites();" 
-                    class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg" 
-                    title="Удалить">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+    
+    container.innerHTML = favProducts.map(product => `
+        <div class="favorites-item">
+            <img src="${product.image_url || 'https://placehold.co/80'}" alt="${product.name}">
+            <div class="flex-1">
+                <p class="font-semibold">${product.name}</p>
+                <p class="text-rose-600 font-bold">${formatPrice(product.price)} сум</p>
+                <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')}); closeMobileFavorites();" 
+                    class="mt-2 px-4 py-2 bg-rose-600 text-white text-sm rounded-lg">
+                    В корзину
                 </button>
             </div>
         </div>
     `).join('');
-
-    if (window.lucide) lucide.createIcons();
+    
+    lucide.createIcons();
 }
 
-/**
- * Обновить счетчик корзины в мобильном меню
- */
+function updateMobileFavCount(count) {
+    const badge = document.getElementById('mobile-fav-count');
+    if (badge) {
+        badge.textContent = count;
+        badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+}
+
 function updateMobileCartCount(count) {
     const badge = document.getElementById('mobile-cart-count');
     if (badge) {
@@ -1150,6 +967,18 @@ function updateMobileCartCount(count) {
         badge.style.display = count > 0 ? 'flex' : 'none';
     }
 }
+
+// Обновляем счётчик при изменении избранного
+const originalToggleFavorite = toggleFavorite;
+toggleFavorite = function(productId) {
+    originalToggleFavorite(productId);
+    
+    // Обновляем счётчик через небольшую задержку
+    setTimeout(() => {
+        const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        updateMobileFavCount(localFavorites.length);
+    }, 100);
+};
 
 function scrollToCatalog() {
     const catalogSection = document.getElementById('catalog');
@@ -1174,23 +1003,14 @@ async function loadBanners() {
 
         // Слайдер с несколькими баннерами
         let currentBannerIndex = 0;
-        let bannerTimeout = null;
 
-        // Очищаем предыдущий таймер при переключении
-        const clearBannerTimeout = () => {
-            if (bannerTimeout) {
-                clearTimeout(bannerTimeout);
-                bannerTimeout = null;
-            }
-        };
-
-        const renderBanner = (banner, index) => {
+        const renderBanner = (banner) => {
             const bannerText = banner.text || 'Весенняя Коллекция';
             const bannerSubtext = banner.subtext || 'Создайте незабываемые моменты с нашими авторскими букетами';
 
             if (banner.media_type === 'video' && banner.video_url) {
                 bannerContainer.innerHTML = `
-                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline>
+                    <video id="hero-video" class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline preload="metadata" poster="">
                         <source src="${banner.video_url}" type="video/mp4">
                         Ваш браузер не поддерживает видео.
                     </video>
@@ -1206,25 +1026,23 @@ async function loadBanners() {
 
                 // Обработка ошибок загрузки видео
                 const video = document.getElementById('hero-video');
-                if (video) {
-                    video.addEventListener('error', () => {
-                        console.error('Ошибка загрузки видео:', banner.video_url);
-                        // Переключаем на следующий баннер если видео не загрузилось
-                        clearBannerTimeout();
-                        const nextIndex = (index + 1) % banners.length;
-                        renderBanner(banners[nextIndex], nextIndex);
+                
+                video.addEventListener('error', (e) => {
+                    console.error('Ошибка загрузки видео:', banner.video_url, e);
+                    // Переключаем на следующий баннер если видео не загрузилось
+                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                    renderBanner(banners[currentBannerIndex]);
+                });
+                
+                // Обработка успешной загрузки
+                video.addEventListener('loadeddata', () => {
+                    console.log('Видео загружено:', banner.video_url);
+                    video.play().catch(err => {
+                        console.warn('Автовоспроизведение заблокировано:', err);
                     });
+                });
 
-                    // Видео успешно загрузилось - переключаем через 15 секунд
-                    video.addEventListener('loadeddata', () => {
-                        console.log('✅ Видео загружено, показываем 15 сек');
-                        clearBannerTimeout();
-                        bannerTimeout = setTimeout(() => {
-                            const nextIndex = (index + 1) % banners.length;
-                            renderBanner(banners[nextIndex], nextIndex);
-                        }, 15000);
-                    });
-                }
+                // Для видео с зацикливанием — не переключаем баннер
 
             } else if (banner.image_url) {
                 bannerContainer.innerHTML = `
@@ -1242,30 +1060,20 @@ async function loadBanners() {
                 `;
 
                 // Для изображений — автопереключение через 5 секунд
-                console.log(`🖼️ Показываем изображение #${index + 1}, переключение через 5 сек`);
-                clearBannerTimeout();
-                bannerTimeout = setTimeout(() => {
-                    const nextIndex = (index + 1) % banners.length;
-                    renderBanner(banners[nextIndex], nextIndex);
+                setTimeout(() => {
+                    currentBannerIndex = (currentBannerIndex + 1) % banners.length;
+                    renderBanner(banners[currentBannerIndex]);
                 }, 5000);
             }
 
             // Клик по баннеру с ссылкой
             if (banner.link) {
                 bannerContainer.style.cursor = 'pointer';
-                bannerContainer.onclick = (e) => {
-                    // Если это кнопка - не переходим по ссылке баннера
-                    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
-                        return;
-                    }
-                    window.location.href = banner.link;
-                };
+                bannerContainer.onclick = () => window.location.href = banner.link;
             }
         };
 
-        // Запускаем первый баннер
-        console.log(`🚀 Запуск слайдера, всего баннеров: ${banners.length}`);
-        renderBanner(banners[currentBannerIndex], currentBannerIndex);
+        renderBanner(banners[currentBannerIndex]);
 
     } catch (e) {
         console.error("Error loading banners:", e);
@@ -1275,10 +1083,11 @@ async function loadBanners() {
 function renderSingleBanner(container, banner) {
     const bannerText = banner.text || 'Весенняя Коллекция';
     const bannerSubtext = banner.subtext || 'Создайте незабываемые моменты с нашими авторскими букетами';
-    
+
     if (banner.media_type === 'video' && banner.video_url) {
         container.innerHTML = `
-            <video class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline src="${banner.video_url}">
+            <video class="absolute inset-0 w-full h-full object-cover opacity-60" autoplay muted loop playsinline preload="metadata" poster="">
+                <source src="${banner.video_url}" type="video/mp4">
                 Ваш браузер не поддерживает видео.
             </video>
             <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white">
@@ -1290,6 +1099,33 @@ function renderSingleBanner(container, banner) {
                 </div>
             </div>
         `;
+        
+        // Обработка ошибок для видео
+        const video = container.querySelector('video');
+        if (video) {
+            video.addEventListener('error', (e) => {
+                console.error('Ошибка загрузки видео в single banner:', banner.video_url, e);
+                // Показываем заглушку если видео не загрузилось
+                container.innerHTML = `
+                    <div class="absolute inset-0 bg-gradient-to-br from-rose-900 via-rose-800 to-black opacity-90"></div>
+                    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center text-white">
+                        <h1 class="text-6xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl">${bannerText}</h1>
+                        <p class="text-xl md:text-2xl mb-10 text-white/90 max-w-2xl drop-shadow-lg">${bannerSubtext}</p>
+                        <div class="flex gap-4">
+                            <button onclick="scrollToCatalog()" class="px-10 py-4 bg-rose-600 text-white rounded-full font-bold hover:bg-rose-700 transition-all text-lg shadow-xl">Выбрать букет</button>
+                            <button onclick="toggleCustomBouquet()" class="px-10 py-4 bg-white/20 backdrop-blur-md text-white border border-white/30 rounded-full font-bold hover:bg-white/30 transition-all text-lg">Собрать свой</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            video.addEventListener('loadeddata', () => {
+                console.log('Видео загружено (single):', banner.video_url);
+                video.play().catch(err => {
+                    console.warn('Автовоспроизведение заблокировано:', err);
+                });
+            });
+        }
     } else if (banner.image_url) {
         container.innerHTML = `
             <div class="absolute inset-0 opacity-60">
@@ -1374,15 +1210,6 @@ async function loadProducts(animate = false) {
     // Защита от повторных вызовов
     if (isLoadingProducts) return;
 
-    const container = document.getElementById('products-grid');
-    
-    // Если контейнер ещё не готов, пробуем позже
-    if (!container) {
-        console.warn('⚠️ products-grid не найден, повторная попытка через 100мс...');
-        setTimeout(() => loadProducts(animate), 100);
-        return;
-    }
-
     try {
         isLoadingProducts = true;
         const sort = document.getElementById('sort-filter')?.value || 'popular';
@@ -1404,6 +1231,9 @@ async function loadProducts(animate = false) {
         const products = await res.json();
         allProductsList = products; // Keep for favorites side-filtering
 
+        const container = document.getElementById('products-grid');
+        if (!container) return;
+
         if (products.length === 0) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-20">
@@ -1414,11 +1244,9 @@ async function loadProducts(animate = false) {
             lucide.createIcons();
         } else {
             renderProducts(products, animate);
-            // Обновляем кнопки избранного после рендера товаров
-            setTimeout(() => updateFavoriteButtons(), 50);
         }
 
-        // Обновляем счетчики и кнопки избранного
+        // Обновляем кнопки избранного после загрузки товаров
         updateFavoriteButtons();
     } catch (error) {
         console.error("Ошибка загрузки:", error);
@@ -1429,50 +1257,9 @@ async function loadProducts(animate = false) {
 
 // --- Favorites ---
 
-/**
- * Показать toast уведомление
- * @param {string} message - Сообщение
- * @param {string} type - Тип: 'success', 'error', 'info'
- */
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const icons = {
-        success: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
-        error: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
-        info: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
-    };
-
-    toast.innerHTML = `
-        ${icons[type] || icons.info}
-        <span class="toast-message">${message}</span>
-    `;
-
-    container.appendChild(toast);
-
-    // Удаляем через 3 секунды
-    setTimeout(() => {
-        toast.classList.add('removing');
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.parentNode.removeChild(toast);
-            }
-        }, 300);
-    }, 3000);
-}
-
-/**
- * Переключить статус избранного
- * @param {number} productId - ID товара
- */
 function toggleFavorite(productId) {
     const index = favorites.indexOf(productId);
     const isAdding = index === -1;
-    const product = allProductsList.find(p => p.id === productId);
 
     if (isAdding) {
         favorites.push(productId);
@@ -1481,224 +1268,169 @@ function toggleFavorite(productId) {
     }
     localStorage.setItem('favorites', JSON.stringify(favorites));
 
-    // Анимация кнопки
-    animateFavoriteButton(productId, isAdding);
-
-    // Обновляем счетчики и UI
-    updateFavoriteCounts();
+    // Сразу обновляем визуальное состояние кнопки (без ожидания перерисовки)
     updateFavoriteButtonVisual(productId, isAdding);
 
-    // Показываем toast уведомление
-    if (isAdding) {
-        showToast(`«${product?.name || 'Товар'}» добавлен в избранное`, 'success');
-    } else {
-        showToast(`«${product?.name || 'Товар'}» удален из избранного`, 'info');
+    // Обновляем счетчики
+    const countBadge = document.getElementById('fav-count');
+    const mobileCountBadge = document.getElementById('mobile-fav-count');
+    if (countBadge) {
+        countBadge.innerText = favorites.length;
+        countBadge.classList.toggle('hidden', favorites.length === 0);
+    }
+    if (mobileCountBadge) {
+        mobileCountBadge.innerText = favorites.length;
+        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
     }
 
     // Синхронизация с сервером если пользователь авторизован
-    syncFavoriteWithServer(productId, isAdding);
+    const token = localStorage.getItem('token');
+    console.log('🔑 Токен для синхронизации:', token ? 'найден' : 'не найден');
+    
+    if (token) {
+        if (isAdding) {
+            console.log('📥 Добавление в избранное на сервере, product_id:', productId);
+            // Добавляем в избранное на сервере
+            fetch('/api/profile/favorites', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ product_id: productId })
+            })
+            .then(response => {
+                console.log('📊 Ответ сервера (POST):', response.status);
+                if (response.status === 401) {
+                    // Токен недействителен, очищаем его
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
+                }
+            })
+            .catch(err => console.error('❌ Ошибка добавления в избранное:', err));
+        } else {
+            console.log('📤 Удаление из избранного на сервере, product_id:', productId);
+            // Удаляем из избранного на сервере
+            fetch(`/api/profile/favorites/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                console.log('📊 Ответ сервера (DELETE):', response.status);
+                if (response.status === 401) {
+                    // Токен недействителен, очищаем его
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    console.warn('⚠️ Токен истёк, пользователь разлогинен');
+                }
+            })
+            .catch(err => console.error('❌ Ошибка удаления из избранного:', err));
+        }
+    } else {
+        console.log('ℹ️ Пользователь не авторизован, синхронизация пропускается');
+    }
 
     // Перерисовываем список избранного если он открыт
-    const sidebar = document.getElementById('fav-sidebar');
-    if (sidebar && !sidebar.classList.contains('hidden')) {
-        renderFavorites();
-    }
+    renderFavorites();
 }
 
-/**
- * Анимация кнопки избранного
- */
-function animateFavoriteButton(productId, isAdding) {
-    const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
-    buttons.forEach(btn => {
-        // Добавляем анимацию всегда (и при добавлении, и при удалении)
-        btn.classList.remove('adding');
-        // Форсируем перерисовку для перезапуска анимации
-        void btn.offsetWidth;
-        btn.classList.add('adding');
-        setTimeout(() => {
-            btn.classList.remove('adding');
-        }, 400);
-    });
-}
-
-/**
- * Обновить счетчики избранного
- */
-function updateFavoriteCounts() {
-    const countBadge = document.getElementById('fav-count');
-    const mobileCountBadge = document.getElementById('mobile-fav-count');
-    const sidebarCount = document.getElementById('fav-sidebar-count');
-
-    const count = favorites.length;
-    const displayCount = count > 0 ? count : '';
-
-    if (countBadge) {
-        countBadge.innerText = displayCount;
-        countBadge.classList.toggle('hidden', count === 0);
-    }
-
-    if (mobileCountBadge) {
-        mobileCountBadge.innerText = displayCount;
-        mobileCountBadge.style.display = count === 0 ? 'none' : 'flex';
-    }
-
-    if (sidebarCount) {
-        sidebarCount.innerText = count > 0 ? `(${count})` : '';
-    }
-}
-
-/**
- * Синхронизация с сервером
- */
-function syncFavoriteWithServer(productId, isAdding) {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    if (isAdding) {
-        fetch('/api/profile/favorites', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ product_id: productId })
-        })
-        .then(response => {
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-            }
-        })
-        .catch(err => console.error('Ошибка добавления в избранное:', err));
-    } else {
-        fetch(`/api/profile/favorites/${productId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        })
-        .then(response => {
-            if (response.status === 401) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-            }
-        })
-        .catch(err => console.error('Ошибка удаления из избранного:', err));
-    }
-}
-
-/**
- * Обновить визуальное состояние кнопки избранного
- */
 function updateFavoriteButtonVisual(productId, isFav) {
+    // Находим все кнопки с этим product-id и обновляем их состояние СРАЗУ
     const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
-
+    
     buttons.forEach(btn => {
         const icon = btn.querySelector('i');
         if (!icon) return;
+
+        // Пропускаем кнопки с иконкой корзины (в списке избранного)
         if (icon.getAttribute('data-lucide') === 'trash-2') return;
 
+        // Обновляем классы и стили СРАЗУ
         if (isFav) {
             // Добавляем в избранное - делаем красным с заливкой
             btn.classList.remove('text-gray-400');
             btn.classList.add('text-rose-500');
             icon.classList.remove('text-gray-400');
-            icon.classList.add('fill-rose-500');
-            icon.classList.remove('text-gray-400');
-            icon.classList.add('text-rose-500');
-            // Принудительно устанавливаем цвет через style с !important
-            icon.setAttribute('style', 'color: rgb(225, 29, 72) !important; fill: rgb(225, 29, 72) !important;');
+            icon.classList.add('text-rose-500', 'fill-rose-500');
+            // Принудительно устанавливаем цвет через style
+            icon.style.color = '#e11d48';
+            icon.style.fill = '#e11d48';
         } else {
             // Удаляем из избранного - делаем серым
             btn.classList.remove('text-rose-500');
             btn.classList.add('text-gray-400');
-            icon.classList.remove('fill-rose-500', 'text-rose-500');
+            icon.classList.remove('text-rose-500', 'fill-rose-500');
             icon.classList.add('text-gray-400');
-            // Сбрасываем inline стили
-            icon.removeAttribute('style');
+            // Сбрасываем style
+            icon.style.color = '';
+            icon.style.fill = '';
         }
     });
+    
+    // НЕ вызываем lucide.createIcons() чтобы не сбрасывать классы
 }
 
-/**
- * Обновить все кнопки избранного
- */
 function updateFavoriteButtons() {
-    updateFavoriteCounts();
-
+    // Обновляем счетчик в хедере
+    const countBadge = document.getElementById('fav-count');
+    const mobileCountBadge = document.getElementById('mobile-fav-count');
+    
+    if (countBadge) {
+        countBadge.innerText = favorites.length;
+        countBadge.classList.toggle('hidden', favorites.length === 0);
+    }
+    
+    if (mobileCountBadge) {
+        mobileCountBadge.innerText = favorites.length;
+        mobileCountBadge.style.display = favorites.length === 0 ? 'none' : 'flex';
+    }
+    
+    // Обновляем состояние кнопок в каталоге (с иконкой сердца)
     document.querySelectorAll('.fav-heart-btn').forEach(btn => {
-        const productId = parseInt(btn.getAttribute('data-product-id'));
+        const productId = btn.getAttribute('data-product-id');
         if (!productId) return;
-
+        
+        // Пропускаем кнопки с иконкой корзины (в списке избранного)
         const icon = btn.querySelector('i');
-        if (!icon || icon.getAttribute('data-lucide') === 'trash-2') return;
-
-        const isFav = favorites.includes(productId);
-
+        if (!icon) return;
+        if (icon.getAttribute('data-lucide') === 'trash-2') return;
+        
+        const isFav = favorites.includes(parseInt(productId));
+        
+        // Меняем иконку и цвет
         if (isFav) {
             btn.classList.add('text-rose-500');
             btn.classList.remove('text-gray-400');
             icon.classList.add('fill-rose-500');
-            icon.classList.remove('text-gray-400');
-            icon.classList.add('text-rose-500');
-            icon.setAttribute('style', 'color: rgb(225, 29, 72) !important; fill: rgb(225, 29, 72) !important;');
         } else {
             btn.classList.remove('text-rose-500');
             btn.classList.add('text-gray-400');
-            icon.classList.remove('fill-rose-500', 'text-rose-500');
-            icon.classList.add('text-gray-400');
-            icon.removeAttribute('style');
+            icon.classList.remove('fill-rose-500');
         }
     });
-}
-
-/**
- * Открыть/закрыть sidebar избранного
- */
-function toggleFavorites() {
-    const sidebar = document.getElementById('fav-sidebar');
-    const isOpening = sidebar.classList.contains('hidden');
     
-    sidebar.classList.toggle('hidden');
-    
-    // Если открываем - рендерим содержимое
-    if (isOpening) {
-        setTimeout(() => {
-            renderFavorites();
-            if (window.lucide) {
-                lucide.createIcons();
-            }
-        }, 10);
+    // Перерисовываем иконки
+    if (window.lucide) {
+        lucide.createIcons();
     }
 }
 
-/**
- * Отрендерить список избранного
- */
+function toggleFavorites() {
+    const sidebar = document.getElementById('fav-sidebar');
+    sidebar.classList.toggle('hidden');
+}
+
 function renderFavorites() {
     const container = document.getElementById('fav-items');
-    const footer = document.getElementById('fav-footer');
     if (!container) return;
 
     if (favorites.length === 0) {
-        container.innerHTML = `
-            <div class="favorites-empty-state">
-                <div class="icon-wrapper">
-                    <i data-lucide="heart" class="w-10 h-10"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">Нет избранных товаров</h3>
-                <p class="text-gray-500 mb-6">Добавляйте товары в избранное, чтобы сохранить их на потом</p>
-                <button onclick="toggleFavorites()"
-                    class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Смотреть каталог</button>
-            </div>
-        `;
-        if (footer) footer.classList.add('hidden');
+        container.innerHTML = '<p class="text-center text-gray-500 mt-10">Список избранного пуст</p>';
         return;
     }
-
-    // Показываем футер
-    if (footer) footer.classList.remove('hidden');
 
     // Если товары ещё не загружены, загружаем их
     if (!allProductsList || allProductsList.length === 0) {
@@ -1711,120 +1443,33 @@ function renderFavorites() {
     renderFavoritesAfterLoad(container);
 }
 
-/**
- * Отрендерить список избранного после загрузки товаров
- */
 function renderFavoritesAfterLoad(container) {
     const favProducts = allProductsList.filter(p => favorites.includes(p.id));
-
+    
     if (favProducts.length === 0) {
-        container.innerHTML = `
-            <div class="favorites-empty-state">
-                <div class="icon-wrapper">
-                    <i data-lucide="heart" class="w-10 h-10"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">Товары больше недоступны</h3>
-                <p class="text-gray-500 mb-6">Все товары из избранного были удалены из каталога</p>
-                <button onclick="toggleFavorites()"
-                    class="px-6 py-3 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-all shadow-lg shadow-rose-200">Смотреть каталог</button>
-            </div>
-        `;
-        const footer = document.getElementById('fav-footer');
-        if (footer) footer.classList.add('hidden');
+        container.innerHTML = '<p class="text-center text-gray-500 mt-10">Товары в избранном больше недоступны</p>';
         return;
     }
-
-    container.innerHTML = favProducts.map((product, index) => `
-        <div class="fav-item flex gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100" style="animation-delay: ${index * 50}ms">
-            <img src="${product.image_url || 'https://placehold.co/80'}" 
-                alt="${product.name}" 
-                class="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm">
-            <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
-                <div>
-                    <h4 class="font-semibold text-sm text-gray-900 truncate">${product.name}</h4>
-                    ${product.category ? `<p class="text-xs text-gray-500 mt-0.5">${product.category}</p>` : ''}
-                </div>
-                <div class="flex items-center justify-between">
-                    <p class="text-rose-600 font-bold text-sm">${formatPrice(product.sale_price || product.price)} сум</p>
-                </div>
+    
+    container.innerHTML = favProducts.map(product => `
+        <div class="flex gap-3 border-b pb-4 items-center">
+            <img src="${product.image_url || 'https://placehold.co/80'}" class="w-20 h-20 object-cover rounded-lg">
+            <div class="flex-1">
+                <h4 class="font-semibold text-sm">${product.name}</h4>
+                <p class="text-rose-600 font-bold">${formatPrice(product.sale_price || product.price)} сум</p>
             </div>
-            <div class="flex flex-col gap-2 justify-center">
-                <button onclick="quickAddToCart(${product.id});" 
-                    class="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 active:scale-95 transition-all shadow-sm"
-                    title="Добавить в корзину">
+            <div class="flex flex-col gap-2">
+                <button onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" class="p-2 bg-rose-50 text-rose-600 rounded hover:bg-rose-100 transition-all">
                     <i data-lucide="shopping-cart" class="w-4 h-4"></i>
                 </button>
-                <button type="button" 
-                    onclick="removeFromFavorites(${product.id})" 
-                    data-product-id="${product.id}" 
-                    class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all rounded-lg" 
-                    title="Удалить из избранного">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <button type="button" onclick="toggleFavorite(${product.id})" data-product-id="${product.id}" class="fav-heart-btn min-w-[44px] min-h-[44px] flex items-center justify-center p-2 text-gray-400 hover:text-rose-500 active:scale-95 transition-all rounded-lg" aria-label="Удалить из избранного">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
                 </button>
             </div>
         </div>
     `).join('');
 
-    if (window.lucide) {
-        lucide.createIcons();
-    }
-}
-
-/**
- * Быстрое добавление в корзину из избранного
- */
-function quickAddToCart(productId) {
-    const product = allProductsList.find(p => p.id === productId);
-    if (!product) return;
-
-    addToCart(product);
-    showToast(`«${product.name}» добавлен в корзину`, 'success');
-}
-
-/**
- * Удалить из избранного с анимацией
- */
-function removeFromFavorites(productId) {
-    const index = favorites.indexOf(productId);
-    if (index === -1) return;
-
-    const product = allProductsList.find(p => p.id === productId);
-    
-    // Находим элемент в DOM и добавляем класс анимации
-    const buttons = document.querySelectorAll(`.fav-heart-btn[data-product-id="${productId}"]`);
-    buttons.forEach(btn => {
-        const item = btn.closest('.fav-item');
-        if (item) {
-            item.classList.add('removing');
-            setTimeout(() => {
-                // После анимации удаляем из массива
-                const idx = favorites.indexOf(productId);
-                if (idx > -1) {
-                    favorites.splice(idx, 1);
-                    localStorage.setItem('favorites', JSON.stringify(favorites));
-                    
-                    updateFavoriteCounts();
-                    updateFavoriteButtonVisual(productId, false);
-                    syncFavoriteWithServer(productId, false);
-                    
-                    // Перерисовываем
-                    renderFavorites();
-                }
-            }, 300);
-        }
-    });
-
-    // Если элемент не найден, просто удаляем
-    if (buttons.length === 0) {
-        favorites.splice(index, 1);
-        localStorage.setItem('favorites', JSON.stringify(favorites));
-        updateFavoriteCounts();
-        updateFavoriteButtonVisual(productId, false);
-        syncFavoriteWithServer(productId, false);
-        renderFavorites();
-    }
-
-    showToast(`«${product?.name || 'Товар'}» удален из избранного`, 'info');
+    lucide.createIcons();
 }
 
 // --- Cart ---
@@ -1844,27 +1489,7 @@ function updateQuantity(productId, delta) {
         } else {
             localStorage.setItem('cart', JSON.stringify(cart));
             renderCart();
-            updateCartCount();
         }
-    }
-}
-
-/**
- * Обновить счетчики корзины
- */
-function updateCartCount() {
-    const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
-    
-    const countElem = document.getElementById('cart-count');
-    if (countElem) {
-        countElem.innerText = totalQuantity;
-        countElem.classList.toggle('hidden', totalQuantity === 0);
-    }
-
-    const mobileCartCount = document.getElementById('mobile-cart-count');
-    if (mobileCartCount) {
-        mobileCartCount.innerText = totalQuantity;
-        mobileCartCount.style.display = totalQuantity > 0 ? 'flex' : 'none';
     }
 }
 
@@ -1931,8 +1556,6 @@ function renderCart() {
 function removeFromCart(productId) {
     cart = cart.filter(item => item.id !== productId);
     saveCart();
-    renderCart();
-    updateCartCount();
 }
 
 async function handleCheckout() {
@@ -2039,6 +1662,10 @@ document.addEventListener('input', (e) => {
 // Вспомогательная функция для сохранения корзины
 function saveCart() {
     localStorage.setItem('cart', JSON.stringify(cart));
+    renderCart();
+    // Обновляем счётчик корзины в мобильном меню
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    updateMobileCartCount(totalItems);
 }
 
 // Функция отправки
@@ -2586,62 +2213,186 @@ function goBackToAdmin() {
     window.close();
 }
 
-// Заказ через Telegram - прямое перенаправление в Telegram
+// Заказ через Telegram - модальное окно
 function openTelegramOrderModal() {
     if (cart.length === 0) {
         alert('Корзина пуста');
         return;
     }
 
-    // Формируем сообщение для Telegram
-    let message = '🌸 Новый заказ\n\n';
-    message += '📦 Товары:\n';
+    // Заполняем список товаров с фото
+    const itemsContainer = document.getElementById('tg-order-items');
+    if (itemsContainer) {
+        itemsContainer.innerHTML = cart.map(item => `
+            <div class="flex gap-3 bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                <img src="${item.image_url || 'https://placehold.co/80'}"
+                    alt="${item.name}"
+                    class="w-16 h-16 object-cover rounded-lg flex-shrink-0">
+                <div class="flex-1 min-w-0">
+                    <h5 class="font-semibold text-sm text-gray-900 truncate">${item.name}</h5>
+                    <p class="text-xs text-gray-500 mt-1">
+                        ${item.quantity} шт.
+                    </p>
+                    <p class="text-rose-600 font-bold text-sm mt-1">
+                        ${formatPrice(item.price * item.quantity)} сум
+                    </p>
+                </div>
+            </div>
+        `).join('');
+    }
 
-    cart.forEach((item, index) => {
-        message += `${index + 1}. ${item.name} — ${item.quantity} шт. × ${formatPrice(item.price)} сум\n`;
-    });
-
+    // Обновляем итоговую сумму
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    message += `\n💰 Итого: ${formatPrice(total)} сум`;
+    const totalElem = document.getElementById('tg-order-total');
+    if (totalElem) {
+        totalElem.innerText = formatPrice(total) + ' сум';
+    }
 
-    // Копируем сообщение в буфер обмена
-    navigator.clipboard.writeText(message).then(() => {
-        alert('✅ Детали заказа скопированы в буфер обмена.\n\nСейчас откроется Telegram — просто вставьте сообщение в чат.');
-
-        // Очищаем корзину
-        cart = [];
-        saveCart();
-        toggleCart();
-
-        // Открываем Telegram
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-            window.location.href = 'https://t.me/uzflower';
-        } else {
-            window.open('https://t.me/uzflower', '_blank');
+    // Заполняем данные пользователя если авторизован
+    if (currentUser) {
+        const phoneElem = document.getElementById('tg-order-phone');
+        if (phoneElem && currentUser.phone) {
+            phoneElem.value = currentUser.phone;
         }
-    }).catch(() => {
-        alert('✅ Сейчас откроется Telegram.');
+    }
 
-        cart = [];
-        saveCart();
-        toggleCart();
-
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-            window.location.href = 'https://t.me/uzflower';
-        } else {
-            window.open('https://t.me/uzflower', '_blank');
-        }
-    });
+    // Показываем модальное окно
+    const modal = document.getElementById('telegram-order-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+    
+    lucide.createIcons();
 }
 
 function closeTelegramOrderModal() {
-    // Функция больше не используется
+    const modal = document.getElementById('telegram-order-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 async function submitTelegramOrder() {
-    // Функция больше не используется - заказ оформляется напрямую через Telegram
+    const phone = document.getElementById('tg-order-phone')?.value.trim();
+    const name = document.getElementById('tg-order-name')?.value.trim();
+    const postcard = document.getElementById('tg-order-postcard')?.value.trim();
+    const comment = document.getElementById('tg-order-comment')?.value.trim();
+
+    if (!phone || !name) {
+        alert('Пожалуйста, заполните телефон и имя');
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    try {
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Создаём заказ в базе
+        const res = await fetch('/api/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                delivery_address: '',
+                comment: comment || '',
+                delivery_date: '',
+                delivery_time: '',
+                postcard_text: postcard || ''
+            })
+        });
+
+        const orderData = await res.json();
+
+        if (!res.ok || !orderData.success) {
+            throw new Error(orderData.detail || 'Ошибка при создании заказа');
+        }
+
+        const orderId = orderData.order_id;
+
+        // Добавляем товары в заказ
+        for (const item of cart) {
+            await fetch(`/api/order/${orderId}/add-item`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    comment: null
+                })
+            });
+        }
+
+        // Формируем сообщение для Telegram
+        let message = '🌸 Новый заказ\n\n';
+        message += '📦 Товары:\n';
+
+        cart.forEach((item, index) => {
+            message += `${index + 1}. ${item.name} — ${item.quantity} шт. × ${formatPrice(item.price)} сум\n`;
+        });
+
+        message += `\n💰 Итого: ${formatPrice(total)} сум`;
+
+        if (address) message += `\n📍 Адрес: ${address}`;
+        if (phone) message += `\n📞 Телефон: ${phone}`;
+        if (date) message += `\n📅 Дата: ${date}`;
+        if (time) {
+            const timeLabels = {
+                '09:00-12:00': '09:00-12:00 (Утро)',
+                '12:00-15:00': '12:00-15:00 (День)',
+                '15:00-18:00': '15:00-18:00 (Вечер)',
+                '18:00-21:00': '18:00-21:00 (Поздний вечер)'
+            };
+            message += `\n⏰ Время: ${timeLabels[time] || time}`;
+        }
+
+        if (postcard) message += `\n💌 Открытка: ${postcard}`;
+        if (comment) message += `\n💬 Комментарий: ${comment}`;
+
+        message += `\n\n🔢 Номер заказа: #${orderId}`;
+
+        // Копируем сообщение в буфер обмена
+        navigator.clipboard.writeText(message).then(() => {
+            alert('✅ Заказ создан! Детали скопированы в буфер обмена.\n\nСейчас откроется Telegram — просто вставьте сообщение в чат.');
+
+            // Очищаем корзину
+            cart = [];
+            saveCart();
+            closeTelegramOrderModal();
+            toggleCart();
+
+            // Открываем Telegram
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                window.location.href = 'https://t.me/uzflower';
+            } else {
+                window.open('https://t.me/uzflower', '_blank');
+            }
+        }).catch(() => {
+            alert('✅ Заказ создан! Сейчас откроется Telegram.');
+
+            cart = [];
+            saveCart();
+            closeTelegramOrderModal();
+            toggleCart();
+
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                window.location.href = 'https://t.me/uzflower';
+            } else {
+                window.open('https://t.me/uzflower', '_blank');
+            }
+        });
+
+    } catch (error) {
+        console.error('Ошибка при создании заказа:', error);
+        alert('Ошибка: ' + (error.message || 'Не удалось создать заказ'));
+    }
 }
 
 // Старая функция orderViaTelegram (для совместимости)

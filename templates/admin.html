@@ -849,8 +849,13 @@
                         : data.map(b => `
                                 <div class="bg-white rounded-2xl border shadow-sm overflow-hidden relative group">
                                     ${b.media_type === 'video'
-                                ? `<video src="${b.video_url}" class="w-full h-48 object-cover" muted loop autoplay onmouseover="this.play()" onmouseout="this.pause()"></video>`
-                                : `<img src="${b.image_url || 'https://via.placeholder.com/400'}" class="w-full h-48 object-cover">`
+                                ? `<div class="relative w-full h-48 bg-black">
+                                    <video src="${b.video_url}" class="w-full h-full object-cover" muted loop playsinline preload="metadata" 
+                                           onmouseover="this.play()" onmouseout="this.pause()" 
+                                           onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center bg-gray-100\\'><p class=\\'text-gray-500\\'>Видео недоступно</p></div>'">
+                                    </video>
+                                   </div>`
+                                : `<img src="${b.image_url || 'https://via.placeholder.com/400'}" class="w-full h-48 object-cover" onerror="this.src='https://via.placeholder.com/400?text=Image+not+found'">`
                             }
                                     ${b.text ? `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4"><p class="text-white font-bold text-lg">${b.text}</p>${b.subtext ? `<p class="text-white/80 text-sm">${b.subtext}</p>` : ''}</div>` : ''}
                                     <div class="absolute top-2 right-2 flex gap-2 banner-actions opacity-0 group-hover:opacity-100 transition-opacity">
@@ -882,10 +887,14 @@
 
                 // Автозапуск видео при наведении
                 document.querySelectorAll('#banners-grid video').forEach(video => {
-                    video.addEventListener('mouseenter', () => video.play());
+                    video.addEventListener('mouseenter', () => video.play().catch(err => console.warn('Video play error:', err)));
                     video.addEventListener('mouseleave', () => {
                         video.pause();
                         video.currentTime = 0;
+                    });
+                    // Пробуем запустить видео после загрузки
+                    video.addEventListener('loadeddata', () => {
+                        video.play().catch(err => console.warn('Autoplay blocked:', err));
                     });
                 });
             } else if (tab === 'products') {
